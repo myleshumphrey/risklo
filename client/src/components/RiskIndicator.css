@@ -1,0 +1,41 @@
+.risk-indicator {
+  --risk-color: #10b981;
+}
+
+.risk-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--risk-color);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.risk-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--risk-color);
+  box-shadow: 0 0 8px var(--risk-color);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.risk-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--risk-color);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
