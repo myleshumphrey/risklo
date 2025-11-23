@@ -2,8 +2,13 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import Dashboard from './components/Dashboard';
 import InputForm from './components/InputForm';
+import UpgradeModal from './components/UpgradeModal';
+import BulkRiskCalculator from './components/BulkRiskCalculator';
+import CsvUpload from './components/CsvUpload';
 
 function App() {
+  const [isPro, setIsPro] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -16,13 +21,13 @@ function App() {
       try {
         const response = await fetch('/api/sheets');
         const data = await response.json();
-        if (data.success) {
+          if (data.success) {
           setSheetNames(data.sheets);
           if (data.sheets.length === 0) {
-            setError('No algorithms found. Make sure the Google Sheet is shared with the service account.');
+            setError('No strategies found. Make sure the Google Sheet is shared with the service account.');
           }
         } else {
-          setError(data.error || 'Failed to load algorithms');
+          setError(data.error || 'Failed to load strategies');
         }
       } catch (err) {
         console.error('Failed to fetch sheet names:', err);
@@ -62,12 +67,31 @@ function App() {
     }
   };
 
+  const handleUpgrade = () => {
+    setIsPro(true);
+    setShowUpgradeModal(false);
+  };
+
   return (
     <div className="App">
       <header className="app-header">
         <div className="header-content">
-          <h1 className="app-title">RiskLo</h1>
-          <p className="app-subtitle">Algorithm Risk Assessment Dashboard</p>
+          <div className="header-left">
+            <h1 className="app-title">RiskLo</h1>
+            <p className="app-subtitle">Strategy Risk Assessment Dashboard</p>
+          </div>
+          <div className="header-right">
+            {isPro ? (
+              <span className="pro-badge">RiskLo Pro</span>
+            ) : (
+              <button 
+                className="upgrade-header-btn"
+                onClick={() => setShowUpgradeModal(true)}
+              >
+                Upgrade to RiskLo Pro
+              </button>
+            )}
+          </div>
         </div>
       </header>
       
@@ -88,8 +112,21 @@ function App() {
           )}
           
           {metrics && <Dashboard metrics={metrics} />}
+
+          <BulkRiskCalculator 
+            isPro={isPro}
+            sheetNames={sheetNames}
+          />
+
+          <CsvUpload isPro={isPro} />
         </div>
       </main>
+
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        onUpgrade={handleUpgrade}
+      />
     </div>
   );
 }
