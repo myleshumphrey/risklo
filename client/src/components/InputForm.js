@@ -27,16 +27,16 @@ function InputForm({ onSubmit, loading, sheetNames, loadingSheets, error }) {
     <div className="input-form-container">
       <form onSubmit={handleSubmit} className="input-form">
         <div className="form-section">
-          <h2 className="form-title">Algorithm Risk Assessment</h2>
+          <h2 className="form-title">Strategy Risk Assessment</h2>
           <p className="form-description">
-            Select an algorithm and configure your trading parameters to assess risk
+            Select a strategy and configure your trading parameters to assess risk
           </p>
         </div>
 
         <div className="form-grid">
           <div className="form-group">
             <label htmlFor="sheetName" className="form-label">
-              Algorithm <span className="required">*</span>
+              Strategy <span className="required">*</span>
             </label>
             <select
               id="sheetName"
@@ -47,7 +47,7 @@ function InputForm({ onSubmit, loading, sheetNames, loadingSheets, error }) {
               required
               disabled={loadingSheets}
             >
-              <option value="">{loadingSheets ? 'Loading algorithms...' : sheetNames.length === 0 ? 'No algorithms found' : 'Select an algorithm'}</option>
+              <option value="">{loadingSheets ? 'Loading strategies...' : sheetNames.length === 0 ? 'No strategies found' : 'Select a strategy'}</option>
               {sheetNames.map((name) => (
                 <option key={name} value={name}>
                   {name}
@@ -58,7 +58,7 @@ function InputForm({ onSubmit, loading, sheetNames, loadingSheets, error }) {
               {error ? (
                 <span style={{ color: '#ef4444' }}>{error}</span>
               ) : (
-                'Select the algorithm you want to analyze'
+                'Select the strategy you want to analyze'
               )}
             </small>
           </div>
