@@ -4,7 +4,7 @@ import './InputForm.css';
 function InputForm({ onSubmit, loading, sheetNames, loadingSheets, error, riskMode }) {
   const [formData, setFormData] = useState({
     sheetName: '',
-    contractType: 'NQ', // Default to NQ
+    contractType: 'MNQ', // Default to MNQ
     accountSize: '',
     contracts: '',
     maxDrawdown: '',

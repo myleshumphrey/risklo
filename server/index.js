@@ -9,14 +9,30 @@ const PORT = process.env.PORT || 5000;
 // Hardcoded spreadsheet ID
 const SPREADSHEET_ID = '1PCU-1ZjBEkAF1LE3Z1tbajCg3hOBzpKxx--z9QU8sAE';
 
-app.use(cors());
+// CORS configuration - allow requests from Netlify domain and localhost
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true
+}));
 app.use(express.json());
 
 // Initialize Google Sheets API
-const auth = new google.auth.GoogleAuth({
-  keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,
-  scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-});
+// Support both environment variable (for production) and file (for local dev)
+let auth;
+if (process.env.GOOGLE_CREDENTIALS_JSON) {
+  // Use JSON from environment variable (production)
+  const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
+  auth = new google.auth.GoogleAuth({
+    credentials: credentials,
+    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+  });
+} else {
+  // Fallback to file (local development)
+  auth = new google.auth.GoogleAuth({
+    keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+  });
+}
 
 // Helper function to get all sheet names
 async function getSheetNames() {
@@ -114,6 +130,7 @@ function calculateRiskMetrics(data, accountSize, contracts, maxDrawdown, contrac
   // Skip header rows (rows 1-2), start from row 3 (index 2)
   const rows = data.slice(2);
   const allLosses = [];
+  const allProfits = [];
   const dailyValues = [];
 
   // MNQ is 1/10th the value of NQ, so we need to divide by 10
@@ -135,12 +152,15 @@ function calculateRiskMetrics(data, accountSize, contracts, maxDrawdown, contrac
         dailyValues.push(adjustedValue);
         if (adjustedValue < 0) {
           allLosses.push(Math.abs(adjustedValue));
+        } else if (adjustedValue > 0) {
+          allProfits.push(adjustedValue);
         }
       }
     }
   });
 
-  if (allLosses.length === 0) {
+  // Check if we have any data at all (losses or profits)
+  if (allLosses.length === 0 && allProfits.length === 0) {
     // Return debug info to help troubleshoot
     const sampleRows = rows.slice(0, 5).map((r, i) => ({
       rowIndex: i + 3,
@@ -148,7 +168,7 @@ function calculateRiskMetrics(data, accountSize, contracts, maxDrawdown, contrac
       columns: r ? r.slice(0, 7) : []
     }));
     return { 
-      error: 'No loss data found in the sheet',
+      error: 'No trading data found in the sheet',
       debug: {
         totalRows: rows.length,
         sampleRows: sampleRows
@@ -161,12 +181,18 @@ function calculateRiskMetrics(data, accountSize, contracts, maxDrawdown, contrac
   const numContracts = Number(contracts) || 1;
   
   // Per-contract values (from Google Sheet, already adjusted for contractType)
-  const worstLossPerContract = Math.max(...allLosses);
-  const avgLossPerContract = allLosses.reduce((a, b) => a + b, 0) / allLosses.length;
+  const worstLossPerContract = allLosses.length > 0 ? Math.max(...allLosses) : 0;
+  const avgLossPerContract = allLosses.length > 0 ? allLosses.reduce((a, b) => a + b, 0) / allLosses.length : 0;
+  
+  // Per-contract profit values
+  const maxProfitPerContract = allProfits.length > 0 ? Math.max(...allProfits) : 0;
+  const avgProfitPerContract = allProfits.length > 0 ? allProfits.reduce((a, b) => a + b, 0) / allProfits.length : 0;
   
   // Scale to position size
   const worstLossForSize = worstLossPerContract * numContracts;
   const avgLossForSize = avgLossPerContract * numContracts;
+  const maxProfitForSize = maxProfitPerContract * numContracts;
+  const avgProfitForSize = avgProfitPerContract * numContracts;
   
   // Calculate percentages based on scaled values
   const worstLossPercent = (worstLossForSize / accountSize) * 100;
@@ -281,15 +307,36 @@ function calculateRiskMetrics(data, accountSize, contracts, maxDrawdown, contrac
     };
   }
 
+  // Calculate profit percentages
+  const maxProfitPercent = maxProfitForSize > 0 ? ((maxProfitForSize / accountSize) * 100).toFixed(2) : '0.00';
+  const avgProfitPercent = avgProfitForSize > 0 ? ((avgProfitForSize / accountSize) * 100).toFixed(2) : '0.00';
+
+  // Debug logging (can be removed later)
+  console.log('Profit calculation debug:', {
+    allProfitsCount: allProfits.length,
+    maxProfitPerContract,
+    avgProfitPerContract,
+    maxProfitForSize,
+    avgProfitForSize,
+    numContracts
+  });
+
   return {
     // Return scaled values (for position size)
     highestLoss: worstLossForSize,
     highestLossPercent: worstLossPercent.toFixed(2),
     avgLoss: avgLossForSize,
     avgLossPercent: avgLossPercent.toFixed(2),
+    // Profit values (scaled for position size)
+    maxProfit: maxProfitForSize,
+    maxProfitPercent: maxProfitPercent,
+    avgProfit: avgProfitForSize,
+    avgProfitPercent: avgProfitPercent,
     // Also include per-contract values for reference
     highestLossPerContract: worstLossPerContract,
     avgLossPerContract: avgLossPerContract,
+    maxProfitPerContract: maxProfitPerContract,
+    avgProfitPerContract: avgProfitPerContract,
     numContracts: numContracts,
     riskScore,
     riskLevel,
@@ -297,6 +344,7 @@ function calculateRiskMetrics(data, accountSize, contracts, maxDrawdown, contrac
     riskMessage,
     totalDays: dailyValues.length,
     losingDays: allLosses.length,
+    winningDays: allProfits.length,
     drawdownBreach,
     blowAccountStatus,
     blowAccountColor,
