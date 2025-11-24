@@ -27,7 +27,6 @@ function HamburgerMenu({ currentPage, onNavigate }) {
         <nav className={`hamburger-menu ${isOpen ? 'open' : ''}`} onClick={(e) => e.stopPropagation()}>
           <div className="menu-header">
             <h2 className="menu-title">RiskLo</h2>
-            <button className="menu-close" onClick={() => setIsOpen(false)}>×</button>
           </div>
           
           <ul className="menu-items">
@@ -74,6 +73,15 @@ function HamburgerMenu({ currentPage, onNavigate }) {
               >
                 <span className="menu-icon">📋</span>
                 <span>Apex 30% Rules</span>
+              </button>
+            </li>
+            <li>
+              <button
+                className={`menu-item ${currentPage === 'how-to-export-csv' ? 'active' : ''}`}
+                onClick={() => handleNavigate('how-to-export-csv')}
+              >
+                <span className="menu-icon">📤</span>
+                <span>How to Export CSV</span>
               </button>
             </li>
           </ul>
