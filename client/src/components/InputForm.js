@@ -24,7 +24,7 @@ function InputForm({ onSubmit, loading, sheetNames, loadingSheets, error, riskMo
         safetyNet: DEFAULT_THRESHOLD
       }));
     }
-  }, [riskMode]);
+  }, [riskMode, formData.accountSize]);
 
   // Update safety net when account size changes in apexMae mode
   useEffect(() => {
