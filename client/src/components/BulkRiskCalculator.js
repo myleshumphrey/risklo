@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import './BulkRiskCalculator.css';
 import Dashboard from './Dashboard';
+import { API_ENDPOINTS } from '../config';
 
 function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode }) {
   const [rows, setRows] = useState([
-    { id: 1, strategy: '', contractType: 'NQ', accountSize: '', contracts: '', maxDrawdown: '', startOfDayProfit: '', safetyNet: '' }
+    { id: 1, strategy: '', contractType: 'MNQ', accountSize: '', contracts: '', maxDrawdown: '', startOfDayProfit: '', safetyNet: '' }
   ]);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
@@ -15,7 +16,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode }) {
     setRows([...rows, {
       id: Date.now(),
       strategy: '',
-      contractType: 'NQ',
+      contractType: 'MNQ',
       accountSize: '',
       contracts: '',
       maxDrawdown: '',
@@ -58,7 +59,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode }) {
 
       // Analyze each row
       const analysisPromises = validRows.map(row => 
-        fetch('/api/analyze', {
+        fetch(API_ENDPOINTS.analyze, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

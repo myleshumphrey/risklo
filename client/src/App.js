@@ -9,6 +9,7 @@ import Footer from './components/Footer';
 import HamburgerMenu from './components/HamburgerMenu';
 import About from './pages/About';
 import FAQ from './pages/FAQ';
+import { API_ENDPOINTS } from './config';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
@@ -25,7 +26,7 @@ function App() {
     // Fetch sheet names on component mount
     const fetchSheetNames = async () => {
       try {
-        const response = await fetch('/api/sheets');
+        const response = await fetch(API_ENDPOINTS.sheets);
         const data = await response.json();
           if (data.success) {
           setSheetNames(data.sheets);
@@ -50,7 +51,7 @@ function App() {
     setError(null);
     
     try {
-      const response = await fetch('/api/analyze', {
+      const response = await fetch(API_ENDPOINTS.analyze, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -161,7 +162,7 @@ function App() {
               )}
             </div>
           </div>
-        </header>
+      </header>
       )}
       
       <main className="app-main">

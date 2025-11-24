@@ -12,6 +12,15 @@ function Dashboard({ metrics, riskMode = 'risk' }) {
     );
   }
 
+  // Debug logging (can be removed later)
+  console.log('Dashboard metrics:', {
+    maxProfit: metrics.maxProfit,
+    avgProfit: metrics.avgProfit,
+    maxProfitPercent: metrics.maxProfitPercent,
+    avgProfitPercent: metrics.avgProfitPercent,
+    allKeys: Object.keys(metrics)
+  });
+
   return (
     <div className="dashboard">
       {/* GO/NO GO Indicator - only show for Risk mode */}
@@ -79,6 +88,30 @@ function Dashboard({ metrics, riskMode = 'risk' }) {
           trend="negative"
         />
         
+        {metrics.maxProfit !== undefined && (
+          <MetricCard
+            title="Max Profit"
+            value={`$${(metrics.maxProfit || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            subtitle={metrics.maxProfit > 0 
+              ? `${metrics.maxProfitPercent}% of account (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`
+              : `No profit data (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`}
+            icon="📈"
+            trend={metrics.maxProfit > 0 ? "positive" : "neutral"}
+          />
+        )}
+        
+        {metrics.avgProfit !== undefined && (
+          <MetricCard
+            title="Average Profit"
+            value={`$${(metrics.avgProfit || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            subtitle={metrics.avgProfit > 0
+              ? `${metrics.avgProfitPercent}% of account (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`
+              : `No profit data (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`}
+            icon="💰"
+            trend={metrics.avgProfit > 0 ? "positive" : "neutral"}
+          />
+        )}
+        
         {metrics.highestLossPerContract && (
           <MetricCard
             title="Per-Contract Loss"
@@ -92,7 +125,9 @@ function Dashboard({ metrics, riskMode = 'risk' }) {
         <MetricCard
           title="Trading Days Analyzed"
           value={metrics.totalDays}
-          subtitle={`${metrics.losingDays} losing days`}
+          subtitle={metrics.winningDays !== undefined 
+            ? `${metrics.winningDays} winning, ${metrics.losingDays} losing days`
+            : `${metrics.losingDays} losing days`}
           icon="📈"
           trend="neutral"
         />
