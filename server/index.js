@@ -11,7 +11,7 @@ const SPREADSHEET_ID = '1PCU-1ZjBEkAF1LE3Z1tbajCg3hOBzpKxx--z9QU8sAE';
 
 // CORS configuration - allow requests from Netlify domain and localhost
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: process.env.FRONTEND_URL || true, // Allow all origins if FRONTEND_URL not set
   credentials: true
 }));
 app.use(express.json());
@@ -465,7 +465,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
 
