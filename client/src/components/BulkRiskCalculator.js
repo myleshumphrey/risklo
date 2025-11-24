@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import './BulkRiskCalculator.css';
 import Dashboard from './Dashboard';
 
-function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk }) {
+function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode }) {
   const [rows, setRows] = useState([
-    { id: 1, strategy: '', contractType: 'NQ', accountSize: '', contracts: '', maxDrawdown: '' }
+    { id: 1, strategy: '', contractType: 'NQ', accountSize: '', contracts: '', maxDrawdown: '', startOfDayProfit: '', safetyNet: '' }
   ]);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
@@ -18,7 +18,9 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk }) {
       contractType: 'NQ',
       accountSize: '',
       contracts: '',
-      maxDrawdown: ''
+      maxDrawdown: '',
+      startOfDayProfit: '',
+      safetyNet: ''
     }]);
   };
 
@@ -38,10 +40,14 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk }) {
     setLoading(true);
     
     try {
-      // Validate all rows
-      const validRows = rows.filter(row => 
-        row.strategy && row.accountSize && row.contracts && row.maxDrawdown
-      );
+      // Validate all rows based on mode
+      const validRows = rows.filter(row => {
+        if (riskMode === 'risk') {
+          return row.strategy && row.accountSize && row.contracts && row.maxDrawdown;
+        } else {
+          return row.strategy && row.accountSize && row.contracts && row.startOfDayProfit && row.safetyNet;
+        }
+      });
 
       if (validRows.length === 0) {
         alert('Please fill in at least one complete row');
@@ -49,18 +55,21 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk }) {
         return;
       }
 
+
       // Analyze each row
       const analysisPromises = validRows.map(row => 
         fetch('/api/analyze', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sheetName: row.strategy,
-            contractType: row.contractType,
-            accountSize: parseFloat(row.accountSize),
-            contracts: parseFloat(row.contracts),
-            maxDrawdown: parseFloat(row.maxDrawdown)
-          })
+            body: JSON.stringify({
+              sheetName: row.strategy,
+              contractType: row.contractType,
+              accountSize: parseFloat(row.accountSize),
+              contracts: parseFloat(row.contracts),
+              maxDrawdown: riskMode === 'risk' ? parseFloat(row.maxDrawdown) : null,
+              startOfDayProfit: riskMode === 'apexMae' ? parseFloat(row.startOfDayProfit) : null,
+              safetyNet: riskMode === 'apexMae' ? parseFloat(row.safetyNet) : null
+            })
         }).then(res => res.json())
       );
 
@@ -110,7 +119,14 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk }) {
                 <th>Contract Type</th>
                 <th>Account Size ($)</th>
                 <th>Contracts</th>
-                <th>Max Drawdown ($)</th>
+                {riskMode === 'risk' ? (
+                  <th>Max Drawdown ($)</th>
+                ) : (
+                  <>
+                    <th>Start-of-Day Profit ($)</th>
+                    <th>Safety Net ($)</th>
+                  </>
+                )}
                 <th></th>
               </tr>
             </thead>
@@ -166,17 +182,46 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk }) {
                       required={index === 0}
                     />
                   </td>
-                  <td>
-                    <input
-                      type="number"
-                      value={row.maxDrawdown}
-                      onChange={(e) => updateRow(row.id, 'maxDrawdown', e.target.value)}
-                      className="bulk-input"
-                      placeholder="2500"
-                      step="0.01"
-                      required={index === 0}
-                    />
-                  </td>
+                  {riskMode === 'risk' ? (
+                    <td>
+                      <input
+                        type="number"
+                        value={row.maxDrawdown}
+                        onChange={(e) => updateRow(row.id, 'maxDrawdown', e.target.value)}
+                        className="bulk-input"
+                        placeholder="2500"
+                        step="0.01"
+                        required={index === 0}
+                      />
+                    </td>
+                  ) : (
+                    <>
+                      <td>
+                        <input
+                          type="number"
+                          value={row.startOfDayProfit}
+                          onChange={(e) => updateRow(row.id, 'startOfDayProfit', e.target.value)}
+                          className="bulk-input"
+                          placeholder="4000"
+                          step="0.01"
+                          min="0"
+                          required={index === 0}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          value={row.safetyNet}
+                          onChange={(e) => updateRow(row.id, 'safetyNet', e.target.value)}
+                          className="bulk-input"
+                          placeholder="2500"
+                          step="0.01"
+                          min="0"
+                          required={index === 0}
+                        />
+                      </td>
+                    </>
+                  )}
                   <td>
                     {rows.length > 1 && (
                       <button
@@ -209,7 +254,13 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk }) {
             className="analyze-bulk-btn"
             disabled={loading}
           >
-            {loading ? 'Analyzing...' : `Analyze ${rows.filter(r => r.strategy && r.accountSize && r.contracts && r.maxDrawdown).length} Configuration(s)`}
+            {loading ? 'Analyzing...' : `Analyze ${rows.filter(r => {
+              if (riskMode === 'risk') {
+                return r.strategy && r.accountSize && r.contracts && r.maxDrawdown;
+              } else {
+                return r.strategy && r.accountSize && r.contracts && r.startOfDayProfit && r.safetyNet;
+              }
+            }).length} Configuration(s)`}
           </button>
         </div>
       </form>
@@ -245,6 +296,16 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk }) {
                     <span>Risk Score:</span>
                     <span>{result.metrics?.riskScore || 'N/A'}/100</span>
                   </div>
+                  {result.metrics?.apexMaeComparison && (
+                    <div className="result-metric">
+                      <span>Apex MAE Limit:</span>
+                      <span style={{ 
+                        color: result.metrics.apexMaeComparison.exceedsMae ? '#ef4444' : '#10b981' 
+                      }}>
+                        ${result.metrics.apexMaeComparison.maxMaePerTrade?.toFixed(2) || 'N/A'}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <div className="result-click-hint">Click for details →</div>
               </div>
