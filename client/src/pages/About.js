@@ -1,9 +1,12 @@
 import React from 'react';
 import './About.css';
+import PageHeader from '../components/PageHeader';
 
-function About() {
+function About({ onNavigate }) {
   return (
-    <div className="about-page">
+    <>
+      <PageHeader onNavigate={onNavigate} />
+      <div className="about-page">
       <div className="about-container">
         <h1 className="about-title">About RiskLo</h1>
         <p className="about-intro">
@@ -167,6 +170,7 @@ function About() {
         </section>
       </div>
     </div>
+    </>
   );
 }
 
