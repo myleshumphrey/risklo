@@ -6,7 +6,7 @@ function InputForm({ onSubmit, loading, sheetNames, loadingSheets, error, riskMo
   const [formData, setFormData] = useState({
     sheetName: '',
     contractType: 'MNQ', // Default to MNQ
-    accountSize: riskMode === 'apexMae' ? DEFAULT_ACCOUNT_SIZE : '',
+    accountSize: DEFAULT_ACCOUNT_SIZE, // Default to 50K for both modes
     contracts: '',
     maxDrawdown: '',
     currentBalance: '', // For apexMae mode
@@ -15,16 +15,16 @@ function InputForm({ onSubmit, loading, sheetNames, loadingSheets, error, riskMo
     safetyNet: riskMode === 'apexMae' ? DEFAULT_THRESHOLD : '',
   });
 
-  // Set default account size when switching to apexMae mode
+  // Set default account size and safety net when switching to apexMae mode
   useEffect(() => {
-    if (riskMode === 'apexMae' && !formData.accountSize) {
+    if (riskMode === 'apexMae') {
       setFormData(prev => ({
         ...prev,
-        accountSize: DEFAULT_ACCOUNT_SIZE,
-        safetyNet: DEFAULT_THRESHOLD
+        accountSize: prev.accountSize || DEFAULT_ACCOUNT_SIZE,
+        safetyNet: prev.safetyNet || DEFAULT_THRESHOLD
       }));
     }
-  }, [riskMode, formData.accountSize]);
+  }, [riskMode]);
 
   // Update safety net when account size changes in apexMae mode
   useEffect(() => {
@@ -144,35 +144,25 @@ function InputForm({ onSubmit, loading, sheetNames, loadingSheets, error, riskMo
             <label htmlFor="accountSize" className="form-label">
               Account Size <span className="required">*</span>
             </label>
-            {riskMode === 'apexMae' ? (
-              <select
-                id="accountSize"
-                name="accountSize"
-                value={formData.accountSize || DEFAULT_ACCOUNT_SIZE}
-                onChange={handleChange}
-                className="form-input form-select"
-                required
-              >
-                {ACCOUNT_SIZE_PRESETS.map((preset) => (
-                  <option key={preset.value} value={preset.value}>
-                    {preset.label} (${preset.value.toLocaleString()})
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                type="number"
-                id="accountSize"
-                name="accountSize"
-                value={formData.accountSize}
-                onChange={handleChange}
-                placeholder="100000"
-                className="form-input"
-                required
-                min="1"
-                step="0.01"
-              />
-            )}
+            <select
+              id="accountSize"
+              name="accountSize"
+              value={formData.accountSize || DEFAULT_ACCOUNT_SIZE}
+              onChange={handleChange}
+              className="form-input form-select"
+              required
+            >
+              {ACCOUNT_SIZE_PRESETS.map((preset) => (
+                <option key={preset.value} value={preset.value}>
+                  {preset.label} (${preset.value.toLocaleString()})
+                </option>
+              ))}
+            </select>
+            <small className="form-hint">
+              {riskMode === 'apexMae' 
+                ? 'Select your Apex Trader Funding account size.'
+                : 'Select your original account size (starting capital). Risk percentages are calculated relative to this amount.'}
+            </small>
           </div>
 
           <div className="form-group">
