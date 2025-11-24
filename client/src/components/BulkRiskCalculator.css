@@ -272,10 +272,18 @@
   width: fit-content;
 }
 
+.account-name-display {
+  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 0.25rem;
+}
+
 .result-strategy {
   color: #ffffff;
   font-weight: 600;
   font-size: 0.95rem;
+  margin-top: 0.25rem;
 }
 
 .result-status {

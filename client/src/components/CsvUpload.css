@@ -20,6 +20,14 @@
   margin-bottom: 1.5rem;
 }
 
+.csv-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
 .csv-title {
   font-size: 1.5rem;
   font-weight: 600;
@@ -32,20 +40,65 @@
   font-size: 0.9rem;
 }
 
+.how-to-button {
+  background: rgba(102, 126, 234, 0.2);
+  border: 1px solid rgba(102, 126, 234, 0.4);
+  color: #667eea;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.how-to-button:hover {
+  background: rgba(102, 126, 234, 0.3);
+  border-color: rgba(102, 126, 234, 0.6);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
 .csv-upload-area {
   display: flex;
   flex-direction: column;
+  gap: 1.5rem;
+}
+
+.csv-instructions {
+  padding: 1rem;
+  background: rgba(102, 126, 234, 0.1);
+  border-left: 3px solid rgba(102, 126, 234, 0.5);
+  border-radius: 8px;
+}
+
+.csv-instructions p {
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.csv-upload-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
 }
 
 .upload-box {
   border: 2px dashed rgba(255, 255, 255, 0.2);
   border-radius: 12px;
-  padding: 3rem 2rem;
+  padding: 2rem 1.5rem;
   text-align: center;
   background: rgba(255, 255, 255, 0.02);
   transition: all 0.2s ease;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .upload-box:hover {
@@ -53,15 +106,26 @@
   background: rgba(255, 255, 255, 0.05);
 }
 
+.upload-label {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
 .upload-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .upload-text {
   color: rgba(255, 255, 255, 0.7);
   margin-bottom: 1rem;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
+  min-height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .file-input {
@@ -86,20 +150,46 @@
 
 .file-info {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.5rem;
   padding: 1rem;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 8px;
 }
 
+.file-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+}
+
 .file-name {
   color: #ffffff;
   font-weight: 500;
+  font-size: 0.9rem;
 }
 
 .file-size {
   color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+}
+
+.csv-error {
+  padding: 1rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  color: #ef4444;
+  font-size: 0.9rem;
+}
+
+.csv-success {
+  padding: 1rem;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+  color: #10b981;
   font-size: 0.9rem;
 }
 
@@ -142,5 +232,28 @@
 
 .csv-note strong {
   color: #ffffff;
+}
+
+@media (max-width: 768px) {
+  .csv-header-top {
+    flex-direction: column;
+  }
+
+  .how-to-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .csv-upload-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .upload-box {
+    padding: 1.5rem 1rem;
+  }
+
+  .upload-icon {
+    font-size: 2rem;
+  }
 }
 
