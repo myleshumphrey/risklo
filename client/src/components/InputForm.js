@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import './InputForm.css';
 
-function InputForm({ onSubmit, loading, sheetNames, loadingSheets, error }) {
+function InputForm({ onSubmit, loading, sheetNames, loadingSheets, error, riskMode }) {
   const [formData, setFormData] = useState({
     sheetName: '',
     contractType: 'NQ', // Default to NQ
     accountSize: '',
     contracts: '',
     maxDrawdown: '',
+    startOfDayProfit: '',
+    safetyNet: '',
   });
 
   const handleChange = (e) => {
@@ -20,7 +22,14 @@ function InputForm({ onSubmit, loading, sheetNames, loadingSheets, error }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    // Only send relevant fields based on mode
+    const submitData = {
+      ...formData,
+      maxDrawdown: riskMode === 'risk' ? formData.maxDrawdown : null,
+      startOfDayProfit: riskMode === 'apexMae' ? formData.startOfDayProfit : null,
+      safetyNet: riskMode === 'apexMae' ? formData.safetyNet : null,
+    };
+    onSubmit(submitData);
   };
 
   return (
@@ -119,26 +128,74 @@ function InputForm({ onSubmit, loading, sheetNames, loadingSheets, error }) {
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="maxDrawdown" className="form-label">
-              Max Trailing Drawdown ($) <span className="required">*</span>
-            </label>
-            <input
-              type="number"
-              id="maxDrawdown"
-              name="maxDrawdown"
-              value={formData.maxDrawdown}
-              onChange={handleChange}
-              placeholder="2500"
-              className="form-input"
-              required
-              min="1"
-              step="0.01"
-            />
-            <small className="form-hint">
-              Your account's maximum trailing drawdown limit (from NinjaTrader/Apex)
-            </small>
-          </div>
+          {riskMode === 'risk' && (
+            <div className="form-group">
+              <label htmlFor="maxDrawdown" className="form-label">
+                Max Trailing Drawdown ($) <span className="required">*</span>
+              </label>
+              <input
+                type="number"
+                id="maxDrawdown"
+                name="maxDrawdown"
+                value={formData.maxDrawdown}
+                onChange={handleChange}
+                placeholder="2500"
+                className="form-input"
+                required
+                min="1"
+                step="0.01"
+              />
+              <small className="form-hint">
+                Your account's maximum trailing drawdown limit (from NinjaTrader/Apex)
+              </small>
+            </div>
+          )}
+
+          {riskMode === 'apexMae' && (
+            <>
+              <div className="form-group">
+                <label htmlFor="startOfDayProfit" className="form-label">
+                  Start-of-Day Profit Balance ($) <span className="required">*</span>
+                </label>
+                <input
+                  type="number"
+                  id="startOfDayProfit"
+                  name="startOfDayProfit"
+                  value={formData.startOfDayProfit}
+                  onChange={handleChange}
+                  placeholder="4000"
+                  className="form-input"
+                  required={riskMode === 'apexMae'}
+                  min="0"
+                  step="0.01"
+                />
+                <small className="form-hint">
+                  Profit above your original account size at the start of today (e.g., if your $50k account is at $54k, profit balance is $4,000)
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="safetyNet" className="form-label">
+                  Trailing Threshold / Safety Net ($) <span className="required">*</span>
+                </label>
+                <input
+                  type="number"
+                  id="safetyNet"
+                  name="safetyNet"
+                  value={formData.safetyNet}
+                  onChange={handleChange}
+                  placeholder="2500"
+                  className="form-input"
+                  required={riskMode === 'apexMae'}
+                  min="0"
+                  step="0.01"
+                />
+                <small className="form-hint">
+                  Your original trailing drawdown threshold (safety net) from Apex for this account (e.g., $2,500 for many $50k plans, $625 fixed for some static accounts)
+                </small>
+              </div>
+            </>
+          )}
         </div>
 
         <button

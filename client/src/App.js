@@ -5,10 +5,16 @@ import InputForm from './components/InputForm';
 import UpgradeModal from './components/UpgradeModal';
 import BulkRiskCalculator from './components/BulkRiskCalculator';
 import CsvUpload from './components/CsvUpload';
+import Footer from './components/Footer';
+import HamburgerMenu from './components/HamburgerMenu';
+import About from './pages/About';
+import FAQ from './pages/FAQ';
 
 function App() {
+  const [currentPage, setCurrentPage] = useState('home');
   const [isPro, setIsPro] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [riskMode, setRiskMode] = useState('risk'); // 'risk' or 'apexMae'
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -49,7 +55,11 @@ function App() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          startOfDayProfit: formData.startOfDayProfit || null,
+          safetyNet: formData.safetyNet || null
+        }),
       });
 
       const data = await response.json();
@@ -72,55 +82,95 @@ function App() {
     setShowUpgradeModal(false);
   };
 
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'about':
+        return <About />;
+      case 'faq':
+        return <FAQ />;
+      case 'home':
+      default:
+        return (
+          <>
+            <InputForm 
+              onSubmit={handleAnalyze} 
+              loading={loading}
+              sheetNames={sheetNames}
+              loadingSheets={loadingSheets}
+              error={error && sheetNames.length === 0 ? error : null}
+              riskMode={riskMode}
+            />
+            
+            {error && (
+              <div className="error-message">
+                {error}
+              </div>
+            )}
+            
+            {metrics && <Dashboard metrics={metrics} riskMode={riskMode} />}
+
+            <BulkRiskCalculator 
+              isPro={isPro}
+              sheetNames={sheetNames}
+              riskMode={riskMode}
+            />
+
+            <CsvUpload isPro={isPro} />
+          </>
+        );
+    }
+  };
+
   return (
     <div className="App">
-      <header className="app-header">
-        <div className="header-content">
-          <div className="header-left">
-            <h1 className="app-title">RiskLo</h1>
-            <p className="app-subtitle">Strategy Risk Assessment Dashboard</p>
+      <HamburgerMenu currentPage={currentPage} onNavigate={setCurrentPage} />
+      
+      {currentPage === 'home' && (
+        <header className="app-header">
+          <div className="header-content">
+            <div className="header-left">
+              <h1 className="app-title">RiskLo</h1>
+              <p className="app-subtitle">Strategy Risk Assessment Dashboard</p>
+            </div>
+            <div className="header-center">
+              <div className="mode-toggle-container">
+                <button
+                  className={`mode-toggle-btn ${riskMode === 'risk' ? 'active' : ''}`}
+                  onClick={() => setRiskMode('risk')}
+                >
+                  Risk
+                </button>
+                <button
+                  className={`mode-toggle-btn ${riskMode === 'apexMae' ? 'active' : ''}`}
+                  onClick={() => setRiskMode('apexMae')}
+                >
+                  30% Drawdown
+                </button>
+              </div>
+            </div>
+            <div className="header-right">
+              {isPro ? (
+                <span className="pro-badge">RiskLo Pro</span>
+              ) : (
+                <button 
+                  className="upgrade-header-btn"
+                  onClick={() => setShowUpgradeModal(true)}
+                >
+                  Upgrade to RiskLo Pro
+                </button>
+              )}
+            </div>
           </div>
-          <div className="header-right">
-            {isPro ? (
-              <span className="pro-badge">RiskLo Pro</span>
-            ) : (
-              <button 
-                className="upgrade-header-btn"
-                onClick={() => setShowUpgradeModal(true)}
-              >
-                Upgrade to RiskLo Pro
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
+        </header>
+      )}
       
       <main className="app-main">
         <div className="container">
-          <InputForm 
-            onSubmit={handleAnalyze} 
-            loading={loading}
-            sheetNames={sheetNames}
-            loadingSheets={loadingSheets}
-            error={error && sheetNames.length === 0 ? error : null}
-          />
-          
-          {error && (
-            <div className="error-message">
-              {error}
-            </div>
-          )}
-          
-          {metrics && <Dashboard metrics={metrics} />}
-
-          <BulkRiskCalculator 
-            isPro={isPro}
-            sheetNames={sheetNames}
-          />
-
-          <CsvUpload isPro={isPro} />
+          {renderPage()}
         </div>
       </main>
+
+      <Footer />
 
       <UpgradeModal
         isOpen={showUpgradeModal}
