@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './BulkRiskCalculator.css';
 import Dashboard from './Dashboard';
 import { API_ENDPOINTS } from '../config';
 import { ACCOUNT_SIZE_PRESETS, DEFAULT_ACCOUNT_SIZE, DEFAULT_THRESHOLD, getThresholdForAccountSize } from '../utils/accountSizes';
 
-function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode }) {
+function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopulateRows }) {
   const [rows, setRows] = useState([
     { 
       id: 1, 
+      accountName: '', // Optional account name (e.g., PAAPEX3982600000002)
       strategy: '', 
       contractType: 'MNQ', 
       accountSize: riskMode === 'apexMae' ? DEFAULT_ACCOUNT_SIZE : '', 
@@ -18,6 +19,13 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode }) {
       safetyNet: riskMode === 'apexMae' ? DEFAULT_THRESHOLD : '' 
     }
   ]);
+
+  // Expose setRows to parent component via callback
+  useEffect(() => {
+    if (onPopulateRows) {
+      onPopulateRows(setRows);
+    }
+  }, [onPopulateRows]);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
   const [selectedResult, setSelectedResult] = useState(null);
@@ -26,6 +34,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode }) {
     if (rows.length >= 20) return;
     setRows([...rows, {
       id: Date.now(),
+      accountName: '', // Optional account name
       strategy: '',
       contractType: 'MNQ',
       accountSize: riskMode === 'apexMae' ? DEFAULT_ACCOUNT_SIZE : '',
@@ -150,6 +159,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode }) {
             <thead>
               <tr>
                 <th className="account-number-header">#</th>
+                <th>Account Name</th>
                 <th>Strategy</th>
                 <th>Contract Type</th>
                 <th>Account Size ($)</th>
@@ -171,6 +181,19 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode }) {
                 <tr key={row.id}>
                   <td className="account-number-cell">
                     <span className="account-number">{index + 1}</span>
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.accountName || ''}
+                      onChange={(e) => updateRow(row.id, 'accountName', e.target.value)}
+                      className="bulk-input"
+                      placeholder="e.g., PAAPEX3982600000002"
+                      style={{ 
+                        fontFamily: 'monospace',
+                        fontSize: '0.85rem'
+                      }}
+                    />
                   </td>
                   <td>
                     <select
@@ -334,7 +357,14 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode }) {
               >
                 <div className="result-header">
                   <div className="result-left">
-                    <span className="account-number-badge">Account #{result.accountNumber}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <span className="account-number-badge">Account #{result.accountNumber}</span>
+                      {result.accountName && (
+                        <span className="account-name-display">
+                          {result.accountName}
+                        </span>
+                      )}
+                    </div>
                     <span className="result-strategy">{result.strategy}</span>
                   </div>
                   <span 
@@ -375,7 +405,22 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode }) {
         <div className="result-detail-modal" onClick={() => setSelectedResult(null)}>
           <div className="result-detail-content" onClick={(e) => e.stopPropagation()}>
             <div className="result-detail-header">
-              <h3>Account #{selectedResult.accountNumber} - {selectedResult.strategy}</h3>
+              <h3>
+                Account #{selectedResult.accountNumber}
+                {selectedResult.accountName && (
+                  <span style={{ 
+                    fontFamily: 'monospace', 
+                    fontSize: '0.9rem',
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    marginLeft: '0.5rem',
+                    fontWeight: 'normal'
+                  }}>
+                    ({selectedResult.accountName})
+                  </span>
+                )}
+                {' - '}
+                {selectedResult.strategy}
+              </h3>
               <button className="close-detail-btn" onClick={() => setSelectedResult(null)}>×</button>
             </div>
             <Dashboard metrics={selectedResult.metrics} />

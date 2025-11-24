@@ -11,6 +11,7 @@ import About from './pages/About';
 import FAQ from './pages/FAQ';
 import HowWeCalculate from './pages/HowWeCalculate';
 import Apex30PercentRule from './pages/Apex30PercentRule';
+import HowToExportCsv from './pages/HowToExportCsv';
 import { API_ENDPOINTS } from './config';
 
 function App() {
@@ -96,6 +97,8 @@ function App() {
         return <FAQ onNavigate={setCurrentPage} />;
       case 'apex-30-percent-rule':
         return <Apex30PercentRule onNavigate={setCurrentPage} />;
+      case 'how-to-export-csv':
+        return <HowToExportCsv onNavigate={setCurrentPage} />;
       case 'home':
       default:
         return (
@@ -122,9 +125,24 @@ function App() {
               isPro={isPro}
               sheetNames={sheetNames}
               riskMode={riskMode}
+              onPopulateRows={(setRowsFn) => {
+                // Store the setRows function so CsvUpload can use it
+                window.bulkCalculatorSetRows = setRowsFn;
+              }}
             />
 
-            <CsvUpload isPro={isPro} />
+            <CsvUpload 
+              isPro={isPro}
+              sheetNames={sheetNames}
+              riskMode={riskMode}
+              onNavigate={setCurrentPage}
+              onPopulateBulkRows={(rows) => {
+                // Populate bulk calculator rows
+                if (window.bulkCalculatorSetRows) {
+                  window.bulkCalculatorSetRows(rows);
+                }
+              }}
+            />
           </>
         );
     }
