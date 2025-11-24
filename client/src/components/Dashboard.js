@@ -3,7 +3,7 @@ import './Dashboard.css';
 import MetricCard from './MetricCard';
 import RiskIndicator from './RiskIndicator';
 
-function Dashboard({ metrics, riskMode = 'risk' }) {
+function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
   if (!metrics || metrics.error) {
     return (
       <div className="dashboard-error">
@@ -18,6 +18,8 @@ function Dashboard({ metrics, riskMode = 'risk' }) {
     avgProfit: metrics.avgProfit,
     maxProfitPercent: metrics.maxProfitPercent,
     avgProfitPercent: metrics.avgProfitPercent,
+    windfallRule: metrics.windfallRule,
+    riskMode: riskMode,
     allKeys: Object.keys(metrics)
   });
 
@@ -63,125 +65,252 @@ function Dashboard({ metrics, riskMode = 'risk' }) {
         />
       </div>
 
-      <div className="metrics-grid">
-        <MetricCard
-          title="Risk Score"
-          value={`${metrics.riskScore}/100`}
-          subtitle={metrics.riskScore < 40 ? 'Low Risk' : metrics.riskScore < 70 ? 'Moderate Risk' : 'High Risk'}
-          icon="⚠️"
-          trend={metrics.riskScore < 40 ? 'neutral' : metrics.riskScore < 70 ? 'moderate' : 'negative'}
-        />
-        
-        <MetricCard
-          title="Highest Loss"
-          value={`$${metrics.highestLoss.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-          subtitle={`${metrics.highestLossPercent}% of account (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`}
-          icon="📉"
-          trend="negative"
-        />
-        
-        <MetricCard
-          title="Average Loss"
-          value={`$${metrics.avgLoss.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-          subtitle={`${metrics.avgLossPercent}% of account (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`}
-          icon="📊"
-          trend="negative"
-        />
-        
-        {metrics.maxProfit !== undefined && (
+      {riskMode === 'apexMae' ? (
+        // Simplified metrics for 30% Drawdown mode - focus on key info
+        <div className="metrics-grid">
+          {metrics.apexMaeComparison && (
+            <MetricCard
+              title="Maximum Loss Allowed"
+              value={`$${metrics.apexMaeComparison.maxMaePerTrade.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              subtitle={`MAE Limit (${(metrics.apexMaeComparison.limitPercent * 100).toFixed(0)}% rule)`}
+              icon="🛡️"
+              trend={metrics.apexMaeComparison.exceedsMae ? 'negative' : 'neutral'}
+            />
+          )}
+          
           <MetricCard
-            title="Max Profit"
-            value={`$${(metrics.maxProfit || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-            subtitle={metrics.maxProfit > 0 
-              ? `${metrics.maxProfitPercent}% of account (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`
-              : `No profit data (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`}
+            title="Your Worst Historical Loss"
+            value={`$${metrics.highestLoss.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            subtitle={`${metrics.highestLossPercent}% of account (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`}
+            icon="📉"
+            trend={metrics.apexMaeComparison?.exceedsMae ? 'negative' : 'neutral'}
+          />
+
+          {metrics.maxProfit !== undefined && metrics.maxProfit > 0 && (
+            <MetricCard
+              title="Maximum Profit"
+              value={`$${metrics.maxProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              subtitle={`${metrics.maxProfitPercent}% of account (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`}
+              icon="📈"
+              trend="positive"
+            />
+          )}
+        </div>
+      ) : (
+        // Full metrics for Risk mode
+        <div className="metrics-grid">
+          <MetricCard
+            title="Risk Score"
+            value={`${metrics.riskScore}/100`}
+            subtitle={metrics.riskScore < 40 ? 'Low Risk' : metrics.riskScore < 70 ? 'Moderate Risk' : 'High Risk'}
+            icon="⚠️"
+            trend={metrics.riskScore < 40 ? 'neutral' : metrics.riskScore < 70 ? 'moderate' : 'negative'}
+          />
+          
+          <MetricCard
+            title="Highest Loss"
+            value={`$${metrics.highestLoss.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            subtitle={`${metrics.highestLossPercent}% of account (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`}
+            icon="📉"
+            trend="negative"
+          />
+          
+          <MetricCard
+            title="Average Loss"
+            value={`$${metrics.avgLoss.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            subtitle={`${metrics.avgLossPercent}% of account (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`}
+            icon="📊"
+            trend="negative"
+          />
+          
+          {metrics.maxProfit !== undefined && metrics.maxProfit > 0 && (
+            <MetricCard
+              title="Max Profit"
+              value={`$${metrics.maxProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              subtitle={`${metrics.maxProfitPercent}% of account (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`}
+              icon="📈"
+              trend="positive"
+            />
+          )}
+          
+          {metrics.avgProfit !== undefined && metrics.avgProfit > 0 && (
+            <MetricCard
+              title="Average Profit"
+              value={`$${metrics.avgProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              subtitle={`${metrics.avgProfitPercent}% of account (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`}
+              icon="💰"
+              trend="positive"
+            />
+          )}
+          
+          {metrics.highestLossPerContract && (
+            <MetricCard
+              title="Per-Contract Loss"
+              value={`$${metrics.highestLossPerContract.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              subtitle={`Worst loss per contract`}
+              icon="⚖️"
+              trend="neutral"
+            />
+          )}
+          
+          <MetricCard
+            title="Trading Days Analyzed"
+            value={metrics.totalDays}
+            subtitle={metrics.winningDays !== undefined 
+              ? `${metrics.winningDays} winning, ${metrics.losingDays} losing days`
+              : `${metrics.losingDays} losing days`}
             icon="📈"
-            trend={metrics.maxProfit > 0 ? "positive" : "neutral"}
-          />
-        )}
-        
-        {metrics.avgProfit !== undefined && (
-          <MetricCard
-            title="Average Profit"
-            value={`$${(metrics.avgProfit || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-            subtitle={metrics.avgProfit > 0
-              ? `${metrics.avgProfitPercent}% of account (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`
-              : `No profit data (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`}
-            icon="💰"
-            trend={metrics.avgProfit > 0 ? "positive" : "neutral"}
-          />
-        )}
-        
-        {metrics.highestLossPerContract && (
-          <MetricCard
-            title="Per-Contract Loss"
-            value={`$${metrics.highestLossPerContract.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-            subtitle={`Worst loss per contract`}
-            icon="⚖️"
             trend="neutral"
           />
-        )}
-        
-        <MetricCard
-          title="Trading Days Analyzed"
-          value={metrics.totalDays}
-          subtitle={metrics.winningDays !== undefined 
-            ? `${metrics.winningDays} winning, ${metrics.losingDays} losing days`
-            : `${metrics.losingDays} losing days`}
-          icon="📈"
-          trend="neutral"
-        />
 
-        {riskMode === 'risk' && metrics.drawdownBreach && (
-          <MetricCard
-            title="Max Drawdown Analysis"
-            value={`$${metrics.drawdownBreach.maxDrawdown.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-            subtitle={metrics.drawdownBreach.breaches > 0 
-              ? `${metrics.drawdownBreach.breaches} breach(es) with ${metrics.numContracts || 1} contract(s) - ${metrics.drawdownBreach.breachProbability}% probability`
-              : `No breaches - $${parseFloat(metrics.drawdownBreach.margin).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} buffer`}
-            icon="🛡️"
-            trend={metrics.drawdownBreach.highestExceeds ? 'negative' : 'neutral'}
-          />
-        )}
-
-        {riskMode === 'apexMae' && metrics.apexMaeComparison && (
-          <MetricCard
-            title="Apex MAE Limit"
-            value={`$${metrics.apexMaeComparison.maxMaePerTrade.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-            subtitle={`${(metrics.apexMaeComparison.limitPercent * 100).toFixed(0)}% of $${metrics.apexMaeComparison.baseAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-            icon="📏"
-            trend={metrics.apexMaeComparison.exceedsMae ? 'negative' : 'neutral'}
-          />
-        )}
-      </div>
+          {metrics.drawdownBreach && (
+            <MetricCard
+              title="Max Drawdown Analysis"
+              value={`$${metrics.drawdownBreach.maxDrawdown.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              subtitle={metrics.drawdownBreach.breaches > 0 
+                ? `${metrics.drawdownBreach.breaches} breach(es) with ${metrics.numContracts || 1} contract(s) - ${metrics.drawdownBreach.breachProbability}% probability`
+                : `No breaches - $${parseFloat(metrics.drawdownBreach.margin).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} buffer`}
+              icon="🛡️"
+              trend={metrics.drawdownBreach.highestExceeds ? 'negative' : 'neutral'}
+            />
+          )}
+        </div>
+      )}
 
       {riskMode === 'apexMae' && metrics.apexMaeComparison && (
-        <div className="apex-mae-box" style={{ 
+        <div className="apex-mae-simplified-box" style={{ 
           borderColor: metrics.apexMaeComparison.exceedsMae ? '#ef4444' : '#10b981',
           backgroundColor: metrics.apexMaeComparison.exceedsMae ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)'
         }}>
-          <div className="apex-mae-header">
-            <span className="apex-mae-label">Apex MAE (30% Rule) Status:</span>
-            <span className="apex-mae-status" style={{ color: metrics.apexMaeComparison.exceedsMae ? '#ef4444' : '#10b981' }}>
-              {metrics.apexMaeComparison.maeStatus}
-            </span>
+          <div className="apex-mae-simplified-header">
+            <div className="apex-mae-status-badge" style={{ 
+              backgroundColor: metrics.apexMaeComparison.exceedsMae ? '#ef4444' : '#10b981',
+              color: '#ffffff'
+            }}>
+              {metrics.apexMaeComparison.exceedsMae ? '⚠️ EXCEEDS LIMIT' : '✅ WITHIN LIMIT'}
+            </div>
+            <h3 className="apex-mae-simplified-title">30% Negative P&L Rule (MAE)</h3>
           </div>
-          <p className="apex-mae-message">{metrics.apexMaeComparison.maeMessage}</p>
-          <div className="apex-mae-details">
-            <div className="apex-mae-detail">
-              <span>Historical Worst Loss:</span>
-              <span>${metrics.apexMaeComparison.worstLossForSize.toFixed(2)}</span>
-            </div>
-            <div className="apex-mae-detail">
-              <span>Apex MAE Limit:</span>
-              <span>${metrics.apexMaeComparison.maxMaePerTrade.toFixed(2)}</span>
-            </div>
-            {!metrics.apexMaeComparison.exceedsMae && (
-              <div className="apex-mae-detail">
-                <span>Buffer:</span>
-                <span style={{ color: '#10b981' }}>${metrics.apexMaeComparison.maeBuffer}</span>
+          
+          <div className="apex-mae-simplified-content">
+            <div className="apex-mae-key-metric">
+              <div className="apex-mae-metric-label">Maximum Loss Allowed (MAE Limit)</div>
+              <div className="apex-mae-metric-value" style={{ color: metrics.apexMaeComparison.exceedsMae ? '#ef4444' : '#10b981' }}>
+                ${metrics.apexMaeComparison.maxMaePerTrade.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
-            )}
+              <div className="apex-mae-metric-subtitle">
+                {metrics.apexMaeComparison.limitPercent * 100}% of ${metrics.apexMaeComparison.baseAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+            </div>
+
+            <div className="apex-mae-comparison">
+              <div className="apex-mae-comparison-item">
+                <span className="comparison-label">Your Worst Historical Loss:</span>
+                <span className={`comparison-value ${metrics.apexMaeComparison.exceedsMae ? 'exceeds' : 'safe'}`}>
+                  ${metrics.apexMaeComparison.worstLossForSize.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+              
+              {metrics.apexMaeComparison.exceedsMae ? (
+                <div className="apex-mae-warning">
+                  <strong>⚠️ WARNING:</strong> Your worst historical loss exceeds the MAE limit by ${Math.abs(parseFloat(metrics.apexMaeComparison.maeBuffer)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. 
+                  This strategy has historically violated the 30% rule.
+                </div>
+              ) : (
+                <div className="apex-mae-safe">
+                  <strong>✅ SAFE:</strong> Your worst historical loss is within the MAE limit. 
+                  You have a ${metrics.apexMaeComparison.maeBuffer} buffer before hitting the limit.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {riskMode === 'apexMae' && metrics.windfallRule && (
+        <div className="apex-mae-simplified-box" style={{ 
+          borderColor: metrics.windfallRule.violatesWindfall === true ? '#ef4444' : metrics.windfallRule.violatesWindfall === false ? '#10b981' : '#f59e0b',
+          backgroundColor: metrics.windfallRule.violatesWindfall === true ? 'rgba(239, 68, 68, 0.1)' : metrics.windfallRule.violatesWindfall === false ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)'
+        }}>
+          <div className="apex-mae-simplified-header">
+            <div className="apex-mae-status-badge" style={{ 
+              backgroundColor: metrics.windfallRule.violatesWindfall === true ? '#ef4444' : metrics.windfallRule.violatesWindfall === false ? '#10b981' : '#f59e0b',
+              color: '#ffffff'
+            }}>
+              {metrics.windfallRule.violatesWindfall === true ? '⚠️ VIOLATES RULE' : metrics.windfallRule.violatesWindfall === false ? '✅ WITHIN RULE' : 'ℹ️ INFO'}
+            </div>
+            <h3 className="apex-mae-simplified-title">30% Consistency Rule (Windfall)</h3>
+          </div>
+          
+          <div className="apex-mae-simplified-content">
+            <div className="apex-mae-key-metric">
+              <div className="apex-mae-metric-label">Highest Profit Day</div>
+              <div className="apex-mae-metric-value" style={{ color: '#10b981' }}>
+                ${metrics.windfallRule.maxProfitDay.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+              <div className="apex-mae-metric-subtitle">
+                Maximum single-day profit from historical data
+              </div>
+            </div>
+
+            <div className="apex-mae-comparison">
+              <div className="apex-mae-comparison-item">
+                <span className="comparison-label">Minimum Total Profit Required:</span>
+                <span className="comparison-value safe">
+                  ${parseFloat(metrics.windfallRule.minTotalProfitRequired).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+              
+              {metrics.windfallRule.maxProfitPercentOfBalance !== null && (
+                <div className="apex-mae-comparison-item">
+                  <span className="comparison-label">Highest Day as % of Profit Balance:</span>
+                  <span className={`comparison-value ${metrics.windfallRule.violatesWindfall ? 'exceeds' : 'safe'}`}>
+                    {metrics.windfallRule.maxProfitPercentOfBalance}%
+                  </span>
+                </div>
+              )}
+              
+              {metrics.windfallRule.violatesWindfall === true ? (
+                <div className="apex-mae-warning">
+                  <strong>⚠️ WARNING:</strong> {metrics.windfallRule.windfallMessage}
+                </div>
+              ) : metrics.windfallRule.violatesWindfall === false ? (
+                <div className="apex-mae-safe">
+                  <strong>✅ SAFE:</strong> {metrics.windfallRule.windfallMessage}
+                </div>
+              ) : (
+                <div className="apex-mae-info" style={{
+                  padding: '1rem',
+                  background: 'rgba(245, 158, 11, 0.15)',
+                  borderLeft: '4px solid #f59e0b',
+                  borderRadius: '8px',
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  fontSize: '0.95rem',
+                  lineHeight: '1.6'
+                }}>
+                  <strong>ℹ️ INFO:</strong> {metrics.windfallRule.windfallMessage}
+                </div>
+              )}
+
+              <div className="windfall-disclaimer" style={{
+                marginTop: '1rem',
+                padding: '0.75rem',
+                background: 'rgba(107, 114, 128, 0.1)',
+                borderLeft: '3px solid #6b7280',
+                borderRadius: '6px',
+                fontSize: '0.85rem',
+                color: 'rgba(255, 255, 255, 0.7)',
+                lineHeight: '1.5'
+              }}>
+                <strong>📌 Important:</strong> The Windfall Rule applies to profit accumulated <strong>since your last approved payout</strong> (or since you started trading if no payouts yet). 
+                {metrics.windfallRule.usesProfitSincePayout ? (
+                  <> This calculation uses your "Profit Since Last Payout" input for accuracy.</>
+                ) : (
+                  <> This calculation uses your start-of-day profit balance. For more accuracy after payouts, enter your "Profit Since Last Payout" in the form above.</>
+                )}
+                {' '}Remember: The rule resets after each payout and applies until your 6th payout or account transfer.
+              </div>
+            </div>
           </div>
         </div>
       )}

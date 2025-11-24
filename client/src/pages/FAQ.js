@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import './FAQ.css';
+import PageHeader from '../components/PageHeader';
 
-function FAQ() {
+function FAQ({ onNavigate }) {
   const [openIndex, setOpenIndex] = useState(null);
 
   const toggleQuestion = (index) => {
@@ -76,7 +77,9 @@ function FAQ() {
   ];
 
   return (
-    <div className="faq-page">
+    <>
+      <PageHeader onNavigate={onNavigate} />
+      <div className="faq-page">
       <div className="faq-container">
         <h1 className="faq-title">Frequently Asked Questions</h1>
         <p className="faq-intro">
@@ -103,6 +106,7 @@ function FAQ() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

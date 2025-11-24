@@ -1,3 +1,34 @@
+.apex-rule-link-container {
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+.learn-apex-rule-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: #ffffff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.learn-apex-rule-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.learn-apex-rule-btn:active {
+  transform: translateY(0);
+}
+
 .input-form-container {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -44,6 +75,12 @@
 
 .required {
   color: #ef4444;
+}
+
+.optional {
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 400;
+  font-size: 0.85em;
 }
 
 .form-input {

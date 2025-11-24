@@ -9,6 +9,8 @@ import Footer from './components/Footer';
 import HamburgerMenu from './components/HamburgerMenu';
 import About from './pages/About';
 import FAQ from './pages/FAQ';
+import HowWeCalculate from './pages/HowWeCalculate';
+import Apex30PercentRule from './pages/Apex30PercentRule';
 import { API_ENDPOINTS } from './config';
 
 function App() {
@@ -59,7 +61,8 @@ function App() {
         body: JSON.stringify({
           ...formData,
           startOfDayProfit: formData.startOfDayProfit || null,
-          safetyNet: formData.safetyNet || null
+          safetyNet: formData.safetyNet || null,
+          profitSinceLastPayout: formData.profitSinceLastPayout || null
         }),
       });
 
@@ -86,9 +89,13 @@ function App() {
   const renderPage = () => {
     switch (currentPage) {
       case 'about':
-        return <About />;
+        return <About onNavigate={setCurrentPage} />;
+      case 'how-we-calculate':
+        return <HowWeCalculate onNavigate={setCurrentPage} />;
       case 'faq':
-        return <FAQ />;
+        return <FAQ onNavigate={setCurrentPage} />;
+      case 'apex-30-percent-rule':
+        return <Apex30PercentRule onNavigate={setCurrentPage} />;
       case 'home':
       default:
         return (
@@ -100,6 +107,7 @@ function App() {
               loadingSheets={loadingSheets}
               error={error && sheetNames.length === 0 ? error : null}
               riskMode={riskMode}
+              onNavigate={setCurrentPage}
             />
             
             {error && (
@@ -108,7 +116,7 @@ function App() {
               </div>
             )}
             
-            {metrics && <Dashboard metrics={metrics} riskMode={riskMode} />}
+            {metrics && <Dashboard metrics={metrics} riskMode={riskMode} onNavigate={setCurrentPage} />}
 
             <BulkRiskCalculator 
               isPro={isPro}
