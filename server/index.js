@@ -72,9 +72,41 @@ function parseNumericValue(cellValue) {
   return isNegative ? -Math.abs(parsed) : parsed;
 }
 
+// Calculate Apex MAE limit
+function computeApexMaeLimit(startOfDayProfit, safetyNet) {
+  const profit = Number(startOfDayProfit) || 0;
+  const net = Number(safetyNet) || 0;
+
+  if (!profit && !net) {
+    return null;
+  }
+
+  // Decide base amount
+  let baseAmount;
+  if (profit <= net && net > 0) {
+    baseAmount = net;
+  } else {
+    baseAmount = profit || net;
+  }
+
+  // Decide percent (30% vs 50%)
+  let limitPercent = 0.3;
+  if (profit >= 2 * net && net > 0) {
+    limitPercent = 0.5;
+  }
+
+  const maxMaePerTrade = baseAmount * limitPercent;
+
+  return {
+    baseAmount,
+    limitPercent,
+    maxMaePerTrade,
+  };
+}
+
 // Calculate risk metrics from data
 // Based on the sheet structure: dates in column A, daily values in columns C-G (Mon-Fri)
-function calculateRiskMetrics(data, accountSize, contracts, maxDrawdown, contractType = 'NQ') {
+function calculateRiskMetrics(data, accountSize, contracts, maxDrawdown, contractType = 'NQ', startOfDayProfit = null, safetyNet = null) {
   if (!data || data.length < 3) {
     return { error: 'Insufficient data' };
   }
@@ -230,6 +262,25 @@ function calculateRiskMetrics(data, accountSize, contracts, maxDrawdown, contrac
     riskMessage = `Your current setup appears safe. Highest historical loss was $${worstLossForSize.toFixed(2)} (${worstLossPercent.toFixed(2)}% of account) with ${numContracts} contract(s).`;
   }
 
+  // Calculate Apex MAE limit if provided
+  const apexMae = computeApexMaeLimit(startOfDayProfit, safetyNet);
+  let apexMaeComparison = null;
+  
+  if (apexMae) {
+    const exceedsMae = worstLossForSize > apexMae.maxMaePerTrade;
+    const maeBuffer = apexMae.maxMaePerTrade - worstLossForSize;
+    apexMaeComparison = {
+      ...apexMae,
+      exceedsMae,
+      maeBuffer: maeBuffer.toFixed(2),
+      worstLossForSize,
+      maeStatus: exceedsMae ? 'EXCEEDS' : 'SAFE',
+      maeMessage: exceedsMae
+        ? `⚠️ Historical worst loss ($${worstLossForSize.toFixed(2)}) exceeds Apex MAE limit ($${apexMae.maxMaePerTrade.toFixed(2)}) by $${Math.abs(maeBuffer).toFixed(2)}`
+        : `✅ Historical worst loss ($${worstLossForSize.toFixed(2)}) is within Apex MAE limit ($${apexMae.maxMaePerTrade.toFixed(2)}). Buffer: $${maeBuffer.toFixed(2)}`
+    };
+  }
+
   return {
     // Return scaled values (for position size)
     highestLoss: worstLossForSize,
@@ -252,6 +303,7 @@ function calculateRiskMetrics(data, accountSize, contracts, maxDrawdown, contrac
     blowAccountMessage,
     blowAccountProbability: blowAccountProbability !== null ? parseFloat(blowAccountProbability.toFixed(2)) : null,
     contractType, // Include contract type in response
+    apexMaeComparison, // Apex MAE comparison data
   };
 }
 
@@ -324,11 +376,14 @@ app.post('/api/analyze', async (req, res) => {
     if (contractType !== 'NQ' && contractType !== 'MNQ') {
       return res.status(400).json({ error: 'Contract type must be either NQ or MNQ' });
     }
+
+    const startOfDayProfit = req.body.startOfDayProfit ? parseFloat(req.body.startOfDayProfit) : null;
+    const safetyNet = req.body.safetyNet ? parseFloat(req.body.safetyNet) : null;
     
     const data = await getSheetData(sheetName);
     
     // If metrics has an error, include debug info
-    const metrics = calculateRiskMetrics(data, parseFloat(accountSize), parseFloat(contracts), maxDrawdown, contractType);
+    const metrics = calculateRiskMetrics(data, parseFloat(accountSize), parseFloat(contracts), maxDrawdown, contractType, startOfDayProfit, safetyNet);
     
     if (metrics.error) {
       // Include debug info to help troubleshoot
