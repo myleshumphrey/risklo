@@ -3,7 +3,7 @@ import './Dashboard.css';
 import MetricCard from './MetricCard';
 import RiskIndicator from './RiskIndicator';
 
-function Dashboard({ metrics }) {
+function Dashboard({ metrics, riskMode = 'risk' }) {
   if (!metrics || metrics.error) {
     return (
       <div className="dashboard-error">
@@ -14,8 +14,8 @@ function Dashboard({ metrics }) {
 
   return (
     <div className="dashboard">
-      {/* GO/NO GO Indicator */}
-      {metrics.blowAccountStatus && (
+      {/* GO/NO GO Indicator - only show for Risk mode */}
+      {riskMode === 'risk' && metrics.blowAccountStatus && (
         <div className="blow-account-indicator" style={{ borderColor: metrics.blowAccountColor, backgroundColor: `${metrics.blowAccountColor}15` }}>
           <div className="blow-account-status">
             <span className="blow-account-label">Account Blowout Risk:</span>
@@ -97,7 +97,7 @@ function Dashboard({ metrics }) {
           trend="neutral"
         />
 
-        {metrics.drawdownBreach && (
+        {riskMode === 'risk' && metrics.drawdownBreach && (
           <MetricCard
             title="Max Drawdown Analysis"
             value={`$${metrics.drawdownBreach.maxDrawdown.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
@@ -108,7 +108,48 @@ function Dashboard({ metrics }) {
             trend={metrics.drawdownBreach.highestExceeds ? 'negative' : 'neutral'}
           />
         )}
+
+        {riskMode === 'apexMae' && metrics.apexMaeComparison && (
+          <MetricCard
+            title="Apex MAE Limit"
+            value={`$${metrics.apexMaeComparison.maxMaePerTrade.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            subtitle={`${(metrics.apexMaeComparison.limitPercent * 100).toFixed(0)}% of $${metrics.apexMaeComparison.baseAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            icon="📏"
+            trend={metrics.apexMaeComparison.exceedsMae ? 'negative' : 'neutral'}
+          />
+        )}
       </div>
+
+      {riskMode === 'apexMae' && metrics.apexMaeComparison && (
+        <div className="apex-mae-box" style={{ 
+          borderColor: metrics.apexMaeComparison.exceedsMae ? '#ef4444' : '#10b981',
+          backgroundColor: metrics.apexMaeComparison.exceedsMae ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)'
+        }}>
+          <div className="apex-mae-header">
+            <span className="apex-mae-label">Apex MAE (30% Rule) Status:</span>
+            <span className="apex-mae-status" style={{ color: metrics.apexMaeComparison.exceedsMae ? '#ef4444' : '#10b981' }}>
+              {metrics.apexMaeComparison.maeStatus}
+            </span>
+          </div>
+          <p className="apex-mae-message">{metrics.apexMaeComparison.maeMessage}</p>
+          <div className="apex-mae-details">
+            <div className="apex-mae-detail">
+              <span>Historical Worst Loss:</span>
+              <span>${metrics.apexMaeComparison.worstLossForSize.toFixed(2)}</span>
+            </div>
+            <div className="apex-mae-detail">
+              <span>Apex MAE Limit:</span>
+              <span>${metrics.apexMaeComparison.maxMaePerTrade.toFixed(2)}</span>
+            </div>
+            {!metrics.apexMaeComparison.exceedsMae && (
+              <div className="apex-mae-detail">
+                <span>Buffer:</span>
+                <span style={{ color: '#10b981' }}>${metrics.apexMaeComparison.maeBuffer}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="risk-message-box">
         <p className="risk-message-text">{metrics.riskMessage}</p>
