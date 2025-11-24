@@ -1,0 +1,165 @@
+.apex-30-percent-page {
+  min-height: calc(100vh - 200px);
+  padding: 2rem 1rem;
+  padding-top: 2rem; /* Reduced since header is now sticky */
+}
+
+.apex-30-percent-container {
+  max-width: 900px;
+  margin: 0 auto;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.page-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.page-intro {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 3rem;
+}
+
+.rule-section {
+  margin-bottom: 3rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 2rem;
+}
+
+.section-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid rgba(102, 126, 234, 0.5);
+}
+
+.section-content h3 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.section-content h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.section-content p {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 1rem;
+}
+
+.section-content ul {
+  list-style-type: disc;
+  padding-left: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.section-content li {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 0.75rem;
+}
+
+.section-content li strong {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.formula-box {
+  background: rgba(102, 126, 234, 0.1);
+  border: 2px solid rgba(102, 126, 234, 0.3);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.formula {
+  font-size: 1.1rem;
+  color: #ffffff;
+  text-align: center;
+  font-family: 'Courier New', monospace;
+}
+
+.example-box {
+  background: rgba(16, 185, 129, 0.1);
+  border-left: 4px solid #10b981;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.example-box h3 {
+  color: #10b981;
+  font-size: 1.2rem;
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.example-box ul {
+  margin-bottom: 1rem;
+}
+
+.example-box li {
+  margin-bottom: 0.5rem;
+}
+
+.example-box .note {
+  background: rgba(16, 185, 129, 0.15);
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-top: 1rem;
+  margin-bottom: 0;
+  font-style: italic;
+}
+
+.note {
+  background: rgba(245, 158, 11, 0.1);
+  border-left: 3px solid #f59e0b;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-top: 1rem;
+}
+
+.note strong {
+  color: #f59e0b;
+}
+
+@media (max-width: 768px) {
+  .apex-30-percent-page {
+    padding-top: 1.5rem;
+  }
+
+  .page-title {
+    font-size: 2rem;
+  }
+
+  .rule-section {
+    padding: 1.5rem;
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+  }
+}
+

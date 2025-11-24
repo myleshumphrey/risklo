@@ -122,7 +122,7 @@ function computeApexMaeLimit(startOfDayProfit, safetyNet) {
 
 // Calculate risk metrics from data
 // Based on the sheet structure: dates in column A, daily values in columns C-G (Mon-Fri)
-function calculateRiskMetrics(data, accountSize, contracts, maxDrawdown, contractType = 'NQ', startOfDayProfit = null, safetyNet = null) {
+function calculateRiskMetrics(data, accountSize, contracts, maxDrawdown, contractType = 'NQ', startOfDayProfit = null, safetyNet = null, profitSinceLastPayout = null) {
   if (!data || data.length < 3) {
     return { error: 'Insufficient data' };
   }
@@ -307,6 +307,77 @@ function calculateRiskMetrics(data, accountSize, contracts, maxDrawdown, contrac
     };
   }
 
+  // Calculate Apex Windfall Rule (30% Consistency Rule)
+  // Formula: Highest Profit Day ÷ 0.3 = Minimum Total Profit Required
+  // If highest profit day exceeds 30% of total profit, it violates the windfall rule
+  let windfallRule = null;
+  
+  // Always calculate windfall rule if there's profit data (maxProfitForSize > 0)
+  // This should always show in 30% Drawdown mode to inform users about the windfall rule
+  if (maxProfitForSize > 0) {
+    // Calculate minimum total profit required based on highest profit day
+    const minTotalProfitRequired = maxProfitForSize / 0.3;
+    
+    // Use profitSinceLastPayout if provided, otherwise fall back to startOfDayProfit
+    // The Windfall Rule applies to profit since last payout, not start-of-day profit
+    const profitBalanceForWindfall = (profitSinceLastPayout !== null && profitSinceLastPayout !== undefined && profitSinceLastPayout !== '') 
+      ? Number(profitSinceLastPayout) 
+      : (startOfDayProfit !== null && startOfDayProfit !== undefined ? Number(startOfDayProfit) : null);
+    
+    const usesProfitSincePayout = (profitSinceLastPayout !== null && profitSinceLastPayout !== undefined && profitSinceLastPayout !== '');
+    
+    if (profitBalanceForWindfall !== null && profitBalanceForWindfall > 0) {
+      // Check if highest profit day exceeds 30% of profit balance (since last payout)
+      const maxProfitPercentOfBalance = (maxProfitForSize / profitBalanceForWindfall) * 100;
+      const violatesWindfall = maxProfitPercentOfBalance > 30;
+      
+      windfallRule = {
+        maxProfitDay: maxProfitForSize,
+        minTotalProfitRequired: minTotalProfitRequired.toFixed(2),
+        maxProfitPercentOfBalance: maxProfitPercentOfBalance.toFixed(2),
+        violatesWindfall,
+        windfallStatus: violatesWindfall ? 'VIOLATES' : 'SAFE',
+        usesProfitSincePayout,
+        windfallMessage: violatesWindfall
+          ? `⚠️ Highest profit day ($${maxProfitForSize.toFixed(2)}) exceeds 30% of ${usesProfitSincePayout ? 'profit since last payout' : 'profit balance'} (${maxProfitPercentOfBalance.toFixed(2)}%). To request payout, you need at least $${minTotalProfitRequired.toFixed(2)} total profit.`
+          : `✅ Highest profit day ($${maxProfitForSize.toFixed(2)}) is within 30% of ${usesProfitSincePayout ? 'profit since last payout' : 'profit balance'} (${maxProfitPercentOfBalance.toFixed(2)}%). Minimum total profit required: $${minTotalProfitRequired.toFixed(2)}.`
+      };
+    } else {
+      // Calculate minimum total profit required even without profit balance
+      windfallRule = {
+        maxProfitDay: maxProfitForSize,
+        minTotalProfitRequired: minTotalProfitRequired.toFixed(2),
+        maxProfitPercentOfBalance: null,
+        violatesWindfall: null,
+        windfallStatus: 'INFO',
+        usesProfitSincePayout: false,
+        windfallMessage: `ℹ️ Highest profit day: $${maxProfitForSize.toFixed(2)}. To request payout, you need at least $${minTotalProfitRequired.toFixed(2)} total profit (${maxProfitForSize.toFixed(2)} ÷ 0.3). Enter your profit balance above for a more accurate check.`
+      };
+    }
+  } else {
+    // If there's no profit data, still show the windfall rule info box
+    // This ensures users always see information about the windfall rule in 30% Drawdown mode
+    windfallRule = {
+      maxProfitDay: 0,
+      minTotalProfitRequired: '0.00',
+      maxProfitPercentOfBalance: null,
+      violatesWindfall: false,
+      windfallStatus: 'NO_DATA',
+      usesProfitSincePayout: false,
+      windfallMessage: `ℹ️ No profit data found in historical trading data. The windfall rule applies when you have profits - ensure no single day exceeds 30% of your total profit balance.`
+    };
+  }
+  
+  // Debug logging
+  console.log('Windfall Rule calculation:', {
+    maxProfitForSize,
+    allProfitsCount: allProfits.length,
+    allLossesCount: allLosses.length,
+    startOfDayProfit,
+    windfallRule: windfallRule ? 'EXISTS' : 'NULL',
+    windfallStatus: windfallRule?.windfallStatus
+  });
+
   // Calculate profit percentages
   const maxProfitPercent = maxProfitForSize > 0 ? ((maxProfitForSize / accountSize) * 100).toFixed(2) : '0.00';
   const avgProfitPercent = avgProfitForSize > 0 ? ((avgProfitForSize / accountSize) * 100).toFixed(2) : '0.00';
@@ -352,6 +423,7 @@ function calculateRiskMetrics(data, accountSize, contracts, maxDrawdown, contrac
     blowAccountProbability: blowAccountProbability !== null ? parseFloat(blowAccountProbability.toFixed(2)) : null,
     contractType, // Include contract type in response
     apexMaeComparison, // Apex MAE comparison data
+    windfallRule, // Apex Windfall Rule (30% Consistency Rule) data
   };
 }
 

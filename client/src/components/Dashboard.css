@@ -74,6 +74,35 @@
   gap: 1rem;
 }
 
+.apex-rule-link {
+  margin-top: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.learn-apex-rule-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: #ffffff;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.learn-apex-rule-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.learn-apex-rule-btn:active {
+  transform: translateY(0);
+}
+
 .dashboard-title {
   font-size: 1.75rem;
   font-weight: 600;
@@ -157,6 +186,130 @@
 }
 
 .apex-mae-detail span:last-child {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Simplified Apex MAE Box */
+.apex-mae-simplified-box {
+  border: 3px solid;
+  border-radius: 16px;
+  padding: 2rem;
+  margin-top: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.apex-mae-simplified-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.apex-mae-status-badge {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 1rem;
+}
+
+.apex-mae-simplified-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+}
+
+.apex-mae-simplified-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.apex-mae-key-metric {
+  text-align: center;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+}
+
+.apex-mae-metric-label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.apex-mae-metric-value {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.apex-mae-metric-subtitle {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+}
+
+.apex-mae-comparison {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.apex-mae-comparison-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+}
+
+.comparison-label {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1rem;
+}
+
+.comparison-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.comparison-value.safe {
+  color: #10b981;
+}
+
+.comparison-value.exceeds {
+  color: #ef4444;
+}
+
+.apex-mae-warning {
+  padding: 1rem;
+  background: rgba(239, 68, 68, 0.15);
+  border-left: 4px solid #ef4444;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.apex-mae-safe {
+  padding: 1rem;
+  background: rgba(16, 185, 129, 0.15);
+  border-left: 4px solid #10b981;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.apex-mae-warning strong,
+.apex-mae-safe strong {
   color: #ffffff;
   font-weight: 600;
 }
