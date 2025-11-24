@@ -2,10 +2,21 @@ import React, { useState } from 'react';
 import './BulkRiskCalculator.css';
 import Dashboard from './Dashboard';
 import { API_ENDPOINTS } from '../config';
+import { ACCOUNT_SIZE_PRESETS, DEFAULT_ACCOUNT_SIZE, DEFAULT_THRESHOLD, getThresholdForAccountSize } from '../utils/accountSizes';
 
 function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode }) {
   const [rows, setRows] = useState([
-    { id: 1, strategy: '', contractType: 'MNQ', accountSize: '', contracts: '', maxDrawdown: '', startOfDayProfit: '', safetyNet: '' }
+    { 
+      id: 1, 
+      strategy: '', 
+      contractType: 'MNQ', 
+      accountSize: riskMode === 'apexMae' ? DEFAULT_ACCOUNT_SIZE : '', 
+      contracts: '', 
+      maxDrawdown: '', 
+      currentBalance: '', 
+      startOfDayProfit: '', 
+      safetyNet: riskMode === 'apexMae' ? DEFAULT_THRESHOLD : '' 
+    }
   ]);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
@@ -17,13 +28,15 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode }) {
       id: Date.now(),
       strategy: '',
       contractType: 'MNQ',
-      accountSize: '',
+      accountSize: riskMode === 'apexMae' ? DEFAULT_ACCOUNT_SIZE : '',
       contracts: '',
       maxDrawdown: '',
+      currentBalance: '',
       startOfDayProfit: '',
-      safetyNet: ''
+      safetyNet: riskMode === 'apexMae' ? DEFAULT_THRESHOLD : ''
     }]);
   };
+
 
   const removeRow = (id) => {
     if (rows.length === 1) return;
@@ -31,9 +44,30 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode }) {
   };
 
   const updateRow = (id, field, value) => {
-    setRows(rows.map(row => 
-      row.id === id ? { ...row, [field]: value } : row
-    ));
+    setRows(rows.map(row => {
+      if (row.id !== id) return row;
+      
+      const updatedRow = { ...row, [field]: value };
+      
+      // Auto-update safety net when account size changes in apexMae mode
+      if (riskMode === 'apexMae' && field === 'accountSize') {
+        const threshold = getThresholdForAccountSize(Number(value));
+        if (threshold) {
+          updatedRow.safetyNet = threshold;
+        }
+      }
+      
+      // Auto-calculate start-of-day profit when current balance or account size changes
+      if (riskMode === 'apexMae' && (field === 'currentBalance' || field === 'accountSize')) {
+        const currentBalance = Number(updatedRow.currentBalance || 0);
+        const accountSize = Number(updatedRow.accountSize || 0);
+        if (currentBalance > 0 && accountSize > 0) {
+          updatedRow.startOfDayProfit = Math.max(0, currentBalance - accountSize);
+        }
+      }
+      
+      return updatedRow;
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -46,7 +80,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode }) {
         if (riskMode === 'risk') {
           return row.strategy && row.accountSize && row.contracts && row.maxDrawdown;
         } else {
-          return row.strategy && row.accountSize && row.contracts && row.startOfDayProfit && row.safetyNet;
+          return row.strategy && row.accountSize && row.contracts && row.currentBalance && row.startOfDayProfit && row.safetyNet;
         }
       });
 
@@ -124,6 +158,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode }) {
                   <th>Max Drawdown ($)</th>
                 ) : (
                   <>
+                    <th>Current Balance ($)</th>
                     <th>Start-of-Day Profit ($)</th>
                     <th>Safety Net ($)</th>
                   </>
@@ -161,15 +196,30 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode }) {
                     </select>
                   </td>
                   <td>
-                    <input
-                      type="number"
-                      value={row.accountSize}
-                      onChange={(e) => updateRow(row.id, 'accountSize', e.target.value)}
-                      className="bulk-input"
-                      placeholder="50000"
-                      step="0.01"
-                      required={index === 0}
-                    />
+                    {riskMode === 'apexMae' ? (
+                      <select
+                        value={row.accountSize}
+                        onChange={(e) => updateRow(row.id, 'accountSize', e.target.value)}
+                        className="bulk-input"
+                        required={index === 0}
+                      >
+                        {ACCOUNT_SIZE_PRESETS.map((preset) => (
+                          <option key={preset.value} value={preset.value}>
+                            {preset.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="number"
+                        value={row.accountSize}
+                        onChange={(e) => updateRow(row.id, 'accountSize', e.target.value)}
+                        className="bulk-input"
+                        placeholder="50000"
+                        step="0.01"
+                        required={index === 0}
+                      />
+                    )}
                   </td>
                   <td>
                     <input
@@ -200,10 +250,10 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode }) {
                       <td>
                         <input
                           type="number"
-                          value={row.startOfDayProfit}
-                          onChange={(e) => updateRow(row.id, 'startOfDayProfit', e.target.value)}
+                          value={row.currentBalance}
+                          onChange={(e) => updateRow(row.id, 'currentBalance', e.target.value)}
                           className="bulk-input"
-                          placeholder="4000"
+                          placeholder="52500"
                           step="0.01"
                           min="0"
                           required={index === 0}
@@ -212,13 +262,19 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode }) {
                       <td>
                         <input
                           type="number"
-                          value={row.safetyNet}
-                          onChange={(e) => updateRow(row.id, 'safetyNet', e.target.value)}
+                          value={row.startOfDayProfit}
+                          readOnly
                           className="bulk-input"
-                          placeholder="2500"
-                          step="0.01"
-                          min="0"
-                          required={index === 0}
+                          style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', cursor: 'not-allowed' }}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          value={row.safetyNet}
+                          readOnly
+                          className="bulk-input"
+                          style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', cursor: 'not-allowed' }}
                         />
                       </td>
                     </>

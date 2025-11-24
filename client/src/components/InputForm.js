@@ -1,16 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './InputForm.css';
+import { ACCOUNT_SIZE_PRESETS, DEFAULT_ACCOUNT_SIZE, DEFAULT_THRESHOLD, getThresholdForAccountSize } from '../utils/accountSizes';
 
-function InputForm({ onSubmit, loading, sheetNames, loadingSheets, error, riskMode }) {
+function InputForm({ onSubmit, loading, sheetNames, loadingSheets, error, riskMode, onNavigate }) {
   const [formData, setFormData] = useState({
     sheetName: '',
     contractType: 'MNQ', // Default to MNQ
-    accountSize: '',
+    accountSize: riskMode === 'apexMae' ? DEFAULT_ACCOUNT_SIZE : '',
     contracts: '',
     maxDrawdown: '',
+    currentBalance: '', // For apexMae mode
     startOfDayProfit: '',
-    safetyNet: '',
+    profitSinceLastPayout: '', // Optional: profit since last payout for Windfall Rule
+    safetyNet: riskMode === 'apexMae' ? DEFAULT_THRESHOLD : '',
   });
+
+  // Set default account size when switching to apexMae mode
+  useEffect(() => {
+    if (riskMode === 'apexMae' && !formData.accountSize) {
+      setFormData(prev => ({
+        ...prev,
+        accountSize: DEFAULT_ACCOUNT_SIZE,
+        safetyNet: DEFAULT_THRESHOLD
+      }));
+    }
+  }, [riskMode]);
+
+  // Update safety net when account size changes in apexMae mode
+  useEffect(() => {
+    if (riskMode === 'apexMae' && formData.accountSize) {
+      const threshold = getThresholdForAccountSize(Number(formData.accountSize));
+      if (threshold) {
+        setFormData(prev => ({ ...prev, safetyNet: threshold }));
+      }
+    }
+  }, [formData.accountSize, riskMode]);
+
+  // Calculate start-of-day profit when current balance changes
+  useEffect(() => {
+    if (riskMode === 'apexMae' && formData.currentBalance && formData.accountSize) {
+      const currentBalance = Number(formData.currentBalance);
+      const accountSize = Number(formData.accountSize);
+      const profit = Math.max(0, currentBalance - accountSize);
+      setFormData(prev => ({ ...prev, startOfDayProfit: profit }));
+    }
+  }, [formData.currentBalance, formData.accountSize, riskMode]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -28,19 +62,33 @@ function InputForm({ onSubmit, loading, sheetNames, loadingSheets, error, riskMo
       maxDrawdown: riskMode === 'risk' ? formData.maxDrawdown : null,
       startOfDayProfit: riskMode === 'apexMae' ? formData.startOfDayProfit : null,
       safetyNet: riskMode === 'apexMae' ? formData.safetyNet : null,
+      profitSinceLastPayout: riskMode === 'apexMae' && formData.profitSinceLastPayout ? formData.profitSinceLastPayout : null,
+      // Remove currentBalance from submission (it's only for calculation)
+      currentBalance: undefined,
     };
     onSubmit(submitData);
   };
 
   return (
-    <div className="input-form-container">
-      <form onSubmit={handleSubmit} className="input-form">
-        <div className="form-section">
-          <h2 className="form-title">Strategy Risk Assessment</h2>
-          <p className="form-description">
-            Select a strategy and configure your trading parameters to assess risk
-          </p>
+    <>
+      {riskMode === 'apexMae' && (
+        <div className="apex-rule-link-container">
+          <button 
+            className="learn-apex-rule-btn"
+            onClick={() => onNavigate && onNavigate('apex-30-percent-rule')}
+          >
+            📚 Learn How the Apex 30% Rule Works
+          </button>
         </div>
+      )}
+      <div className="input-form-container">
+        <form onSubmit={handleSubmit} className="input-form">
+          <div className="form-section">
+            <h2 className="form-title">Strategy Risk Assessment</h2>
+            <p className="form-description">
+              Select a strategy and configure your trading parameters to assess risk
+            </p>
+          </div>
 
         <div className="form-grid">
           <div className="form-group">
@@ -94,20 +142,37 @@ function InputForm({ onSubmit, loading, sheetNames, loadingSheets, error, riskMo
 
           <div className="form-group">
             <label htmlFor="accountSize" className="form-label">
-              Account Size ($) <span className="required">*</span>
+              Account Size <span className="required">*</span>
             </label>
-            <input
-              type="number"
-              id="accountSize"
-              name="accountSize"
-              value={formData.accountSize}
-              onChange={handleChange}
-              placeholder="100000"
-              className="form-input"
-              required
-              min="1"
-              step="0.01"
-            />
+            {riskMode === 'apexMae' ? (
+              <select
+                id="accountSize"
+                name="accountSize"
+                value={formData.accountSize || DEFAULT_ACCOUNT_SIZE}
+                onChange={handleChange}
+                className="form-input form-select"
+                required
+              >
+                {ACCOUNT_SIZE_PRESETS.map((preset) => (
+                  <option key={preset.value} value={preset.value}>
+                    {preset.label} (${preset.value.toLocaleString()})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="number"
+                id="accountSize"
+                name="accountSize"
+                value={formData.accountSize}
+                onChange={handleChange}
+                placeholder="100000"
+                className="form-input"
+                required
+                min="1"
+                step="0.01"
+              />
+            )}
           </div>
 
           <div className="form-group">
@@ -154,44 +219,80 @@ function InputForm({ onSubmit, loading, sheetNames, loadingSheets, error, riskMo
           {riskMode === 'apexMae' && (
             <>
               <div className="form-group">
+                <label htmlFor="currentBalance" className="form-label">
+                  Current Account Balance ($) <span className="required">*</span>
+                </label>
+                <input
+                  type="number"
+                  id="currentBalance"
+                  name="currentBalance"
+                  value={formData.currentBalance}
+                  onChange={handleChange}
+                  placeholder="52500"
+                  className="form-input"
+                  required={riskMode === 'apexMae'}
+                  min="0"
+                  step="0.01"
+                />
+                <small className="form-hint">
+                  Your current account balance (e.g., if you started with $50k and now have $52,500, enter 52500)
+                </small>
+              </div>
+
+              <div className="form-group">
                 <label htmlFor="startOfDayProfit" className="form-label">
-                  Start-of-Day Profit Balance ($) <span className="required">*</span>
+                  Start-of-Day Profit Balance ($)
                 </label>
                 <input
                   type="number"
                   id="startOfDayProfit"
                   name="startOfDayProfit"
                   value={formData.startOfDayProfit}
-                  onChange={handleChange}
-                  placeholder="4000"
+                  readOnly
                   className="form-input"
-                  required={riskMode === 'apexMae'}
-                  min="0"
-                  step="0.01"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', cursor: 'not-allowed' }}
                 />
                 <small className="form-hint">
-                  Profit above your original account size at the start of today (e.g., if your $50k account is at $54k, profit balance is $4,000)
+                  Automatically calculated: Current Balance - Account Size = ${formData.startOfDayProfit || '0.00'}
                 </small>
               </div>
 
               <div className="form-group">
                 <label htmlFor="safetyNet" className="form-label">
-                  Trailing Threshold / Safety Net ($) <span className="required">*</span>
+                  Trailing Threshold / Safety Net ($)
                 </label>
                 <input
                   type="number"
                   id="safetyNet"
                   name="safetyNet"
                   value={formData.safetyNet}
-                  onChange={handleChange}
-                  placeholder="2500"
+                  readOnly
                   className="form-input"
-                  required={riskMode === 'apexMae'}
-                  min="0"
-                  step="0.01"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', cursor: 'not-allowed' }}
                 />
                 <small className="form-hint">
-                  Your original trailing drawdown threshold (safety net) from Apex for this account (e.g., $2,500 for many $50k plans, $625 fixed for some static accounts)
+                  Automatically set based on your account size (${formData.safetyNet || '0.00'} for {formData.accountSize ? `$${Number(formData.accountSize).toLocaleString()}` : 'selected account'})
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="profitSinceLastPayout" className="form-label">
+                  Profit Since Last Payout ($) <span className="optional">(Optional)</span>
+                </label>
+                <input
+                  type="number"
+                  id="profitSinceLastPayout"
+                  name="profitSinceLastPayout"
+                  value={formData.profitSinceLastPayout}
+                  onChange={handleChange}
+                  className="form-input"
+                  placeholder="Leave empty to use start-of-day profit"
+                  step="0.01"
+                  min="0"
+                />
+                <small className="form-hint">
+                  For more accurate Windfall Rule calculation, enter your profit accumulated since your last approved payout. 
+                  If left empty, RiskLo will use your start-of-day profit balance.
                 </small>
               </div>
             </>
@@ -206,7 +307,8 @@ function InputForm({ onSubmit, loading, sheetNames, loadingSheets, error, riskMo
           {loading ? 'Analyzing...' : 'Analyze Risk'}
         </button>
       </form>
-    </div>
+      </div>
+    </>
   );
 }
 

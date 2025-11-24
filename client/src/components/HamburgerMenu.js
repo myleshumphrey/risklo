@@ -51,11 +51,29 @@ function HamburgerMenu({ currentPage, onNavigate }) {
             </li>
             <li>
               <button
+                className={`menu-item ${currentPage === 'how-we-calculate' ? 'active' : ''}`}
+                onClick={() => handleNavigate('how-we-calculate')}
+              >
+                <span className="menu-icon">🧮</span>
+                <span>How We Calculate</span>
+              </button>
+            </li>
+            <li>
+              <button
                 className={`menu-item ${currentPage === 'faq' ? 'active' : ''}`}
                 onClick={() => handleNavigate('faq')}
               >
                 <span className="menu-icon">❓</span>
                 <span>FAQ</span>
+              </button>
+            </li>
+            <li>
+              <button
+                className={`menu-item ${currentPage === 'apex-30-percent-rule' ? 'active' : ''}`}
+                onClick={() => handleNavigate('apex-30-percent-rule')}
+              >
+                <span className="menu-icon">📋</span>
+                <span>Apex 30% Rules</span>
               </button>
             </li>
           </ul>
