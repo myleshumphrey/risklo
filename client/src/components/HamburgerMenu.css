@@ -21,6 +21,7 @@
 
 @media (max-width: 768px) {
   .hamburger-btn {
+    top: 0.5rem; /* Position within the header bar */
     right: 1rem;
   }
 }
