@@ -167,6 +167,22 @@
   color: rgba(255, 255, 255, 0.4);
 }
 
+.bulk-input option {
+  background: #1a1f3a;
+  color: #ffffff;
+  padding: 0.5rem;
+}
+
+.bulk-input option:checked {
+  background: #667eea;
+  color: #ffffff;
+}
+
+.bulk-input option:hover {
+  background: #667eea;
+  color: #ffffff;
+}
+
 .remove-row-btn {
   background: rgba(239, 68, 68, 0.2);
   border: 1px solid rgba(239, 68, 68, 0.3);
