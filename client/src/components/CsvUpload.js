@@ -7,7 +7,7 @@ import {
   detectCsvType 
 } from '../utils/ninjaTraderParser';
 
-function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate }) {
+function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate, onUpgrade }) {
   const [accountsFile, setAccountsFile] = useState(null);
   const [strategiesFile, setStrategiesFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -150,6 +150,11 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
             <h3>NinjaTrader CSV Upload</h3>
             <p>This feature is available in RiskLo Pro</p>
             <p className="gate-subtext">Upload NinjaTrader exports for instant multi-account risk checks</p>
+            {onUpgrade && (
+              <button className="gate-upgrade-btn" onClick={onUpgrade}>
+                Upgrade to RiskLo Pro
+              </button>
+            )}
           </div>
         </div>
       </div>

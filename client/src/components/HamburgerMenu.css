@@ -1,6 +1,6 @@
 .hamburger-btn {
   position: fixed;
-  top: 1.5rem;
+  top: 2rem;
   right: 1.5rem;
   z-index: 1000;
   background: rgba(255, 255, 255, 0.1);
@@ -10,6 +10,19 @@
   cursor: pointer;
   transition: all 0.2s ease;
   backdrop-filter: blur(10px);
+}
+
+@media (min-width: 769px) {
+  .hamburger-btn {
+    top: 2rem;
+    right: max(2rem, calc((100% - 1200px) / 2 + 2rem));
+  }
+}
+
+@media (max-width: 768px) {
+  .hamburger-btn {
+    right: 1rem;
+  }
 }
 
 .hamburger-btn:hover {
@@ -93,6 +106,35 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.menu-upgrade-section {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.menu-upgrade-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: #ffffff;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.menu-upgrade-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
 .menu-title {
   font-size: 1.5rem;
   font-weight: 700;
@@ -170,6 +212,17 @@
 @media (max-width: 768px) {
   .hamburger-menu {
     width: 280px;
+  }
+
+  .hamburger-btn {
+    right: 1rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .hamburger-btn {
+    top: 2rem;
+    right: max(2rem, calc((100% - 1200px) / 2 + 2rem));
   }
 }
 
