@@ -1,6 +1,8 @@
 .faq-page {
   min-height: 100vh;
   padding: 2rem 0 4rem;
+  margin-top: 0;
+  padding-top: calc(2rem + 4rem); /* Account for fixed header height */
 }
 
 .faq-container {
