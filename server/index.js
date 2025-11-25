@@ -35,13 +35,61 @@ if (process.env.GOOGLE_CREDENTIALS_JSON) {
 }
 
 // Helper function to get all sheet names
+/**
+ * Filters out unwanted sheet names (date sheets, current results, etc.)
+ * @param {string[]} sheetNames - Array of sheet names from Google Sheets
+ * @returns {string[]} - Filtered array with only strategy sheets
+ */
+function filterSheetNames(sheetNames) {
+  if (!sheetNames || !Array.isArray(sheetNames)) {
+    return [];
+  }
+
+  // Patterns to exclude:
+  // 1. Date sheets in format MM.YYYY (e.g., "01.2025", "12.2024")
+  // 2. "Current results" and "Current results (Hidden)"
+  const datePattern = /^\d{2}\.\d{4}$/; // Matches MM.YYYY format
+  const excludedNames = new Set([
+    'Current results',
+    'Current results (Hidden)'
+  ]);
+
+  return sheetNames.filter(name => {
+    // Skip if name is empty or null
+    if (!name || typeof name !== 'string') {
+      return false;
+    }
+
+    // Skip if it matches date pattern
+    if (datePattern.test(name.trim())) {
+      return false;
+    }
+
+    // Skip if it's in the excluded names list (case-insensitive)
+    const normalizedName = name.trim();
+    for (const excluded of excludedNames) {
+      if (normalizedName.toLowerCase() === excluded.toLowerCase()) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+}
+
 async function getSheetNames() {
   try {
     const sheets = google.sheets({ version: 'v4', auth });
     const response = await sheets.spreadsheets.get({
       spreadsheetId: SPREADSHEET_ID,
     });
-    return response.data.sheets.map(sheet => sheet.properties.title);
+    
+    const allSheetNames = response.data.sheets
+      .map(sheet => sheet.properties?.title)
+      .filter(title => title != null); // Filter out null/undefined titles
+    
+    // Filter out unwanted sheets (date sheets, current results, etc.)
+    return filterSheetNames(allSheetNames);
   } catch (error) {
     console.error('Error fetching sheet names:', error);
     throw error;
@@ -61,6 +109,10 @@ async function getSheetData(sheetName) {
     return response.data.values;
   } catch (error) {
     console.error('Error fetching sheet data:', error);
+    // Handle case where sheet doesn't exist (may have been deleted)
+    if (error.message && (error.message.includes('Unable to parse range') || error.message.includes('400'))) {
+      throw new Error(`Sheet "${sheetName}" not found. It may have been deleted or renamed.`);
+    }
     throw error;
   }
 }
@@ -228,32 +280,35 @@ function calculateRiskMetrics(data, accountSize, contracts, maxDrawdown, contrac
     };
     
     // Determine GO/NO GO status using scaled values
+    // IMPORTANT: We're using end-of-day P&L, but trailing drawdown is based on intraday MAE
+    // This means we may underestimate risk - a trade could close positive but still blow if it hit the limit intraday
+    
     if (!isSafe) {
       // Worst loss exceeds max drawdown
       blowAccountStatus = 'NO GO';
       blowAccountColor = '#ef4444'; // red
       const excess = Math.abs(bufferToMaxDrawdown);
-      blowAccountMessage = `⚠️ HIGH RISK: With your current contract size (${numContracts}), the worst historical loss ($${scaledWorstLoss.toFixed(2)}) exceeds your max drawdown by $${excess.toFixed(2)}. ${breaches > 0 ? `Historical data shows ${breaches} day(s) (${breachProbability.toFixed(1)}%) exceeded your max drawdown. ` : ''}Account blowout risk is HIGH.`;
+      blowAccountMessage = `⚠️ HIGH RISK: With your current contract size (${numContracts}), the worst historical end-of-day loss ($${scaledWorstLoss.toFixed(2)}) exceeds your max drawdown by $${excess.toFixed(2)}. ${breaches > 0 ? `Historical data shows ${breaches} day(s) (${breachProbability.toFixed(1)}%) had end-of-day losses exceeding your max drawdown. ` : ''}Account blowout risk is HIGH.`;
       blowAccountProbability = breachProbability; // Use actual breach probability, not 100%
     } else if (breachProbability > 5) {
       blowAccountStatus = 'NO GO';
       blowAccountColor = '#ef4444'; // red
-      blowAccountMessage = `⚠️ HIGH RISK: Historical data shows ${breaches} days (${breachProbability.toFixed(1)}%) exceeded your max drawdown with ${numContracts} contract(s). Account blowout risk is HIGH.`;
+      blowAccountMessage = `⚠️ HIGH RISK: Historical data shows ${breaches} days (${breachProbability.toFixed(1)}%) had end-of-day losses exceeding your max drawdown with ${numContracts} contract(s). Account blowout risk is HIGH.`;
       blowAccountProbability = breachProbability;
     } else if (breachProbability > 1) {
       blowAccountStatus = 'CAUTION';
       blowAccountColor = '#f59e0b'; // amber
-      blowAccountMessage = `⚠️ MODERATE RISK: Historical data shows ${breaches} day(s) (${breachProbability.toFixed(1)}%) exceeded your max drawdown with ${numContracts} contract(s). Monitor closely.`;
+      blowAccountMessage = `⚠️ MODERATE RISK: Historical data shows ${breaches} day(s) (${breachProbability.toFixed(1)}%) had end-of-day losses exceeding your max drawdown with ${numContracts} contract(s). Monitor closely.`;
       blowAccountProbability = breachProbability;
     } else if (breaches === 0) {
       blowAccountStatus = 'GO';
       blowAccountColor = '#10b981'; // green
-      blowAccountMessage = `✅ SAFE: No historical losses (with your current contract size of ${numContracts}) exceeded your max drawdown. You have $${bufferToMaxDrawdown.toFixed(2)} buffer above highest loss.`;
+      blowAccountMessage = `✅ SAFE: No historical end-of-day losses (with your current contract size of ${numContracts}) exceeded your max drawdown. You have $${bufferToMaxDrawdown.toFixed(2)} buffer above highest loss.`;
       blowAccountProbability = 0;
     } else {
       blowAccountStatus = 'GO';
       blowAccountColor = '#10b981'; // green
-      blowAccountMessage = `✅ SAFE: Very low probability (${breachProbability.toFixed(2)}%) of exceeding max drawdown based on historical data with ${numContracts} contract(s).`;
+      blowAccountMessage = `✅ SAFE: Very low probability (${breachProbability.toFixed(2)}%) of end-of-day losses exceeding max drawdown based on historical data with ${numContracts} contract(s).`;
       blowAccountProbability = breachProbability;
     }
   }
@@ -352,12 +407,19 @@ function calculateRiskMetrics(data, accountSize, contracts, maxDrawdown, contrac
     const usesProfitSincePayout = (profitSinceLastPayout !== null && profitSinceLastPayout !== undefined && profitSinceLastPayout !== '');
     
     if (profitBalanceForWindfall !== null && profitBalanceForWindfall > 0) {
+      // Calculate maximum profit allowed (30% of profit balance)
+      const maxProfitAllowed = profitBalanceForWindfall * 0.3;
+      const profitBuffer = maxProfitAllowed - maxProfitForSize;
+      
       // Check if highest profit day exceeds 30% of profit balance (since last payout)
       const maxProfitPercentOfBalance = (maxProfitForSize / profitBalanceForWindfall) * 100;
       const violatesWindfall = maxProfitPercentOfBalance > 30;
       
       windfallRule = {
         maxProfitDay: maxProfitForSize,
+        maxProfitAllowed: maxProfitAllowed.toFixed(2),
+        profitBalanceForWindfall: profitBalanceForWindfall.toFixed(2),
+        profitBuffer: profitBuffer.toFixed(2),
         minTotalProfitRequired: minTotalProfitRequired.toFixed(2),
         maxProfitPercentOfBalance: maxProfitPercentOfBalance.toFixed(2),
         violatesWindfall,
@@ -371,6 +433,9 @@ function calculateRiskMetrics(data, accountSize, contracts, maxDrawdown, contrac
       // Calculate minimum total profit required even without profit balance
       windfallRule = {
         maxProfitDay: maxProfitForSize,
+        maxProfitAllowed: null,
+        profitBalanceForWindfall: null,
+        profitBuffer: null,
         minTotalProfitRequired: minTotalProfitRequired.toFixed(2),
         maxProfitPercentOfBalance: null,
         violatesWindfall: null,

@@ -12,23 +12,19 @@ function FAQ({ onNavigate }) {
   const faqs = [
     {
       question: "What is RiskLo and how does it work?",
-      answer: "RiskLo is a risk assessment dashboard that analyzes your trading algorithm's historical performance data from Google Sheets. It calculates key risk metrics like maximum drawdown, average losses, and compares them against your account parameters (account size, number of contracts, max drawdown limits) to give you a clear risk assessment. Simply connect your Google Sheet, enter your account details, and get instant risk analysis."
+      answer: "RiskLo is a risk assessment dashboard that analyzes trading strategy historical performance data. It calculates key risk metrics like maximum drawdown, average losses, and compares them against your account parameters (account size, number of contracts, max drawdown limits) to give you a clear risk assessment. Strategy data is updated daily with the latest performance results. Simply select a strategy, enter your account details, and get instant risk analysis."
     },
     {
-      question: "How do I connect my Google Sheet?",
-      answer: "You'll need to set up Google Sheets API credentials. First, create a service account in Google Cloud Console, download the credentials JSON file, and place it in the server directory. Then share your Google Sheet with the service account email address. The app will automatically fetch all available strategy sheets (tabs) from your spreadsheet. See the SETUP.md file for detailed instructions."
-    },
-    {
-      question: "What format should my Google Sheet be in?",
-      answer: "Your Google Sheet should have dates in column A and daily P&L values in columns C through G (Monday through Friday). The first two rows are treated as headers. Each row starting from row 3 should contain a date and the corresponding daily profit/loss values for each day of the week. Losses should be negative values (e.g., -$500)."
+      question: "Where does the strategy data come from?",
+      answer: "RiskLo uses daily updated performance data for each trading strategy. The strategy data is maintained and automatically updated daily with the latest trading results. Historical daily profit and loss values are included for each strategy, allowing RiskLo to calculate accurate risk metrics. You simply select a strategy from the dropdown - the data is already there and ready to use."
     },
     {
       question: "What's the difference between NQ and MNQ contract types?",
-      answer: "NQ (Nasdaq E-mini) and MNQ (Micro E-mini Nasdaq) are different contract sizes. MNQ is 1/10th the value of NQ. If your Google Sheet data is based on NQ contracts but you're trading MNQ, selecting MNQ will automatically divide all values by 10 to give you accurate risk calculations for your actual position size."
+      answer: "NQ (Nasdaq E-mini) and MNQ (Micro E-mini Nasdaq) are different contract sizes. MNQ is 1/10th the value of NQ. Strategy data is typically based on NQ contracts. If you're trading MNQ, selecting MNQ will automatically adjust all values by dividing by 10 to give you accurate risk calculations for your actual position size."
     },
     {
       question: "How does the Account Blowout Risk calculation work?",
-      answer: "The Account Blowout Risk compares your historical worst loss (scaled by your number of contracts) against your maximum trailing drawdown limit. If your worst historical loss exceeds your max drawdown, you'll see a 'NO GO' status because historically, this strategy has lost more than your account can handle. If it's below your limit, you'll see a 'GO' status with a buffer amount showing how much room you have."
+      answer: "The Account Blowout Risk compares your historical worst loss (scaled by your number of contracts) against your maximum trailing drawdown limit. If your worst historical loss exceeds your max drawdown, you'll see a 'NO GO' status because historically, this strategy has lost more than your account can handle. If it's below your limit, you'll see a 'GO' status with a buffer amount showing how much room you have. ⚠️ Important Note: Trailing drawdown is based on intraday maximum adverse excursion (MAE), not end-of-day P&L. This means a trade could close positive but still blow the account if it exceeded the drawdown limit during the day. RiskLo uses end-of-day P&L data, so actual risk may be higher than shown. Always account for intraday volatility when assessing risk."
     },
     {
       question: "What is the 30% Drawdown Rule (Apex MAE)?",
@@ -48,15 +44,15 @@ function FAQ({ onNavigate }) {
     },
     {
       question: "Is my data secure?",
-      answer: "Yes. RiskLo only reads data from your Google Sheet - it never writes or modifies anything. Your credentials are stored locally on your server and never shared. The app uses Google's official Sheets API with read-only permissions. All calculations happen on your local server, and no data is sent to external services except Google Sheets (which you control)."
+      answer: "Yes. RiskLo only uses strategy performance data for calculations - it never stores or transmits your personal account information. All risk calculations happen securely, and your account details (account size, contracts, drawdown limits) are only used locally for analysis. No personal trading data is stored or shared with third parties."
     },
     {
-      question: "What if I don't have historical data yet?",
-      answer: "RiskLo needs at least some historical trading data to calculate meaningful risk metrics. If you're starting a new strategy, you'll need to collect some trading data first. Once you have a few weeks of data, you can start using RiskLo to assess risk. The more data you have, the more accurate your risk assessment will be."
+      question: "How much historical data is needed for accurate risk assessment?",
+      answer: "RiskLo uses the available historical trading data for each strategy to calculate risk metrics. The more trading days included in the data, the more accurate your risk assessment will be. Strategies with extensive historical data will provide more reliable probability calculations and risk scores. The tool works with whatever historical data is available for each strategy."
     },
     {
       question: "How accurate are the risk calculations?",
-      answer: "RiskLo calculates risk based on your historical data. It's important to understand that past performance doesn't guarantee future results. The tool shows you what has happened historically, but market conditions can change. Use RiskLo as one tool in your risk management toolkit, not as the sole determinant of your trading decisions. Always consider current market conditions and consult with financial professionals when making significant trading decisions."
+      answer: "RiskLo calculates risk based on each strategy's historical performance data. It's important to understand that past performance doesn't guarantee future results. The tool shows you what has happened historically with each strategy, but market conditions can change. Use RiskLo as one tool in your risk management toolkit, not as the sole determinant of your trading decisions. Always consider current market conditions and consult with financial professionals when making significant trading decisions."
     },
     {
       question: "What's the difference between 'Risk' mode and '30% Drawdown' mode?",
@@ -67,8 +63,16 @@ function FAQ({ onNavigate }) {
       answer: "RiskLo is designed to help you assess risk before you start trading a strategy. It analyzes historical data to give you a risk profile. However, it doesn't track live positions or real-time P&L. Use RiskLo to evaluate strategies and account setups, but always monitor your live positions separately and follow your broker's or prop firm's real-time risk management tools."
     },
     {
-      question: "What if my Google Sheet has a different format?",
-      answer: "Currently, RiskLo expects a specific format (dates in column A, daily values in columns C-G). If your sheet has a different structure, you may need to reformat it or contact support for custom solutions. The tool is designed to work with common trading performance tracking formats."
+      question: "How often is the strategy data updated?",
+      answer: "Strategy performance data is updated daily with the latest trading results. This ensures that your risk assessments are based on the most current performance data available. Each strategy's historical daily profit and loss values are refreshed automatically, so you always have access to up-to-date risk analysis."
+    },
+    {
+      question: "Can I add my own strategy or update the data?",
+      answer: "The strategy data is maintained by RiskLo's development team and updated automatically. If you'd like to request a new strategy to be added or have questions about the available strategies, please contact support. The daily updates ensure all strategies reflect the latest trading performance."
+    },
+    {
+      question: "What if a strategy I want to analyze isn't in the list?",
+      answer: "If you don't see a specific strategy in the dropdown, it may not be available yet. Strategy data is added and maintained by RiskLo's team. You can contact support to request that a strategy be added. In the meantime, you can use similar strategies that are available to get a sense of risk levels."
     },
     {
       question: "Is RiskLo affiliated with Vector Algorithmics or Apex Trader Funding?",

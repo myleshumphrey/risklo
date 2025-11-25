@@ -40,9 +40,12 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
             </div>
           )}
           <p className="blow-account-message">{metrics.blowAccountMessage}</p>
-          {metrics.blowAccountProbability !== null && metrics.blowAccountProbability > 0 && (
+          {metrics.blowAccountProbability !== null && (
             <div className="blow-account-probability">
-              Probability of exceeding max drawdown: <strong>{metrics.blowAccountProbability}%</strong>
+              Probability of end-of-day losses exceeding max drawdown: <strong>{metrics.blowAccountProbability.toFixed(1)}%</strong>
+              <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'rgba(245, 158, 11, 0.15)', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.3)', fontSize: '0.9em' }}>
+                <strong>⚠️ Important:</strong> Trailing drawdown is based on <strong>intraday maximum adverse excursion (MAE)</strong>, not end-of-day P&L. A trade could close positive but still blow the account if it exceeded the drawdown limit during the day. This analysis uses end-of-day data, so <strong>actual risk may be higher</strong> than shown.
+              </div>
             </div>
           )}
         </div>
@@ -277,21 +280,33 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
           </div>
           
           <div className="apex-mae-simplified-content">
-            <div className="apex-mae-key-metric">
-              <div className="apex-mae-metric-label">Highest Profit Day</div>
-              <div className="apex-mae-metric-value" style={{ color: '#10b981' }}>
-                ${metrics.windfallRule.maxProfitDay.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {metrics.windfallRule.maxProfitAllowed ? (
+              <div className="apex-mae-key-metric">
+                <div className="apex-mae-metric-label">Maximum Profit Allowed (Windfall Limit)</div>
+                <div className="apex-mae-metric-value" style={{ color: metrics.windfallRule.violatesWindfall ? '#ef4444' : '#10b981' }}>
+                  ${parseFloat(metrics.windfallRule.maxProfitAllowed).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+                <div className="apex-mae-metric-subtitle">
+                  30% of ${parseFloat(metrics.windfallRule.profitBalanceForWindfall).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
               </div>
-              <div className="apex-mae-metric-subtitle">
-                Maximum single-day profit from historical data
+            ) : (
+              <div className="apex-mae-key-metric">
+                <div className="apex-mae-metric-label">Highest Profit Day</div>
+                <div className="apex-mae-metric-value" style={{ color: '#10b981' }}>
+                  ${metrics.windfallRule.maxProfitDay.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+                <div className="apex-mae-metric-subtitle">
+                  Maximum single-day profit from historical data
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="apex-mae-comparison">
               <div className="apex-mae-comparison-item">
-                <span className="comparison-label">Minimum Total Profit Required:</span>
-                <span className="comparison-value safe">
-                  ${parseFloat(metrics.windfallRule.minTotalProfitRequired).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <span className="comparison-label">Your Highest Profit Day:</span>
+                <span className={`comparison-value ${metrics.windfallRule.violatesWindfall ? 'exceeds' : 'safe'}`}>
+                  ${metrics.windfallRule.maxProfitDay.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
               
