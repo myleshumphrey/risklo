@@ -50,12 +50,17 @@
 }
 
 @media (max-width: 768px) {
+  .page-header-simple {
+    padding: 1rem 0;
+  }
+  
   .page-header-title {
-    font-size: 2rem;
+    font-size: 1.5rem;
   }
   
   .page-header-simple-content {
     padding: 0 1rem;
+    padding-right: 4rem; /* Make room for hamburger menu on mobile */
   }
 }
 
