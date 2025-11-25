@@ -295,12 +295,22 @@ function calculateRiskMetrics(data, accountSize, contracts, maxDrawdown, contrac
   if (apexMae) {
     const exceedsMae = worstLossForSize > apexMae.maxMaePerTrade;
     const maeBuffer = apexMae.maxMaePerTrade - worstLossForSize;
+    
+    // Calculate probability of exceeding MAE limit based on historical data
+    // Count how many trading days had losses that exceeded the MAE limit
+    const scaledLosses = allLosses.map(loss => loss * numContracts);
+    const maeBreaches = scaledLosses.filter(loss => loss > apexMae.maxMaePerTrade).length;
+    const maeBreachProbability = dailyValues.length > 0 ? (maeBreaches / dailyValues.length) * 100 : 0;
+    
     apexMaeComparison = {
       ...apexMae,
       exceedsMae,
       maeBuffer: maeBuffer.toFixed(2),
       worstLossForSize,
       maeStatus: exceedsMae ? 'EXCEEDS' : 'SAFE',
+      maeBreachProbability: parseFloat(maeBreachProbability.toFixed(2)),
+      maeBreaches,
+      totalTradingDays: dailyValues.length,
       maeMessage: exceedsMae
         ? `⚠️ Historical worst loss ($${worstLossForSize.toFixed(2)}) exceeds Apex MAE limit ($${apexMae.maxMaePerTrade.toFixed(2)}) by $${Math.abs(maeBuffer).toFixed(2)}`
         : `✅ Historical worst loss ($${worstLossForSize.toFixed(2)}) is within Apex MAE limit ($${apexMae.maxMaePerTrade.toFixed(2)}). Buffer: $${maeBuffer.toFixed(2)}`
@@ -312,12 +322,12 @@ function calculateRiskMetrics(data, accountSize, contracts, maxDrawdown, contrac
         blowAccountStatus = 'NO GO';
         blowAccountColor = '#ef4444'; // red
         blowAccountMessage = `⚠️ HIGH RISK: Historical worst loss ($${worstLossForSize.toFixed(2)}) exceeds Apex MAE limit ($${apexMae.maxMaePerTrade.toFixed(2)}) by $${Math.abs(maeBuffer).toFixed(2)}. Account blowout risk is HIGH.`;
-        blowAccountProbability = 100;
+        blowAccountProbability = Math.max(100, maeBreachProbability); // At least 100% if worst loss exceeds
       } else {
         blowAccountStatus = 'GO';
         blowAccountColor = '#10b981'; // green
         blowAccountMessage = `✅ SAFE: Historical worst loss ($${worstLossForSize.toFixed(2)}) is within Apex MAE limit ($${apexMae.maxMaePerTrade.toFixed(2)}). Buffer: $${maeBuffer.toFixed(2)}.`;
-        blowAccountProbability = 0;
+        blowAccountProbability = maeBreachProbability;
       }
     }
   }
@@ -514,11 +524,12 @@ app.post('/api/analyze', async (req, res) => {
 
     const startOfDayProfit = req.body.startOfDayProfit ? parseFloat(req.body.startOfDayProfit) : null;
     const safetyNet = req.body.safetyNet ? parseFloat(req.body.safetyNet) : null;
+    const profitSinceLastPayout = req.body.profitSinceLastPayout ? parseFloat(req.body.profitSinceLastPayout) : null;
     
     const data = await getSheetData(sheetName);
     
     // If metrics has an error, include debug info
-    const metrics = calculateRiskMetrics(data, parseFloat(accountSize), parseFloat(contracts), maxDrawdown, contractType, startOfDayProfit, safetyNet);
+    const metrics = calculateRiskMetrics(data, parseFloat(accountSize), parseFloat(contracts), maxDrawdown, contractType, startOfDayProfit, safetyNet, profitSinceLastPayout);
     
     if (metrics.error) {
       // Include debug info to help troubleshoot
