@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './InputForm.css';
 import { ACCOUNT_SIZE_PRESETS, DEFAULT_ACCOUNT_SIZE, DEFAULT_THRESHOLD, getThresholdForAccountSize } from '../utils/accountSizes';
+import { sortStrategies } from '../utils/strategySort';
 
 function InputForm({ onSubmit, loading, sheetNames, loadingSheets, error, riskMode, onNavigate }) {
   const [formData, setFormData] = useState({
@@ -105,7 +106,7 @@ function InputForm({ onSubmit, loading, sheetNames, loadingSheets, error, riskMo
               disabled={loadingSheets}
             >
               <option value="">{loadingSheets ? 'Loading strategies...' : sheetNames.length === 0 ? 'No strategies found' : 'Select a strategy'}</option>
-              {sheetNames.map((name) => (
+              {sortStrategies(sheetNames).map((name) => (
                 <option key={name} value={name}>
                   {name}
                 </option>
