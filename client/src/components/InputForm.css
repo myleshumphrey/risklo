@@ -118,6 +118,22 @@
   cursor: not-allowed;
 }
 
+.form-select option {
+  background: #1a1f3a;
+  color: #ffffff;
+  padding: 0.5rem;
+}
+
+.form-select option:checked {
+  background: #667eea;
+  color: #ffffff;
+}
+
+.form-select option:hover {
+  background: #667eea;
+  color: #ffffff;
+}
+
 .form-hint {
   color: rgba(255, 255, 255, 0.5);
   font-size: 0.75rem;
