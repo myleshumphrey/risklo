@@ -91,8 +91,9 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
     setLoading(true);
     
     try {
-      // Validate all rows based on mode
-      const validRows = rows.filter(row => {
+      // Validate all rows based on mode, preserving original row index
+      const rowsWithIndex = rows.map((row, originalIndex) => ({ ...row, originalIndex: originalIndex + 1 }));
+      const validRows = rowsWithIndex.filter(row => {
         if (riskMode === 'risk') {
           return row.strategy && row.accountSize && row.contracts && row.maxDrawdown;
         } else {
@@ -127,7 +128,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
       const results = await Promise.all(analysisPromises);
       setResults(results.map((result, index) => ({
         ...validRows[index],
-        accountNumber: index + 1,
+        accountNumber: validRows[index].originalIndex, // Use original table row number
         metrics: result.metrics
       })));
     } catch (err) {
@@ -399,20 +400,50 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
                     <span>${result.metrics?.highestLoss?.toFixed(2) || 'N/A'}</span>
                   </div>
                   {riskMode === 'risk' && (
-                    <div className="result-metric">
-                      <span>Risk Score:</span>
-                      <span>{result.metrics?.riskScore || 'N/A'}/100</span>
-                    </div>
+                    <>
+                      <div className="result-metric">
+                        <span>Risk Score:</span>
+                        <span>{result.metrics?.riskScore || 'N/A'}/100</span>
+                      </div>
+                      {result.metrics?.blowAccountProbability !== null && result.metrics?.blowAccountProbability !== undefined && (
+                        <div className="result-metric">
+                          <span>Exceed Probability:</span>
+                          <span style={{ 
+                            color: result.metrics.blowAccountProbability > 0 
+                              ? (result.metrics.blowAccountStatus === 'NO GO' ? '#ef4444' : '#f59e0b')
+                              : '#10b981',
+                            fontWeight: '600'
+                          }}>
+                            {result.metrics.blowAccountProbability.toFixed(1)}%
+                          </span>
+                        </div>
+                      )}
+                    </>
                   )}
                   {riskMode === 'apexMae' && result.metrics?.apexMaeComparison && (
-                    <div className="result-metric">
-                      <span>Apex MAE Limit:</span>
-                      <span style={{ 
-                        color: result.metrics.apexMaeComparison.exceedsMae ? '#ef4444' : '#10b981' 
-                      }}>
-                        ${result.metrics.apexMaeComparison.maxMaePerTrade?.toFixed(2) || 'N/A'}
-                      </span>
-                    </div>
+                    <>
+                      <div className="result-metric">
+                        <span>Apex MAE Limit:</span>
+                        <span style={{ 
+                          color: result.metrics.apexMaeComparison.exceedsMae ? '#ef4444' : '#10b981' 
+                        }}>
+                          ${result.metrics.apexMaeComparison.maxMaePerTrade?.toFixed(2) || 'N/A'}
+                        </span>
+                      </div>
+                      {result.metrics.apexMaeComparison.maeBreachProbability !== undefined && (
+                        <div className="result-metric">
+                          <span>Exceed Probability:</span>
+                          <span style={{ 
+                            color: result.metrics.apexMaeComparison.maeBreachProbability > 0 
+                              ? (result.metrics.apexMaeComparison.exceedsMae ? '#ef4444' : '#f59e0b')
+                              : '#10b981',
+                            fontWeight: '600'
+                          }}>
+                            {result.metrics.apexMaeComparison.maeBreachProbability.toFixed(1)}%
+                          </span>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
                 <div className="result-click-hint">Click for details →</div>
