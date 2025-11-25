@@ -20,7 +20,6 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 2rem;
-  padding-right: 5rem; /* Make room for hamburger menu */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -60,7 +59,9 @@
   
   .page-header-simple-content {
     padding: 0 1rem;
-    padding-right: 4rem; /* Make room for hamburger menu on mobile */
+    padding-right: 1rem; /* Remove extra padding - bar extends full width */
+    justify-content: center; /* Center the title */
+    width: 100%;
   }
 }
 
