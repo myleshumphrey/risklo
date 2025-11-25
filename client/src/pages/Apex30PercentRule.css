@@ -1,7 +1,8 @@
 .apex-30-percent-page {
   min-height: calc(100vh - 200px);
   padding: 2rem 1rem;
-  padding-top: 2rem; /* Reduced since header is now sticky */
+  margin-top: 0;
+  padding-top: calc(2rem + 4rem); /* Account for fixed header height */
 }
 
 .apex-30-percent-container {

@@ -1,6 +1,8 @@
 .about-page {
   min-height: 100vh;
   padding: 2rem 0 4rem;
+  margin-top: 0;
+  padding-top: calc(2rem + 4rem); /* Account for fixed header height (2rem padding top + 2rem padding bottom + content) */
 }
 
 .about-container {
