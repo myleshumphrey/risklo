@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
 import './HamburgerMenu.css';
 
-function HamburgerMenu({ currentPage, onNavigate }) {
+function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro }) {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleNavigate = (page) => {
     onNavigate(page);
+    setIsOpen(false);
+  };
+
+  const handleUpgrade = () => {
+    if (onUpgrade) {
+      onUpgrade();
+    }
     setIsOpen(false);
   };
 
@@ -28,6 +35,15 @@ function HamburgerMenu({ currentPage, onNavigate }) {
           <div className="menu-header">
             <h2 className="menu-title">RiskLo</h2>
           </div>
+          
+          {!isPro && onUpgrade && (
+            <div className="menu-upgrade-section">
+              <button className="menu-upgrade-btn" onClick={handleUpgrade}>
+                <span className="menu-icon">⭐</span>
+                <span>Upgrade to RiskLo Pro</span>
+              </button>
+            </div>
+          )}
           
           <ul className="menu-items">
             <li>

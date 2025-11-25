@@ -125,6 +125,7 @@ function App() {
               isPro={isPro}
               sheetNames={sheetNames}
               riskMode={riskMode}
+              onUpgrade={() => setShowUpgradeModal(true)}
               onPopulateRows={(setRowsFn) => {
                 // Store the setRows function so CsvUpload can use it
                 window.bulkCalculatorSetRows = setRowsFn;
@@ -136,6 +137,7 @@ function App() {
               sheetNames={sheetNames}
               riskMode={riskMode}
               onNavigate={setCurrentPage}
+              onUpgrade={() => setShowUpgradeModal(true)}
               onPopulateBulkRows={(rows) => {
                 // Populate bulk calculator rows
                 if (window.bulkCalculatorSetRows) {
@@ -150,7 +152,12 @@ function App() {
 
   return (
     <div className="App">
-      <HamburgerMenu currentPage={currentPage} onNavigate={setCurrentPage} />
+      <HamburgerMenu 
+        currentPage={currentPage} 
+        onNavigate={setCurrentPage}
+        onUpgrade={() => setShowUpgradeModal(true)}
+        isPro={isPro}
+      />
       
       {currentPage === 'home' && (
         <header className="app-header">
@@ -176,15 +183,8 @@ function App() {
               </div>
             </div>
             <div className="header-right">
-              {isPro ? (
+              {isPro && (
                 <span className="pro-badge">RiskLo Pro</span>
-              ) : (
-                <button 
-                  className="upgrade-header-btn"
-                  onClick={() => setShowUpgradeModal(true)}
-                >
-                  Upgrade to RiskLo Pro
-                </button>
               )}
             </div>
           </div>
