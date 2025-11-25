@@ -50,19 +50,25 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
 
       <div className="dashboard-header">
         <div>
-          <h2 className="dashboard-title">Risk Assessment</h2>
-          <div className="risk-score-display">
-            <span className="risk-score-label">Risk Score:</span>
-            <span className="risk-score-value" style={{ color: metrics.riskColor }}>
-              {metrics.riskScore}/100
-            </span>
-          </div>
+          <h2 className="dashboard-title">
+            {riskMode === 'risk' ? 'Risk Results' : '30% Drawdown Results'}
+          </h2>
+          {riskMode === 'risk' && (
+            <div className="risk-score-display">
+              <span className="risk-score-label">Risk Score:</span>
+              <span className="risk-score-value" style={{ color: metrics.riskColor }}>
+                {metrics.riskScore}/100
+              </span>
+            </div>
+          )}
         </div>
-        <RiskIndicator 
-          level={metrics.riskLevel} 
-          color={metrics.riskColor}
-          message={metrics.riskMessage}
-        />
+        {riskMode === 'risk' && (
+          <RiskIndicator 
+            level={metrics.riskLevel} 
+            color={metrics.riskColor}
+            message={metrics.riskMessage}
+          />
+        )}
       </div>
 
       {riskMode === 'apexMae' ? (

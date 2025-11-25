@@ -5,6 +5,15 @@ import { API_ENDPOINTS } from '../config';
 import { ACCOUNT_SIZE_PRESETS, DEFAULT_ACCOUNT_SIZE, DEFAULT_THRESHOLD, getThresholdForAccountSize } from '../utils/accountSizes';
 
 function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopulateRows, onUpgrade }) {
+  const [results, setResults] = useState(null);
+  const [selectedResult, setSelectedResult] = useState(null);
+
+  // Clear results when switching modes
+  useEffect(() => {
+    setResults(null);
+    setSelectedResult(null);
+  }, [riskMode]);
+
   const [rows, setRows] = useState([
     { 
       id: 1, 
@@ -27,8 +36,6 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
     }
   }, [onPopulateRows]);
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState(null);
-  const [selectedResult, setSelectedResult] = useState(null);
 
   const addRow = () => {
     if (rows.length >= 20) return;
@@ -352,7 +359,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
 
       {results && (
         <div className="bulk-results">
-          <h3>Results</h3>
+          <h3>{riskMode === 'risk' ? 'Risk Results' : '30% Drawdown Results'}</h3>
           <div className="results-grid">
             {results.map((result, index) => (
               <div 
@@ -374,9 +381,16 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
                   </div>
                   <span 
                     className="result-status"
-                    style={{ color: result.metrics?.blowAccountColor || '#6b7280' }}
+                    style={{ 
+                      color: riskMode === 'apexMae' 
+                        ? (result.metrics?.apexMaeComparison?.exceedsMae ? '#ef4444' : '#10b981')
+                        : (result.metrics?.blowAccountColor || '#6b7280')
+                    }}
                   >
-                    {result.metrics?.blowAccountStatus || 'N/A'}
+                    {riskMode === 'apexMae' 
+                      ? (result.metrics?.apexMaeComparison?.exceedsMae ? 'NO GO' : 'GO')
+                      : (result.metrics?.blowAccountStatus || 'N/A')
+                    }
                   </span>
                 </div>
                 <div className="result-metrics">
@@ -384,11 +398,13 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
                     <span>Highest Loss:</span>
                     <span>${result.metrics?.highestLoss?.toFixed(2) || 'N/A'}</span>
                   </div>
-                  <div className="result-metric">
-                    <span>Risk Score:</span>
-                    <span>{result.metrics?.riskScore || 'N/A'}/100</span>
-                  </div>
-                  {result.metrics?.apexMaeComparison && (
+                  {riskMode === 'risk' && (
+                    <div className="result-metric">
+                      <span>Risk Score:</span>
+                      <span>{result.metrics?.riskScore || 'N/A'}/100</span>
+                    </div>
+                  )}
+                  {riskMode === 'apexMae' && result.metrics?.apexMaeComparison && (
                     <div className="result-metric">
                       <span>Apex MAE Limit:</span>
                       <span style={{ 
@@ -428,7 +444,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
               </h3>
               <button className="close-detail-btn" onClick={() => setSelectedResult(null)}>×</button>
             </div>
-            <Dashboard metrics={selectedResult.metrics} />
+            <Dashboard metrics={selectedResult.metrics} riskMode={riskMode} />
           </div>
         </div>
       )}

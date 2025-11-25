@@ -305,6 +305,21 @@ function calculateRiskMetrics(data, accountSize, contracts, maxDrawdown, contrac
         ? `⚠️ Historical worst loss ($${worstLossForSize.toFixed(2)}) exceeds Apex MAE limit ($${apexMae.maxMaePerTrade.toFixed(2)}) by $${Math.abs(maeBuffer).toFixed(2)}`
         : `✅ Historical worst loss ($${worstLossForSize.toFixed(2)}) is within Apex MAE limit ($${apexMae.maxMaePerTrade.toFixed(2)}). Buffer: $${maeBuffer.toFixed(2)}`
     };
+    
+    // Set blowAccountStatus for 30% Drawdown mode based on Apex MAE
+    if (maxDrawdown === null && apexMae) {
+      if (exceedsMae) {
+        blowAccountStatus = 'NO GO';
+        blowAccountColor = '#ef4444'; // red
+        blowAccountMessage = `⚠️ HIGH RISK: Historical worst loss ($${worstLossForSize.toFixed(2)}) exceeds Apex MAE limit ($${apexMae.maxMaePerTrade.toFixed(2)}) by $${Math.abs(maeBuffer).toFixed(2)}. Account blowout risk is HIGH.`;
+        blowAccountProbability = 100;
+      } else {
+        blowAccountStatus = 'GO';
+        blowAccountColor = '#10b981'; // green
+        blowAccountMessage = `✅ SAFE: Historical worst loss ($${worstLossForSize.toFixed(2)}) is within Apex MAE limit ($${apexMae.maxMaePerTrade.toFixed(2)}). Buffer: $${maeBuffer.toFixed(2)}.`;
+        blowAccountProbability = 0;
+      }
+    }
   }
 
   // Calculate Apex Windfall Rule (30% Consistency Rule)
