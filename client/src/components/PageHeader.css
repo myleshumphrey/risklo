@@ -6,6 +6,12 @@
   position: sticky;
   top: 0;
   z-index: 100;
+  width: 100%;
+  margin: 0;
+  padding-left: 0;
+  padding-right: 0;
+  box-sizing: border-box;
+  display: block;
 }
 
 .page-header-simple-content {
@@ -15,6 +21,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  width: 100%;
 }
 
 .page-header-title-btn {

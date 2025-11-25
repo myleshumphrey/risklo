@@ -18,7 +18,7 @@ function HowWeCalculate({ onNavigate }) {
           <h2 className="section-title">Account Size Presets & Trailing Thresholds</h2>
           <div className="section-content">
             <p>
-              For the 30% Drawdown calculator, we use preset account sizes with their corresponding trailing thresholds:
+              RiskLo uses preset account sizes with their corresponding trailing thresholds. These presets are available in both Risk mode and 30% Drawdown mode:
             </p>
             <div className="account-table">
               <table>
@@ -154,38 +154,60 @@ function HowWeCalculate({ onNavigate }) {
             </ul>
 
             <h3>Calculation Method</h3>
+            <p>RiskLo calculates two key values:</p>
+            
+            <h4>1. Maximum Profit Allowed (Windfall Limit)</h4>
             <div className="formula-box">
               <div className="formula">
-                <strong>Highest Profit Day ÷ 0.3 = Minimum Total Profit Required</strong>
+                <strong>Maximum Profit Allowed = Profit Balance × 30%</strong>
               </div>
             </div>
+            <p className="note">
+              This is the maximum amount you can profit in a single day without violating the rule. If your profit balance is $2,500, 
+              your maximum profit allowed per day is $750 (30% of $2,500).
+            </p>
+
+            <h4>2. Minimum Total Profit Required</h4>
+            <div className="formula-box">
+              <div className="formula">
+                <strong>Minimum Total Profit Required = Highest Profit Day ÷ 0.3</strong>
+              </div>
+            </div>
+            <p>
+              This calculates the minimum total profit you need to have accumulated to request a payout, based on your highest single-day profit.
+            </p>
 
             <div className="example-box">
               <h3>Example:</h3>
               <ul>
                 <li>Account Size: $50,000</li>
-                <li>Highest Profit Day: $1,500</li>
-                <li>Minimum Total Profit Required: $1,500 ÷ 0.3 = <strong>$5,000</strong></li>
+                <li>Current Balance: $52,500</li>
+                <li>Start-of-Day Profit Balance: $2,500</li>
+                <li>Maximum Profit Allowed: $2,500 × 0.30 = <strong>$750</strong></li>
+                <li>Highest Profit Day (from historical data): $249.50</li>
+                <li>Minimum Total Profit Required: $249.50 ÷ 0.3 = <strong>$831.67</strong></li>
               </ul>
               <p>
-                In this situation, to request a payout, you would need to have at least $5,000 in total profit 
-                (current balance minus starting balance). If your current total profit is below this minimum, you'll need 
-                to continue trading until you meet this requirement before requesting a payout.
+                In this example, your highest profit day ($249.50) is within the maximum allowed ($750), so it's safe. 
+                However, to request a payout, you would need at least $831.67 in total profit. If your current total profit is below this minimum, 
+                you'll need to continue trading until you meet this requirement before requesting a payout.
               </p>
             </div>
 
             <h3>How RiskLo Checks This:</h3>
             <p>
-              RiskLo analyzes your historical trading data to find the highest single-day profit. It then calculates:
+              RiskLo analyzes your historical trading data to find the highest single-day profit. It then:
             </p>
             <ul>
-              <li>The minimum total profit you would need to have accumulated to avoid violating the rule</li>
-              <li>If you have a profit balance entered, it checks whether your highest profit day exceeds 30% of that balance</li>
+              <li>Calculates the maximum profit allowed (30% of your profit balance)</li>
+              <li>Compares your highest profit day against this limit</li>
+              <li>Calculates the minimum total profit required based on your highest profit day</li>
               <li>Shows a warning if the strategy has historically produced profits that would violate the windfall rule</li>
             </ul>
             <p className="note">
               <strong>Note:</strong> The windfall rule is separate from the MAE (30% Negative P&L) rule. The MAE rule limits losses, 
-              while the Windfall rule limits profits to ensure consistency.
+              while the Windfall rule limits profits to ensure consistency. RiskLo uses your "Profit Since Last Payout" if provided, 
+              otherwise it uses your start-of-day profit balance for calculations.
             </p>
           </div>
         </section>
@@ -221,25 +243,46 @@ function HowWeCalculate({ onNavigate }) {
           <h2 className="section-title">Contract Scaling</h2>
           <div className="section-content">
             <p>
-              All risk calculations account for your number of contracts and contract type:
+              All risk calculations account for your number of contracts and contract type. The process works in two steps:
+            </p>
+            
+            <h3>Step 1: Apply Contract Type Multiplier</h3>
+            <p>
+              First, the raw value from the Google Sheet is adjusted based on contract type:
             </p>
             <div className="formula-box">
               <div className="formula">
-                <strong>Scaled Loss = Per-Contract Loss × Number of Contracts × Contract Multiplier</strong>
+                <strong>Adjusted Value = Raw Value × Contract Multiplier</strong>
               </div>
             </div>
             <p>Where:</p>
             <ul>
-              <li><strong>Contract Multiplier:</strong> 1.0 for NQ, 0.1 for MNQ (since MNQ is 1/10th the value)</li>
+              <li><strong>Contract Multiplier:</strong> 1.0 for NQ, 0.1 for MNQ (since MNQ is 1/10th the value of NQ)</li>
             </ul>
+            <p className="note">
+              If your Google Sheet data is for NQ contracts but you're trading MNQ, the values are automatically divided by 10.
+            </p>
+
+            <h3>Step 2: Scale by Number of Contracts</h3>
+            <div className="formula-box">
+              <div className="formula">
+                <strong>Final Scaled Value = Adjusted Value × Number of Contracts</strong>
+              </div>
+            </div>
+
             <div className="example-box">
               <h3>Example:</h3>
               <ul>
-                <li>Per-Contract Loss: $643.50</li>
-                <li>Number of Contracts: 3</li>
+                <li>Raw Value from Sheet (NQ): $643.50</li>
                 <li>Contract Type: MNQ (multiplier = 0.1)</li>
-                <li>Scaled Loss = $643.50 × 3 × 0.1 = <strong>$193.05</strong></li>
+                <li>Adjusted Value: $643.50 × 0.1 = $64.35</li>
+                <li>Number of Contracts: 3</li>
+                <li>Final Scaled Loss: $64.35 × 3 = <strong>$193.05</strong></li>
               </ul>
+              <p>
+                This ensures that all risk metrics (highest loss, average loss, max profit, etc.) are calculated 
+                for your actual position size, not just per-contract values.
+              </p>
             </div>
           </div>
         </section>
@@ -260,6 +303,113 @@ function HowWeCalculate({ onNavigate }) {
               If your worst historical loss exceeds your limit, the strategy has historically lost more than your account can handle, 
               indicating a high risk of account blowout.
             </p>
+            
+            <h3>Important Limitation: Trailing Drawdown vs. End-of-Day P&L</h3>
+            <div className="warning-box" style={{
+              padding: '1rem',
+              background: 'rgba(245, 158, 11, 0.15)',
+              borderLeft: '4px solid #f59e0b',
+              borderRadius: '8px',
+              marginTop: '1rem'
+            }}>
+              <p>
+                <strong>⚠️ Critical Note:</strong> Trailing drawdown is based on <strong>intraday maximum adverse excursion (MAE)</strong>, 
+                not end-of-day P&L. This means:
+              </p>
+              <ul>
+                <li>A trade could close positive but still blow the account if it exceeded the drawdown limit during the day</li>
+                <li>For example: If your max drawdown is $300, but a trade dips to -$400 intraday before recovering to +$200, 
+                the account would still be liquidated</li>
+                <li>RiskLo uses end-of-day P&L data from your Google Sheet, so <strong>actual risk may be higher</strong> than shown</li>
+              </ul>
+              <p>
+                This analysis provides a conservative estimate based on end-of-day data. Always account for intraday volatility 
+                when assessing risk.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="calculation-section">
+          <h2 className="section-title">Probability of Exceeding Limits</h2>
+          <div className="section-content">
+            <p>
+              RiskLo calculates the probability of exceeding your limits based on historical trading data:
+            </p>
+            
+            <h3>For Risk Mode (Max Drawdown):</h3>
+            <div className="formula-box">
+              <div className="formula">
+                <strong>Probability = (Number of Days That Exceeded Max Drawdown ÷ Total Trading Days) × 100%</strong>
+              </div>
+            </div>
+            <p>
+              This shows what percentage of historical trading days had losses that exceeded your max drawdown limit. 
+              The calculation uses end-of-day P&L values, so actual intraday breach probability may be higher.
+            </p>
+
+            <h3>For 30% Drawdown Mode (MAE Limit):</h3>
+            <div className="formula-box">
+              <div className="formula">
+                <strong>Probability = (Number of Days That Exceeded MAE Limit ÷ Total Trading Days) × 100%</strong>
+              </div>
+            </div>
+            <p>
+              This shows what percentage of historical trading days had losses that exceeded your Apex MAE limit. 
+              Again, this is based on end-of-day P&L, so actual intraday breach probability may be higher.
+            </p>
+
+            <div className="example-box">
+              <h3>Example:</h3>
+              <ul>
+                <li>Total Trading Days: 50</li>
+                <li>Days That Exceeded Limit: 3</li>
+                <li>Probability: (3 ÷ 50) × 100% = <strong>6.0%</strong></li>
+              </ul>
+              <p>
+                This means 6% of historical trading days exceeded the limit. However, if the worst loss already exceeds the limit, 
+                the probability reflects how often this happened historically, not a guaranteed 100% occurrence.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="calculation-section">
+          <h2 className="section-title">Profit Metrics</h2>
+          <div className="section-content">
+            <p>
+              RiskLo calculates profit metrics to give you a complete picture of your strategy's performance:
+            </p>
+            
+            <h3>Maximum Profit</h3>
+            <div className="formula-box">
+              <div className="formula">
+                <strong>Maximum Profit = Highest Single-Day Profit × Number of Contracts × Contract Multiplier</strong>
+              </div>
+            </div>
+            <p>
+              This is the highest profit achieved in a single trading day, scaled by your contract size.
+            </p>
+
+            <h3>Average Profit</h3>
+            <div className="formula-box">
+              <div className="formula">
+                <strong>Average Profit = (Sum of All Profits ÷ Number of Profitable Days) × Number of Contracts × Contract Multiplier</strong>
+              </div>
+            </div>
+            <p>
+              This shows the average profit on winning days, scaled by your contract size.
+            </p>
+
+            <div className="example-box">
+              <h3>Example:</h3>
+              <ul>
+                <li>Highest Single-Day Profit (per contract): $1,198.00</li>
+                <li>Number of Contracts: 3</li>
+                <li>Contract Type: MNQ (multiplier = 0.1)</li>
+                <li>Maximum Profit: $1,198.00 × 3 × 0.1 = <strong>$359.40</strong></li>
+              </ul>
+            </div>
           </div>
         </section>
 
