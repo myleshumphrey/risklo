@@ -221,11 +221,39 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
                 <div className="apex-mae-warning">
                   <strong>⚠️ WARNING:</strong> Your worst historical loss exceeds the MAE limit by ${Math.abs(parseFloat(metrics.apexMaeComparison.maeBuffer)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. 
                   This strategy has historically violated the 30% rule.
+                  {metrics.apexMaeComparison.maeBreachProbability !== undefined && (
+                    <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'rgba(239, 68, 68, 0.15)', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                      <strong>Probability of exceeding MAE limit:</strong> <span style={{ color: '#ef4444', fontWeight: 'bold', fontSize: '1.1em' }}>{metrics.apexMaeComparison.maeBreachProbability}%</span>
+                      {metrics.apexMaeComparison.maeBreaches > 0 && (
+                        <div style={{ marginTop: '0.5rem', fontSize: '0.9em', opacity: 0.9 }}>
+                          ({metrics.apexMaeComparison.maeBreaches} of {metrics.apexMaeComparison.totalTradingDays} trading days exceeded the limit)
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="apex-mae-safe">
                   <strong>✅ SAFE:</strong> Your worst historical loss is within the MAE limit. 
                   You have a ${metrics.apexMaeComparison.maeBuffer} buffer before hitting the limit.
+                  {metrics.apexMaeComparison.maeBreachProbability !== undefined && metrics.apexMaeComparison.maeBreachProbability > 0 && (
+                    <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'rgba(245, 158, 11, 0.15)', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+                      <strong>Probability of exceeding MAE limit:</strong> <span style={{ color: '#f59e0b', fontWeight: 'bold', fontSize: '1.1em' }}>{metrics.apexMaeComparison.maeBreachProbability}%</span>
+                      {metrics.apexMaeComparison.maeBreaches > 0 && (
+                        <div style={{ marginTop: '0.5rem', fontSize: '0.9em', opacity: 0.9 }}>
+                          ({metrics.apexMaeComparison.maeBreaches} of {metrics.apexMaeComparison.totalTradingDays} trading days exceeded the limit)
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {metrics.apexMaeComparison.maeBreachProbability !== undefined && metrics.apexMaeComparison.maeBreachProbability === 0 && (
+                    <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'rgba(16, 185, 129, 0.15)', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                      <strong>Probability of exceeding MAE limit:</strong> <span style={{ color: '#10b981', fontWeight: 'bold', fontSize: '1.1em' }}>0%</span>
+                      <div style={{ marginTop: '0.5rem', fontSize: '0.9em', opacity: 0.9 }}>
+                        (No historical trading days exceeded the MAE limit)
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
