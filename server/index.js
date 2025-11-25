@@ -233,8 +233,8 @@ function calculateRiskMetrics(data, accountSize, contracts, maxDrawdown, contrac
       blowAccountStatus = 'NO GO';
       blowAccountColor = '#ef4444'; // red
       const excess = Math.abs(bufferToMaxDrawdown);
-      blowAccountMessage = `⚠️ HIGH RISK: With your current contract size (${numContracts}), the worst historical loss ($${scaledWorstLoss.toFixed(2)}) exceeds your max drawdown by $${excess.toFixed(2)}. Account blowout risk is HIGH.`;
-      blowAccountProbability = 100;
+      blowAccountMessage = `⚠️ HIGH RISK: With your current contract size (${numContracts}), the worst historical loss ($${scaledWorstLoss.toFixed(2)}) exceeds your max drawdown by $${excess.toFixed(2)}. ${breaches > 0 ? `Historical data shows ${breaches} day(s) (${breachProbability.toFixed(1)}%) exceeded your max drawdown. ` : ''}Account blowout risk is HIGH.`;
+      blowAccountProbability = breachProbability; // Use actual breach probability, not 100%
     } else if (breachProbability > 5) {
       blowAccountStatus = 'NO GO';
       blowAccountColor = '#ef4444'; // red
@@ -321,8 +321,8 @@ function calculateRiskMetrics(data, accountSize, contracts, maxDrawdown, contrac
       if (exceedsMae) {
         blowAccountStatus = 'NO GO';
         blowAccountColor = '#ef4444'; // red
-        blowAccountMessage = `⚠️ HIGH RISK: Historical worst loss ($${worstLossForSize.toFixed(2)}) exceeds Apex MAE limit ($${apexMae.maxMaePerTrade.toFixed(2)}) by $${Math.abs(maeBuffer).toFixed(2)}. Account blowout risk is HIGH.`;
-        blowAccountProbability = Math.max(100, maeBreachProbability); // At least 100% if worst loss exceeds
+        blowAccountMessage = `⚠️ HIGH RISK: Historical worst loss ($${worstLossForSize.toFixed(2)}) exceeds Apex MAE limit ($${apexMae.maxMaePerTrade.toFixed(2)}) by $${Math.abs(maeBuffer).toFixed(2)}. ${maeBreaches > 0 ? `Historical data shows ${maeBreaches} day(s) (${maeBreachProbability.toFixed(1)}%) exceeded the MAE limit. ` : ''}Account blowout risk is HIGH.`;
+        blowAccountProbability = maeBreachProbability; // Use actual breach probability, not 100%
       } else {
         blowAccountStatus = 'GO';
         blowAccountColor = '#10b981'; // green

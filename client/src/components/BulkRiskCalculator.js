@@ -3,6 +3,7 @@ import './BulkRiskCalculator.css';
 import Dashboard from './Dashboard';
 import { API_ENDPOINTS } from '../config';
 import { ACCOUNT_SIZE_PRESETS, DEFAULT_ACCOUNT_SIZE, DEFAULT_THRESHOLD, getThresholdForAccountSize } from '../utils/accountSizes';
+import { sortStrategies } from '../utils/strategySort';
 
 function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopulateRows, onUpgrade }) {
   const [results, setResults] = useState(null);
@@ -216,7 +217,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
                       required={index === 0}
                     >
                       <option value="">Select...</option>
-                      {sheetNames.map(name => (
+                      {sortStrategies(sheetNames).map(name => (
                         <option key={name} value={name}>{name}</option>
                       ))}
                     </select>
