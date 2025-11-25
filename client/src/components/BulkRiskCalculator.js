@@ -4,7 +4,7 @@ import Dashboard from './Dashboard';
 import { API_ENDPOINTS } from '../config';
 import { ACCOUNT_SIZE_PRESETS, DEFAULT_ACCOUNT_SIZE, DEFAULT_THRESHOLD, getThresholdForAccountSize } from '../utils/accountSizes';
 
-function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopulateRows }) {
+function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopulateRows, onUpgrade }) {
   const [rows, setRows] = useState([
     { 
       id: 1, 
@@ -140,6 +140,11 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
             <h3>Bulk Risk Assessment</h3>
             <p>This feature is available in RiskLo Pro</p>
             <p className="gate-subtext">Upgrade to analyze up to 20 account + strategy combinations at once</p>
+            {onUpgrade && (
+              <button className="gate-upgrade-btn" onClick={onUpgrade}>
+                Upgrade to RiskLo Pro
+              </button>
+            )}
           </div>
         </div>
       </div>
