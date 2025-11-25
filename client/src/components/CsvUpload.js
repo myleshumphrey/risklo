@@ -13,6 +13,7 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
   const [uploading, setUploading] = useState(false);
   const [parseError, setParseError] = useState(null);
   const [parseSuccess, setParseSuccess] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleAccountsFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -141,6 +142,63 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
     });
   };
 
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = Array.from(e.dataTransfer.files).filter(file => 
+      file.type === 'text/csv' || file.name.endsWith('.csv')
+    );
+
+    if (files.length === 0) {
+      alert('Please drop CSV files only');
+      return;
+    }
+
+    // Process each dropped file
+    for (const file of files) {
+      try {
+        const csvText = await readFileAsText(file);
+        const fileType = detectCsvType(csvText);
+        
+        if (fileType === 'accounts') {
+          setAccountsFile(file);
+          setParseError(null);
+        } else if (fileType === 'strategies') {
+          setStrategiesFile(file);
+          setParseError(null);
+        } else {
+          // If we can't detect, try to assign based on filename or let user know
+          const fileName = file.name.toLowerCase();
+          if (fileName.includes('account')) {
+            setAccountsFile(file);
+          } else if (fileName.includes('strateg') || fileName.includes('strategy')) {
+            setStrategiesFile(file);
+          } else {
+            // If we can't determine, show a message
+            alert(`Could not determine file type for "${file.name}". Please use the specific upload buttons or rename your file to include "account" or "strategy" in the name.`);
+          }
+        }
+      } catch (err) {
+        console.error('Error reading dropped file:', err);
+        alert(`Error reading file "${file.name}": ${err.message}`);
+      }
+    }
+  };
+
   if (!isPro) {
     return (
       <div className="csv-upload-gated">
@@ -178,9 +236,22 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
         </div>
       </div>
 
-      <div className="csv-upload-area">
+      <div 
+        className={`csv-upload-area ${isDragging ? 'dragging' : ''}`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {isDragging && (
+          <div className="drag-overlay">
+            <div className="drag-overlay-content">
+              <div className="drag-icon">📥</div>
+              <p>Drop your CSV files here</p>
+            </div>
+          </div>
+        )}
         <div className="csv-instructions">
-          <p>Upload your NinjaTrader CSV exports. You can upload both files at once, or use auto-detect.</p>
+          <p>Upload your NinjaTrader CSV exports. You can drag and drop files here, upload both files at once, or use auto-detect.</p>
         </div>
 
         <div className="csv-upload-grid">
