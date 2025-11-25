@@ -29,6 +29,11 @@ function App() {
   // Get current metrics based on mode
   const metrics = riskMode === 'risk' ? riskMetrics : apexMaeMetrics;
 
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentPage]);
+
   useEffect(() => {
     // Fetch sheet names on component mount
     const fetchSheetNames = async () => {
