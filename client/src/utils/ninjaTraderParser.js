@@ -143,19 +143,46 @@ export function matchAccountsToStrategies(accounts, strategies, availableSheetNa
     if (!account) return; // No matching account found
 
     // Try to match strategy name to available sheet names
-    // Use fuzzy matching - check if strategy name contains sheet name or vice versa
+    // Prioritize exact matches, then longer matches
     let matchedSheetName = null;
+    let bestMatch = null;
+    let bestMatchScore = 0;
+    
+    const stratLower = strat.strategy.toLowerCase();
+    
     for (const sheetName of availableSheetNames) {
       const sheetLower = sheetName.toLowerCase();
-      const stratLower = strat.strategy.toLowerCase();
       
-      // Exact match or contains match
-      if (sheetLower === stratLower || 
-          sheetLower.includes(stratLower) || 
-          stratLower.includes(sheetLower)) {
+      // Exact match - highest priority
+      if (sheetLower === stratLower) {
         matchedSheetName = sheetName;
         break;
       }
+      
+      // Calculate match score (prefer longer, more specific matches)
+      let score = 0;
+      if (sheetLower.includes(stratLower)) {
+        // Sheet name contains strategy name (e.g., "Grass Fed Prime Beef 2.0" contains "Grass Fed Prime Beef")
+        score = stratLower.length; // Prefer longer strategy names
+      } else if (stratLower.includes(sheetLower)) {
+        // Strategy name contains sheet name (e.g., "Grass Fed Prime Beef" contains "Grass Fed Prime Beef 2.0")
+        score = sheetLower.length; // Prefer longer sheet names
+      }
+      
+      // Prefer matches where both contain each other (more specific)
+      if (sheetLower.includes(stratLower) && stratLower.includes(sheetLower)) {
+        score += 1000; // Boost for mutual inclusion
+      }
+      
+      if (score > bestMatchScore) {
+        bestMatchScore = score;
+        bestMatch = sheetName;
+      }
+    }
+    
+    // Use best match if no exact match found
+    if (!matchedSheetName && bestMatch) {
+      matchedSheetName = bestMatch;
     }
 
     // If no match found, try to use the strategy name as-is
