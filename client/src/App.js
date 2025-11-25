@@ -19,11 +19,15 @@ function App() {
   const [isPro, setIsPro] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [riskMode, setRiskMode] = useState('risk'); // 'risk' or 'apexMae'
-  const [metrics, setMetrics] = useState(null);
+  const [riskMetrics, setRiskMetrics] = useState(null); // Metrics for Risk mode
+  const [apexMaeMetrics, setApexMaeMetrics] = useState(null); // Metrics for 30% Drawdown mode
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [sheetNames, setSheetNames] = useState([]);
   const [loadingSheets, setLoadingSheets] = useState(true);
+
+  // Get current metrics based on mode
+  const metrics = riskMode === 'risk' ? riskMetrics : apexMaeMetrics;
 
   useEffect(() => {
     // Fetch sheet names on component mount
@@ -73,13 +77,29 @@ function App() {
         throw new Error(data.error || 'Failed to analyze data');
       }
 
-      setMetrics(data.metrics);
+      // Store metrics based on current mode
+      if (riskMode === 'risk') {
+        setRiskMetrics(data.metrics);
+      } else {
+        setApexMaeMetrics(data.metrics);
+      }
     } catch (err) {
       setError(err.message);
-      setMetrics(null);
+      // Clear metrics for current mode on error
+      if (riskMode === 'risk') {
+        setRiskMetrics(null);
+      } else {
+        setApexMaeMetrics(null);
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  // Clear metrics when switching modes
+  const handleModeChange = (newMode) => {
+    setRiskMode(newMode);
+    // Don't clear metrics - let user see they need to analyze for the new mode
   };
 
   const handleUpgrade = () => {
@@ -119,7 +139,23 @@ function App() {
               </div>
             )}
             
-            {metrics && <Dashboard metrics={metrics} riskMode={riskMode} onNavigate={setCurrentPage} />}
+            {metrics ? (
+              <Dashboard metrics={metrics} riskMode={riskMode} onNavigate={setCurrentPage} />
+            ) : (
+              <div className="no-results-message">
+                <div className="no-results-content">
+                  <div className="no-results-icon">📊</div>
+                  <h3 className="no-results-title">
+                    {riskMode === 'risk' ? 'Risk Results' : '30% Drawdown Results'}
+                  </h3>
+                  <p className="no-results-text">
+                    {riskMode === 'risk' 
+                      ? 'Analyze your strategy to see risk assessment results.'
+                      : 'Analyze your strategy to see 30% Drawdown rule results.'}
+                  </p>
+                </div>
+              </div>
+            )}
 
             <BulkRiskCalculator 
               isPro={isPro}
@@ -163,29 +199,32 @@ function App() {
         <header className="app-header">
           <div className="header-content">
             <div className="header-left">
-              <h1 className="app-title">RiskLo</h1>
+              <div className="title-with-badge">
+                <h1 className="app-title">RiskLo</h1>
+                <span className={`header-badge ${isPro ? 'pro-badge-header' : 'basic-badge-header'}`}>
+                  {isPro ? 'Pro' : 'Basic'}
+                </span>
+              </div>
               <p className="app-subtitle">Strategy Risk Assessment Dashboard</p>
             </div>
             <div className="header-center">
               <div className="mode-toggle-container">
                 <button
                   className={`mode-toggle-btn ${riskMode === 'risk' ? 'active' : ''}`}
-                  onClick={() => setRiskMode('risk')}
+                  onClick={() => handleModeChange('risk')}
                 >
                   Risk
                 </button>
                 <button
                   className={`mode-toggle-btn ${riskMode === 'apexMae' ? 'active' : ''}`}
-                  onClick={() => setRiskMode('apexMae')}
+                  onClick={() => handleModeChange('apexMae')}
                 >
                   30% Drawdown
                 </button>
               </div>
             </div>
             <div className="header-right">
-              {isPro && (
-                <span className="pro-badge">RiskLo Pro</span>
-              )}
+              {/* Empty - badge moved to header-left */}
             </div>
           </div>
       </header>
