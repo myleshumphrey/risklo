@@ -33,7 +33,12 @@ function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro }) {
       <div className={`hamburger-overlay ${isOpen ? 'open' : ''}`} onClick={() => setIsOpen(false)}>
         <nav className={`hamburger-menu ${isOpen ? 'open' : ''}`} onClick={(e) => e.stopPropagation()}>
           <div className="menu-header">
-            <h2 className="menu-title">RiskLo</h2>
+            <div className="menu-title-with-badge">
+              <h2 className="menu-title">RiskLo</h2>
+              <span className={`menu-header-badge ${isPro ? 'menu-pro-badge' : 'menu-basic-badge'}`}>
+                {isPro ? 'Pro' : 'Basic'}
+              </span>
+            </div>
           </div>
           
           {!isPro && onUpgrade && (
