@@ -148,11 +148,12 @@
 
 @media (max-width: 768px) {
   .apex-30-percent-page {
-    padding-top: 1.5rem;
+    padding-top: calc(1rem + 3rem); /* Account for reduced mobile header height */
+    padding: calc(1rem + 3rem) 1rem 2rem;
   }
 
   .page-title {
-    font-size: 2rem;
+    font-size: 1.75rem;
   }
 
   .rule-section {
