@@ -7,6 +7,7 @@ import BulkRiskCalculator from './components/BulkRiskCalculator';
 import CsvUpload from './components/CsvUpload';
 import Footer from './components/Footer';
 import HamburgerMenu from './components/HamburgerMenu';
+import DisclaimerModal from './components/DisclaimerModal';
 import About from './pages/About';
 import FAQ from './pages/FAQ';
 import HowWeCalculate from './pages/HowWeCalculate';
@@ -18,6 +19,7 @@ function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const [isPro, setIsPro] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showDisclaimer, setShowDisclaimer] = useState(true); // Show disclaimer on every visit
   const [riskMode, setRiskMode] = useState('risk'); // 'risk' or 'apexMae'
   const [riskMetrics, setRiskMetrics] = useState(null); // Metrics for Risk mode
   const [apexMaeMetrics, setApexMaeMetrics] = useState(null); // Metrics for 30% Drawdown mode
@@ -191,8 +193,16 @@ function App() {
     }
   };
 
+  const handleDisclaimerAccept = () => {
+    setShowDisclaimer(false);
+  };
+
   return (
     <div className="App">
+      {showDisclaimer && (
+        <DisclaimerModal onAccept={handleDisclaimerAccept} />
+      )}
+      
       <HamburgerMenu 
         currentPage={currentPage} 
         onNavigate={setCurrentPage}
