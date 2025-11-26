@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './UpgradeModal.css';
 import { API_ENDPOINTS } from '../config';
+import { IconChart } from './Icons';
 
 function UpgradeModal({ isOpen, onClose, user, isPro }) {
   const [loading, setLoading] = useState(false);
@@ -86,7 +87,7 @@ function UpgradeModal({ isOpen, onClose, user, isPro }) {
 
         <div className="modal-features">
           <div className="feature-item">
-            <span className="feature-icon">📊</span>
+            <span className="feature-icon"><IconChart size={20} /></span>
             <div>
               <h3>Bulk Risk Calculator</h3>
               <p>Analyze up to 20 account + strategy combinations at once</p>

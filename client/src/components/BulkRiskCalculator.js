@@ -4,6 +4,7 @@ import Dashboard from './Dashboard';
 import { API_ENDPOINTS } from '../config';
 import { ACCOUNT_SIZE_PRESETS, DEFAULT_ACCOUNT_SIZE, DEFAULT_THRESHOLD, getThresholdForAccountSize } from '../utils/accountSizes';
 import { sortStrategies } from '../utils/strategySort';
+import { IconLock } from './Icons';
 
 function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopulateRows, onUpgrade }) {
   const [results, setResults] = useState(null);
@@ -145,7 +146,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
       <div className="bulk-calculator-gated">
         <div className="gate-overlay">
           <div className="gate-content">
-            <div className="lock-icon">🔒</div>
+            <div className="lock-icon"><IconLock size={24} /></div>
             <h3>Bulk Risk Assessment</h3>
             <p>This feature is available in RiskLo Pro</p>
             <p className="gate-subtext">Upgrade to analyze up to 20 account + strategy combinations at once</p>

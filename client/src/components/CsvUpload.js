@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './CsvUpload.css';
+import { IconLock, IconChart, IconTrendUp, IconAlert, IconCheck } from './Icons';
 import { 
   parseAccountsCsv, 
   parseStrategiesCsv, 
@@ -204,7 +205,7 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
       <div className="csv-upload-gated">
         <div className="gate-overlay">
           <div className="gate-content">
-            <div className="lock-icon">🔒</div>
+            <div className="lock-icon"><IconLock size={24} /></div>
             <h3>NinjaTrader CSV Upload</h3>
             <p>This feature is available in RiskLo Pro</p>
             <p className="gate-subtext">Upload NinjaTrader exports for instant multi-account risk checks</p>
@@ -256,7 +257,7 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
 
         <div className="csv-upload-grid">
           <div className="upload-box">
-            <div className="upload-icon">📊</div>
+            <div className="upload-icon"><IconChart size={32} /></div>
             <p className="upload-label">Accounts CSV</p>
             <p className="upload-text">
               {accountsFile ? accountsFile.name : 'Upload Accounts file'}
@@ -274,7 +275,7 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
           </div>
 
           <div className="upload-box">
-            <div className="upload-icon">📈</div>
+            <div className="upload-icon"><IconTrendUp size={32} /></div>
             <p className="upload-label">Strategies CSV</p>
             <p className="upload-text">
               {strategiesFile ? strategiesFile.name : 'Upload Strategies file'}
@@ -314,13 +315,13 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
           <div className="file-info">
             {accountsFile && (
               <div className="file-item">
-                <span className="file-name">📊 {accountsFile.name}</span>
+                <span className="file-name"><IconChart size={16} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} /> {accountsFile.name}</span>
                 <span className="file-size">{(accountsFile.size / 1024).toFixed(2)} KB</span>
               </div>
             )}
             {strategiesFile && (
               <div className="file-item">
-                <span className="file-name">📈 {strategiesFile.name}</span>
+                <span className="file-name"><IconTrendUp size={16} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} /> {strategiesFile.name}</span>
                 <span className="file-size">{(strategiesFile.size / 1024).toFixed(2)} KB</span>
               </div>
             )}
@@ -329,13 +330,13 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
 
         {parseError && (
           <div className="csv-error">
-            <strong>⚠️ Error:</strong> {parseError}
+            <strong><IconAlert size={16} style={{ display: 'inline', marginRight: '0.25rem', verticalAlign: 'middle' }} /> Error:</strong> {parseError}
           </div>
         )}
 
         {parseSuccess && (
           <div className="csv-success">
-            <strong>✅ Success:</strong> {parseSuccess}
+            <strong><IconCheck size={16} style={{ display: 'inline', marginRight: '0.25rem', verticalAlign: 'middle' }} /> Success:</strong> {parseSuccess}
           </div>
         )}
 
