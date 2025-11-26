@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import PageHeader from '../components/PageHeader';
 import './Account.css';
-import { IconPro, IconChart, IconCheck, IconAlert, IconLock } from '../components/Icons';
+import { IconPro, IconChart, IconCheck, IconAlert } from '../components/Icons';
 
 function Account({ onNavigate, onUpgrade }) {
   const { user, isPro, isDevMode, signOut, handleGoogleSignIn } = useAuth();

@@ -24,18 +24,6 @@ function AppContent() {
   const { user, isPro, isDevMode, refreshProStatus } = useAuth();
   const [currentPage, setCurrentPage] = useState('home');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  // Check if user has already accepted disclaimer
-  const checkDisclaimerAccepted = () => {
-    if (user?.email) {
-      // Check user-specific acceptance
-      const userAcceptance = localStorage.getItem(`disclaimer_accepted_${user.email}`);
-      return userAcceptance === 'true';
-    } else {
-      // Always show disclaimer for non-logged-in users
-      return false;
-    }
-  };
-
   const [showDisclaimer, setShowDisclaimer] = useState(true); // Will be updated in useEffect
   const [riskMode, setRiskMode] = useState('risk'); // 'risk' or 'apexMae'
   const [riskMetrics, setRiskMetrics] = useState(null); // Metrics for Risk mode
@@ -60,7 +48,8 @@ function AppContent() {
       setShowDisclaimer(true);
     } else {
       // Check if logged-in user has accepted
-      const hasAccepted = checkDisclaimerAccepted();
+      const userAcceptance = localStorage.getItem(`disclaimer_accepted_${user.email}`);
+      const hasAccepted = userAcceptance === 'true';
       setShowDisclaimer(!hasAccepted);
     }
   }, [user]);

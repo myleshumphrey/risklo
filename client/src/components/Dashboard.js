@@ -2,7 +2,7 @@ import React from 'react';
 import './Dashboard.css';
 import MetricCard from './MetricCard';
 import RiskIndicator from './RiskIndicator';
-import { IconShield, IconTrendDown, IconTrendUp, IconAlert, IconChart, IconScale, IconInfo, IconCheck } from './Icons';
+import { IconTrendDown, IconTrendUp, IconAlert, IconChart, IconScale, IconInfo, IconCheck } from './Icons';
 
 function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
   if (!metrics || metrics.error) {
