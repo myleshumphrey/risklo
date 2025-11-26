@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import './HamburgerMenu.css';
+import { IconStar, IconHome, IconBook, IconCalculator, IconHelp, IconFile, IconUpload, IconUser, IconLogOut } from './Icons';
 
 function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro, isDevMode }) {
   const { user, signOut, handleGoogleSignIn } = useAuth();
@@ -98,7 +99,7 @@ function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro, isDevMode })
           {!isPro && onUpgrade && (
             <div className="menu-upgrade-section">
               <button className="menu-upgrade-btn" onClick={handleUpgrade}>
-                <span className="menu-icon">⭐</span>
+                <span className="menu-icon"><IconStar size={18} /></span>
                 <span>Upgrade to RiskLo Pro</span>
               </button>
             </div>
@@ -110,7 +111,7 @@ function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro, isDevMode })
                 className={`menu-item ${currentPage === 'home' ? 'active' : ''}`}
                 onClick={() => handleNavigate('home')}
               >
-                <span className="menu-icon">🏠</span>
+                <span className="menu-icon"><IconHome size={18} /></span>
                 <span>Dashboard</span>
               </button>
             </li>
@@ -119,7 +120,7 @@ function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro, isDevMode })
                 className={`menu-item ${currentPage === 'about' ? 'active' : ''}`}
                 onClick={() => handleNavigate('about')}
               >
-                <span className="menu-icon">📖</span>
+                <span className="menu-icon"><IconBook size={18} /></span>
                 <span>About</span>
               </button>
             </li>
@@ -128,7 +129,7 @@ function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro, isDevMode })
                 className={`menu-item ${currentPage === 'how-we-calculate' ? 'active' : ''}`}
                 onClick={() => handleNavigate('how-we-calculate')}
               >
-                <span className="menu-icon">🧮</span>
+                <span className="menu-icon"><IconCalculator size={18} /></span>
                 <span>How We Calculate</span>
               </button>
             </li>
@@ -137,7 +138,7 @@ function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro, isDevMode })
                 className={`menu-item ${currentPage === 'faq' ? 'active' : ''}`}
                 onClick={() => handleNavigate('faq')}
               >
-                <span className="menu-icon">❓</span>
+                <span className="menu-icon"><IconHelp size={18} /></span>
                 <span>FAQ</span>
               </button>
             </li>
@@ -146,7 +147,7 @@ function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro, isDevMode })
                 className={`menu-item ${currentPage === 'apex-30-percent-rule' ? 'active' : ''}`}
                 onClick={() => handleNavigate('apex-30-percent-rule')}
               >
-                <span className="menu-icon">📋</span>
+                <span className="menu-icon"><IconFile size={18} /></span>
                 <span>Apex 30% Rules</span>
               </button>
             </li>
@@ -155,8 +156,17 @@ function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro, isDevMode })
                 className={`menu-item ${currentPage === 'how-to-export-csv' ? 'active' : ''}`}
                 onClick={() => handleNavigate('how-to-export-csv')}
               >
-                <span className="menu-icon">📤</span>
+                <span className="menu-icon"><IconUpload size={18} /></span>
                 <span>How to Export CSV</span>
+              </button>
+            </li>
+            <li>
+              <button
+                className={`menu-item ${currentPage === 'terms-and-conditions' ? 'active' : ''}`}
+                onClick={() => handleNavigate('terms-and-conditions')}
+              >
+                <span className="menu-icon"><IconFile size={18} /></span>
+                <span>Terms & Conditions</span>
               </button>
             </li>
             {!user && (
@@ -172,7 +182,7 @@ function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro, isDevMode })
                   className={`menu-item ${currentPage === 'account' ? 'active' : ''}`}
                   onClick={() => handleNavigate('account')}
                 >
-                  <span className="menu-icon">👤</span>
+                  <span className="menu-icon"><IconUser size={18} /></span>
                   <span>Account</span>
                 </button>
               </li>
@@ -180,7 +190,7 @@ function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro, isDevMode })
             {user && (
               <li>
                 <button className="menu-sign-out-btn" onClick={handleSignOut}>
-                  <span className="menu-icon">🚪</span>
+                  <span className="menu-icon"><IconLogOut size={18} /></span>
                   <span>Sign Out</span>
                 </button>
               </li>
