@@ -257,9 +257,17 @@
 }
 
 .menu-icon {
-  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 1.5rem;
-  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+  flex-shrink: 0;
+}
+
+.menu-item:hover .menu-icon,
+.menu-item.active .menu-icon {
+  color: #ffffff;
 }
 
 .menu-auth-section {

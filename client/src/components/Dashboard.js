@@ -2,6 +2,7 @@ import React from 'react';
 import './Dashboard.css';
 import MetricCard from './MetricCard';
 import RiskIndicator from './RiskIndicator';
+import { IconShield, IconTrendDown, IconTrendUp, IconAlert, IconChart, IconScale, IconInfo, IconCheck } from './Icons';
 
 function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
   if (!metrics || metrics.error) {
@@ -44,7 +45,7 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
             <div className="blow-account-probability">
               Probability of end-of-day losses exceeding max drawdown: <strong>{metrics.blowAccountProbability.toFixed(1)}%</strong>
               <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'rgba(245, 158, 11, 0.15)', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.3)', fontSize: '0.9em' }}>
-                <strong>⚠️ Important:</strong> Trailing drawdown is based on <strong>intraday maximum adverse excursion (MAE)</strong>, not end-of-day P&L. A trade could close positive but still blow the account if it exceeded the drawdown limit during the day. This analysis uses end-of-day data, so <strong>actual risk may be higher</strong> than shown.
+                <strong><IconAlert size={16} style={{ display: 'inline', marginRight: '0.25rem', verticalAlign: 'middle' }} /> Important:</strong> Trailing drawdown is based on <strong>intraday maximum adverse excursion (MAE)</strong>, not end-of-day P&L. A trade could close positive but still blow the account if it exceeded the drawdown limit during the day. This analysis uses end-of-day data, so <strong>actual risk may be higher</strong> than shown.
               </div>
             </div>
           )}
@@ -91,7 +92,7 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
             title="Your Worst Historical Loss"
             value={`$${metrics.highestLoss.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             subtitle={`${metrics.highestLossPercent}% of account (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`}
-            icon="📉"
+            icon={<IconTrendDown size={20} />}
             trend={metrics.apexMaeComparison?.exceedsMae ? 'negative' : 'neutral'}
           />
 
@@ -100,7 +101,7 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
               title="Maximum Profit"
               value={`$${metrics.maxProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               subtitle={`${metrics.maxProfitPercent}% of account (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`}
-              icon="📈"
+              icon={<IconTrendUp size={20} />}
               trend="positive"
             />
           )}
@@ -112,7 +113,7 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
             title="Risk Score"
             value={`${metrics.riskScore}/100`}
             subtitle={metrics.riskScore < 40 ? 'Low Risk' : metrics.riskScore < 70 ? 'Moderate Risk' : 'High Risk'}
-            icon="⚠️"
+            icon={<IconAlert size={20} />}
             trend={metrics.riskScore < 40 ? 'neutral' : metrics.riskScore < 70 ? 'moderate' : 'negative'}
           />
           
@@ -120,7 +121,7 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
             title="Highest Loss"
             value={`$${metrics.highestLoss.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             subtitle={`${metrics.highestLossPercent}% of account (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`}
-            icon="📉"
+            icon={<IconTrendDown size={20} />}
             trend="negative"
           />
           
@@ -128,7 +129,7 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
             title="Average Loss"
             value={`$${metrics.avgLoss.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             subtitle={`${metrics.avgLossPercent}% of account (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`}
-            icon="📊"
+            icon={<IconChart size={20} />}
             trend="negative"
           />
           
@@ -137,7 +138,7 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
               title="Max Profit"
               value={`$${metrics.maxProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               subtitle={`${metrics.maxProfitPercent}% of account (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`}
-              icon="📈"
+              icon={<IconTrendUp size={20} />}
               trend="positive"
             />
           )}
@@ -147,7 +148,7 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
               title="Average Profit"
               value={`$${metrics.avgProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               subtitle={`${metrics.avgProfitPercent}% of account (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`}
-              icon="💰"
+              icon={<IconTrendUp size={20} />}
               trend="positive"
             />
           )}
@@ -157,7 +158,7 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
               title="Per-Contract Loss"
               value={`$${metrics.highestLossPerContract.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               subtitle={`Worst loss per contract`}
-              icon="⚖️"
+              icon={<IconScale size={20} />}
               trend="neutral"
             />
           )}
@@ -196,7 +197,17 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
               backgroundColor: metrics.apexMaeComparison.exceedsMae ? '#ef4444' : '#10b981',
               color: '#ffffff'
             }}>
-              {metrics.apexMaeComparison.exceedsMae ? '⚠️ EXCEEDS LIMIT' : '✅ WITHIN LIMIT'}
+              {metrics.apexMaeComparison.exceedsMae ? (
+                <>
+                  <IconAlert size={16} style={{ display: 'inline', marginRight: '0.5rem' }} />
+                  EXCEEDS LIMIT
+                </>
+              ) : (
+                <>
+                  <IconCheck size={16} style={{ display: 'inline', marginRight: '0.5rem' }} />
+                  WITHIN LIMIT
+                </>
+              )}
             </div>
             <h3 className="apex-mae-simplified-title">30% Negative P&L Rule (MAE)</h3>
           </div>
@@ -222,7 +233,7 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
               
               {metrics.apexMaeComparison.exceedsMae ? (
                 <div className="apex-mae-warning">
-                  <strong>⚠️ WARNING:</strong> Your worst historical loss exceeds the MAE limit by ${Math.abs(parseFloat(metrics.apexMaeComparison.maeBuffer)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. 
+                  <strong><IconAlert size={16} style={{ display: 'inline', marginRight: '0.25rem', verticalAlign: 'middle' }} /> WARNING:</strong> Your worst historical loss exceeds the MAE limit by ${Math.abs(parseFloat(metrics.apexMaeComparison.maeBuffer)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. 
                   This strategy has historically violated the 30% rule.
                   {metrics.apexMaeComparison.maeBreachProbability !== undefined && (
                     <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'rgba(239, 68, 68, 0.15)', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
@@ -237,7 +248,7 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
                 </div>
               ) : (
                 <div className="apex-mae-safe">
-                  <strong>✅ SAFE:</strong> Your worst historical loss is within the MAE limit. 
+                  <strong><IconCheck size={16} style={{ display: 'inline', marginRight: '0.25rem', verticalAlign: 'middle' }} /> SAFE:</strong> Your worst historical loss is within the MAE limit. 
                   You have a ${metrics.apexMaeComparison.maeBuffer} buffer before hitting the limit.
                   {metrics.apexMaeComparison.maeBreachProbability !== undefined && metrics.apexMaeComparison.maeBreachProbability > 0 && (
                     <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'rgba(245, 158, 11, 0.15)', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
@@ -274,7 +285,22 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
               backgroundColor: metrics.windfallRule.violatesWindfall === true ? '#ef4444' : metrics.windfallRule.violatesWindfall === false ? '#10b981' : '#f59e0b',
               color: '#ffffff'
             }}>
-              {metrics.windfallRule.violatesWindfall === true ? '⚠️ VIOLATES RULE' : metrics.windfallRule.violatesWindfall === false ? '✅ WITHIN RULE' : 'ℹ️ INFO'}
+              {metrics.windfallRule.violatesWindfall === true ? (
+                <>
+                  <IconAlert size={16} style={{ display: 'inline', marginRight: '0.5rem' }} />
+                  VIOLATES RULE
+                </>
+              ) : metrics.windfallRule.violatesWindfall === false ? (
+                <>
+                  <IconCheck size={16} style={{ display: 'inline', marginRight: '0.5rem' }} />
+                  WITHIN RULE
+                </>
+              ) : (
+                <>
+                  <IconInfo size={16} style={{ display: 'inline', marginRight: '0.5rem' }} />
+                  INFO
+                </>
+              )}
             </div>
             <h3 className="apex-mae-simplified-title">30% Consistency Rule (Windfall)</h3>
           </div>
@@ -321,11 +347,11 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
               
               {metrics.windfallRule.violatesWindfall === true ? (
                 <div className="apex-mae-warning">
-                  <strong>⚠️ WARNING:</strong> {metrics.windfallRule.windfallMessage}
+                  <strong><IconAlert size={16} style={{ display: 'inline', marginRight: '0.25rem', verticalAlign: 'middle' }} /> WARNING:</strong> {metrics.windfallRule.windfallMessage}
                 </div>
               ) : metrics.windfallRule.violatesWindfall === false ? (
                 <div className="apex-mae-safe">
-                  <strong>✅ SAFE:</strong> {metrics.windfallRule.windfallMessage}
+                  <strong><IconCheck size={16} style={{ display: 'inline', marginRight: '0.25rem', verticalAlign: 'middle' }} /> SAFE:</strong> {metrics.windfallRule.windfallMessage}
                 </div>
               ) : (
                 <div className="apex-mae-info" style={{
@@ -337,7 +363,7 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
                   fontSize: '0.95rem',
                   lineHeight: '1.6'
                 }}>
-                  <strong>ℹ️ INFO:</strong> {metrics.windfallRule.windfallMessage}
+                  <strong><IconInfo size={16} style={{ display: 'inline', marginRight: '0.25rem', verticalAlign: 'middle' }} /> INFO:</strong> {metrics.windfallRule.windfallMessage}
                 </div>
               )}
 

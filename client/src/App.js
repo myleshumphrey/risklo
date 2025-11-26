@@ -16,13 +16,27 @@ import HowWeCalculate from './pages/HowWeCalculate';
 import Apex30PercentRule from './pages/Apex30PercentRule';
 import HowToExportCsv from './pages/HowToExportCsv';
 import Account from './pages/Account';
+import TermsAndConditions from './pages/TermsAndConditions';
 import { API_ENDPOINTS } from './config';
+import { IconChart } from './components/Icons';
 
 function AppContent() {
   const { user, isPro, isDevMode, refreshProStatus } = useAuth();
   const [currentPage, setCurrentPage] = useState('home');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [showDisclaimer, setShowDisclaimer] = useState(true); // Show disclaimer on every visit
+  // Check if user has already accepted disclaimer
+  const checkDisclaimerAccepted = () => {
+    if (user?.email) {
+      // Check user-specific acceptance
+      const userAcceptance = localStorage.getItem(`disclaimer_accepted_${user.email}`);
+      return userAcceptance === 'true';
+    } else {
+      // Always show disclaimer for non-logged-in users
+      return false;
+    }
+  };
+
+  const [showDisclaimer, setShowDisclaimer] = useState(true); // Will be updated in useEffect
   const [riskMode, setRiskMode] = useState('risk'); // 'risk' or 'apexMae'
   const [riskMetrics, setRiskMetrics] = useState(null); // Metrics for Risk mode
   const [apexMaeMetrics, setApexMaeMetrics] = useState(null); // Metrics for 30% Drawdown mode
@@ -38,6 +52,18 @@ function AppContent() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [currentPage]);
+
+  // Check disclaimer acceptance on mount and when user changes
+  useEffect(() => {
+    if (!user) {
+      // Always show disclaimer for non-logged-in users
+      setShowDisclaimer(true);
+    } else {
+      // Check if logged-in user has accepted
+      const hasAccepted = checkDisclaimerAccepted();
+      setShowDisclaimer(!hasAccepted);
+    }
+  }, [user]);
 
   useEffect(() => {
     // Fetch sheet names on component mount
@@ -149,6 +175,8 @@ function AppContent() {
         return <HowToExportCsv onNavigate={setCurrentPage} />;
       case 'account':
         return <Account onNavigate={setCurrentPage} onUpgrade={() => setShowUpgradeModal(true)} />;
+      case 'terms-and-conditions':
+        return <TermsAndConditions onNavigate={setCurrentPage} />;
       case 'home':
       default:
         return (
@@ -174,7 +202,7 @@ function AppContent() {
             ) : (
               <div className="no-results-message">
                 <div className="no-results-content">
-                  <div className="no-results-icon">📊</div>
+                  <div className="no-results-icon"><IconChart size={64} /></div>
                   <h3 className="no-results-title">
                     {riskMode === 'risk' ? 'Risk Results' : '30% Drawdown Results'}
                   </h3>
@@ -217,8 +245,19 @@ function AppContent() {
   };
 
   const handleDisclaimerAccept = () => {
-    setShowDisclaimer(false);
+    // Store acceptance in localStorage
+    if (user?.email) {
+      // Store user-specific acceptance
+      localStorage.setItem(`disclaimer_accepted_${user.email}`, 'true');
+      localStorage.setItem(`disclaimer_accepted_date_${user.email}`, new Date().toISOString());
+      setShowDisclaimer(false);
+    } else {
+      // For non-logged-in users, don't store acceptance - always show on next visit
+      // Just close the modal for this session
+      setShowDisclaimer(false);
+    }
   };
+
 
   return (
     <div className="App">
