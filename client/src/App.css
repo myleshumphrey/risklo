@@ -21,10 +21,55 @@
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 2rem;
+  position: relative;
 }
 
 .header-left {
   text-align: left;
+}
+
+/* Desktop: Show desktop version, hide mobile */
+.header-sign-in-mobile {
+  display: none;
+}
+
+.header-sign-in-desktop {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* Hide sign-in button when user is signed in (using class) */
+.header-sign-in-desktop.signed-in .google-sign-in-wrapper,
+.header-sign-in-desktop.signed-in .custom-google-sign-in-btn {
+  display: none !important;
+}
+
+/* Hide sign-in button wrapper when user-info is present (CSS :has selector) */
+.header-sign-in-desktop:has(.user-info) .google-sign-in-wrapper,
+.header-sign-in-desktop:has(.user-info) .custom-google-sign-in-btn {
+  display: none !important;
+}
+
+/* Ensure user-info is visible when present */
+.header-sign-in-desktop .user-info {
+  display: flex !important;
+}
+
+/* Mobile: Show mobile version (button only), hide desktop */
+@media (max-width: 768px) {
+  .header-sign-in-mobile {
+    display: flex;
+  }
+  
+  .header-sign-in-desktop {
+    display: none !important;
+  }
+  
+  /* On mobile, when signed in, hide user info and show button only */
+  .header-sign-in-mobile .user-info {
+    display: none;
+  }
 }
 
 .title-with-badge {
@@ -66,6 +111,16 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  padding-right: 5rem; /* Make room for hamburger menu */
+  margin-right: 0;
+}
+
+.header-sign-in {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .mode-toggle-container {
@@ -219,29 +274,48 @@
     text-align: center;
     width: 100%;
     position: relative;
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .header-sign-in-mobile {
+    display: flex;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 10;
+  }
+
+  .header-sign-in-mobile .user-info {
+    display: none; /* Don't show user info in mobile position */
+  }
+
+  .header-sign-in-desktop {
+    display: none !important; /* Hidden on mobile */
   }
 
   .title-with-badge {
-    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
+    margin: 0 auto;
   }
 
   .app-title {
-    position: relative;
     margin: 0;
   }
 
   .header-badge {
     font-size: 0.65rem;
     padding: 0.2rem 0.6rem;
-    position: absolute;
-    left: calc(100% + 0.5rem);
-    top: 50%;
-    transform: translateY(-50%);
+    position: static;
+    transform: none;
     white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .app-title {
@@ -280,7 +354,9 @@
   .header-right {
     order: 3;
     justify-content: flex-end;
-    display: none; /* Hide upgrade button on mobile - can access via menu */
+    display: flex; /* Show Google Sign-In on mobile */
+    padding-right: 4rem; /* Make room for hamburger menu */
+    width: 100%;
   }
 
   .upgrade-header-btn {
