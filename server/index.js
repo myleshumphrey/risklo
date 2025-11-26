@@ -1,7 +1,18 @@
 const express = require('express');
 const cors = require('cors');
 const { google } = require('googleapis');
+const Stripe = require('stripe');
 require('dotenv').config();
+
+// Initialize Stripe (only if secret key is provided)
+let stripe = null;
+if (process.env.STRIPE_SECRET_KEY) {
+  stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2023-10-16',
+  });
+} else {
+  console.warn('WARNING: STRIPE_SECRET_KEY not set. Stripe features will be disabled.');
+}
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -9,9 +20,29 @@ const PORT = process.env.PORT || 5000;
 // Hardcoded spreadsheet ID
 const SPREADSHEET_ID = '1PCU-1ZjBEkAF1LE3Z1tbajCg3hOBzpKxx--z9QU8sAE';
 
-// CORS configuration - allow requests from Netlify domain and localhost
+// CORS configuration - allow requests from Netlify domain, localhost, and local network IPs
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://192.168.183.203:3000', // Local network IP for mobile testing
+].filter(Boolean); // Remove undefined values
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || true, // Allow all origins if FRONTEND_URL not set
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is in allowed list, or allow all if FRONTEND_URL not set
+    if (process.env.FRONTEND_URL && !allowedOrigins.includes(origin)) {
+      // For local network IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x), allow them
+      if (/^http:\/\/(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error('Not allowed by CORS'));
+    }
+    callback(null, true);
+  },
   credentials: true
 }));
 app.use(express.json());
@@ -626,6 +657,177 @@ app.post('/api/analyze', async (req, res) => {
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
+});
+
+// ============================================
+// AUTH & STRIPE ENDPOINTS
+// ============================================
+
+/**
+ * Check if a user has an active RiskLo Pro subscription
+ * GET /api/auth/pro-status?email=user@example.com
+ */
+app.get('/api/auth/pro-status', async (req, res) => {
+  try {
+    const { email } = req.query;
+    
+    if (!email) {
+      return res.status(400).json({ error: 'Email parameter is required' });
+    }
+
+    // Check if email is in dev mode list (comma-separated from env var)
+    const devModeEmails = process.env.DEV_MODE_PRO_EMAILS;
+    if (devModeEmails) {
+      const devEmails = devModeEmails.split(',').map(e => e.trim().toLowerCase());
+      if (devEmails.includes(email.toLowerCase())) {
+        return res.json({ isPro: true, devMode: true });
+      }
+    }
+
+    // If Stripe is not configured, return false (not Pro)
+    if (!stripe) {
+      return res.json({ isPro: false });
+    }
+
+    // Search for customers by email
+    const customers = await stripe.customers.list({
+      email: email,
+      limit: 1,
+    });
+
+    if (customers.data.length === 0) {
+      return res.json({ isPro: false });
+    }
+
+    const customer = customers.data[0];
+
+    // Check for active subscriptions
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customer.id,
+      status: 'active',
+      limit: 10,
+    });
+
+    // Check if any active subscription is for RiskLo Pro
+    const priceId = process.env.STRIPE_PRICE_RISKLO_PRO;
+    const hasActiveProSubscription = subscriptions.data.some(sub => {
+      return sub.items.data.some(item => item.price.id === priceId);
+    });
+
+    res.json({ isPro: hasActiveProSubscription });
+  } catch (error) {
+    console.error('Error checking Pro status:', error);
+    res.status(500).json({ error: 'Failed to check Pro status', message: error.message });
+  }
+});
+
+// Test route to verify Stripe routes are being registered
+app.get('/api/stripe/test', (req, res) => {
+  res.json({ message: 'Stripe routes are working', stripeConfigured: !!stripe });
+});
+
+/**
+ * Create Stripe Checkout Session for RiskLo Pro subscription
+ * POST /api/stripe/create-checkout-session
+ * Body: { email: string }
+ */
+app.post('/api/stripe/create-checkout-session', async (req, res) => {
+  try {
+    if (!stripe) {
+      return res.status(500).json({ error: 'Stripe is not configured. Please set STRIPE_SECRET_KEY environment variable.' });
+    }
+
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const priceId = process.env.STRIPE_PRICE_RISKLO_PRO;
+    if (!priceId) {
+      return res.status(500).json({ error: 'Stripe price ID not configured. Please set STRIPE_PRICE_RISKLO_PRO environment variable.' });
+    }
+
+    const baseUrl = process.env.APP_BASE_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
+
+    // Create or retrieve customer
+    let customer;
+    const existingCustomers = await stripe.customers.list({
+      email: email,
+      limit: 1,
+    });
+
+    if (existingCustomers.data.length > 0) {
+      customer = existingCustomers.data[0];
+    } else {
+      customer = await stripe.customers.create({
+        email: email,
+      });
+    }
+
+    // Create checkout session
+    const session = await stripe.checkout.sessions.create({
+      customer: customer.id,
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      mode: 'subscription',
+      success_url: `${baseUrl}/?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/?checkout=canceled`,
+      metadata: {
+        email: email,
+      },
+    });
+
+    res.json({ sessionId: session.id, url: session.url });
+  } catch (error) {
+    console.error('Error creating checkout session:', error);
+    res.status(500).json({ error: 'Failed to create checkout session', message: error.message });
+  }
+});
+
+/**
+ * Verify checkout session after payment
+ * GET /api/stripe/verify-session?session_id=cs_xxx
+ */
+app.get('/api/stripe/verify-session', async (req, res) => {
+  try {
+    if (!stripe) {
+      return res.status(500).json({ error: 'Stripe is not configured. Please set STRIPE_SECRET_KEY environment variable.' });
+    }
+
+    const { session_id } = req.query;
+
+    if (!session_id) {
+      return res.status(400).json({ error: 'Session ID is required' });
+    }
+
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+
+    if (session.payment_status === 'paid' && session.status === 'complete') {
+      // Get customer email from session
+      const customer = await stripe.customers.retrieve(session.customer);
+      
+      res.json({
+        success: true,
+        email: customer.email,
+        subscriptionId: session.subscription,
+      });
+    } else {
+      res.json({
+        success: false,
+        status: session.status,
+        paymentStatus: session.payment_status,
+      });
+    }
+  } catch (error) {
+    console.error('Error verifying session:', error);
+    res.status(500).json({ error: 'Failed to verify session', message: error.message });
+  }
 });
 
 app.listen(PORT, '0.0.0.0', () => {

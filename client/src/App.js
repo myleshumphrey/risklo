@@ -8,16 +8,19 @@ import CsvUpload from './components/CsvUpload';
 import Footer from './components/Footer';
 import HamburgerMenu from './components/HamburgerMenu';
 import DisclaimerModal from './components/DisclaimerModal';
+import GoogleSignIn from './components/GoogleSignIn';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import About from './pages/About';
 import FAQ from './pages/FAQ';
 import HowWeCalculate from './pages/HowWeCalculate';
 import Apex30PercentRule from './pages/Apex30PercentRule';
 import HowToExportCsv from './pages/HowToExportCsv';
+import Account from './pages/Account';
 import { API_ENDPOINTS } from './config';
 
-function App() {
+function AppContent() {
+  const { user, isPro, isDevMode, refreshProStatus } = useAuth();
   const [currentPage, setCurrentPage] = useState('home');
-  const [isPro, setIsPro] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(true); // Show disclaimer on every visit
   const [riskMode, setRiskMode] = useState('risk'); // 'risk' or 'apexMae'
@@ -109,10 +112,28 @@ function App() {
     // Don't clear metrics - let user see they need to analyze for the new mode
   };
 
-  const handleUpgrade = () => {
-    setIsPro(true);
-    setShowUpgradeModal(false);
-  };
+  // Handle checkout success (check URL params)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const checkout = params.get('checkout');
+    const sessionId = params.get('session_id');
+
+    if (checkout === 'success' && sessionId && user?.email) {
+      // Verify the session and refresh Pro status
+      fetch(API_ENDPOINTS.verifySession(sessionId))
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            refreshProStatus();
+            // Clean up URL
+            window.history.replaceState({}, '', window.location.pathname);
+          }
+        })
+        .catch((error) => {
+          console.error('Error verifying session:', error);
+        });
+    }
+  }, [user, refreshProStatus]);
 
   const renderPage = () => {
     switch (currentPage) {
@@ -126,6 +147,8 @@ function App() {
         return <Apex30PercentRule onNavigate={setCurrentPage} />;
       case 'how-to-export-csv':
         return <HowToExportCsv onNavigate={setCurrentPage} />;
+      case 'account':
+        return <Account onNavigate={setCurrentPage} onUpgrade={() => setShowUpgradeModal(true)} />;
       case 'home':
       default:
         return (
@@ -208,12 +231,18 @@ function App() {
         onNavigate={setCurrentPage}
         onUpgrade={() => setShowUpgradeModal(true)}
         isPro={isPro}
+        isDevMode={isDevMode}
       />
       
       {currentPage === 'home' && (
         <header className="app-header">
           <div className="header-content">
             <div className="header-left">
+              {!user && (
+                <div className="header-sign-in-mobile">
+                  <GoogleSignIn />
+                </div>
+              )}
               <div className="title-with-badge">
                 <h1 className="app-title">RiskLo</h1>
                 <span className={`header-badge ${isPro ? 'pro-badge-header' : 'basic-badge-header'}`}>
@@ -239,7 +268,9 @@ function App() {
               </div>
             </div>
             <div className="header-right">
-              {/* Empty - badge moved to header-left */}
+              <div className={`header-sign-in-desktop ${user ? 'signed-in' : ''}`}>
+                <GoogleSignIn />
+              </div>
             </div>
           </div>
       </header>
@@ -256,9 +287,18 @@ function App() {
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
-        onUpgrade={handleUpgrade}
+        user={user}
+        isPro={isPro}
       />
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

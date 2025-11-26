@@ -93,6 +93,8 @@
   z-index: 1000;
   overflow-y: auto;
   box-shadow: -4px 0 20px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
 }
 
 .hamburger-menu.open {
@@ -233,10 +235,56 @@
   color: #ffffff;
 }
 
+.menu-sign-out-btn {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  padding: 1rem 1.5rem;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+}
+
+.menu-sign-out-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
 .menu-icon {
   font-size: 1.25rem;
   width: 1.5rem;
   text-align: center;
+}
+
+.menu-auth-section {
+  margin-top: auto;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 1.5rem;
+}
+
+.menu-sign-in-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 0 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.menu-google-sign-in-button {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.menu-google-sign-in-button > div {
+  width: 100% !important;
 }
 
 @media (max-width: 768px) {
