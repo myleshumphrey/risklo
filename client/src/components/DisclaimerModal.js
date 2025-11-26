@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './DisclaimerModal.css';
+import { IconChart } from './Icons';
 
 function DisclaimerModal({ onAccept }) {
   const [showFullDisclaimer, setShowFullDisclaimer] = useState(false);
@@ -8,7 +9,10 @@ function DisclaimerModal({ onAccept }) {
     <div className="disclaimer-overlay">
       <div className="disclaimer-modal">
         <div className="disclaimer-header">
-          <h2 className="disclaimer-title">📊 Welcome to RiskLo</h2>
+          <h2 className="disclaimer-title">
+            <IconChart size={24} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} />
+            Welcome to RiskLo
+          </h2>
         </div>
         
         <div className="disclaimer-content">

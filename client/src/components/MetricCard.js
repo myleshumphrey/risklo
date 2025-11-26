@@ -2,10 +2,19 @@ import React from 'react';
 import './MetricCard.css';
 
 function MetricCard({ title, value, subtitle, icon, trend }) {
+  // If icon is a string (emoji), render it as-is for backward compatibility
+  // Otherwise, render as React component
+  const renderIcon = () => {
+    if (typeof icon === 'string') {
+      return <span className="metric-icon-emoji">{icon}</span>;
+    }
+    return <span className="metric-icon-svg">{icon}</span>;
+  };
+
   return (
     <div className="metric-card">
       <div className="metric-header">
-        <span className="metric-icon">{icon}</span>
+        {renderIcon()}
         <h3 className="metric-title">{title}</h3>
       </div>
       <div className="metric-value">{value}</div>

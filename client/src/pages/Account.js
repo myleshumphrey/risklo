@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import PageHeader from '../components/PageHeader';
 import './Account.css';
+import { IconPro, IconChart, IconCheck, IconAlert } from '../components/Icons';
 
 function Account({ onNavigate, onUpgrade }) {
   const { user, isPro, isDevMode, signOut, handleGoogleSignIn } = useAuth();
@@ -92,9 +93,66 @@ function Account({ onNavigate, onUpgrade }) {
           <div className="account-plan-section">
             <h3>Current Plan</h3>
             <div className={`plan-badge-large ${isPro ? 'pro-plan' : 'basic-plan'} ${isDevMode ? 'dev-plan' : ''}`}>
-              <span className="plan-icon">{isPro ? '⭐' : '📊'}</span>
+              <span className="plan-icon">{isPro ? <IconPro size={20} /> : <IconChart size={20} />}</span>
               <span className="plan-name">{isPro ? (isDevMode ? 'RiskLo Pro (Dev Mode)' : 'RiskLo Pro') : 'RiskLo Basic'}</span>
             </div>
+
+            {/* Terms Acceptance Status */}
+            {(() => {
+              const acceptanceKey = `disclaimer_accepted_${user.email}`;
+              const dateKey = `disclaimer_accepted_date_${user.email}`;
+              const hasAccepted = localStorage.getItem(acceptanceKey) === 'true';
+              const acceptanceDate = localStorage.getItem(dateKey);
+              
+              if (hasAccepted) {
+                return (
+                  <div className="terms-acceptance-section" style={{
+                    marginTop: '1.5rem',
+                    padding: '1rem',
+                    background: 'rgba(76, 175, 80, 0.1)',
+                    border: '1px solid rgba(76, 175, 80, 0.3)',
+                    borderRadius: '8px',
+                    color: 'rgba(255, 255, 255, 0.9)',
+                    fontSize: '0.9rem'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                      <span><IconCheck size={16} /></span>
+                      <strong>
+                        <a 
+                          href="#terms" 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (onNavigate) onNavigate('terms-and-conditions');
+                          }}
+                          style={{
+                            color: 'inherit',
+                            textDecoration: 'underline',
+                            cursor: 'pointer',
+                            transition: 'opacity 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.target.style.opacity = '0.8'}
+                          onMouseLeave={(e) => e.target.style.opacity = '1'}
+                        >
+                          Terms & Conditions Accepted
+                        </a>
+                      </strong>
+                    </div>
+                    {acceptanceDate && (
+                      <div style={{ fontSize: '0.85rem', opacity: 0.8, marginLeft: '1.5rem' }}>
+                        Accepted on {new Date(acceptanceDate).toLocaleDateString('en-US', { 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              return null;
+            })()}
             
             {isDevMode && (
               <div className="dev-mode-notice" style={{
@@ -106,7 +164,7 @@ function Account({ onNavigate, onUpgrade }) {
                 color: 'rgba(255, 255, 255, 0.9)',
                 fontSize: '0.9rem'
               }}>
-                ⚠️ <strong>Dev Mode Active:</strong> You have Pro access for testing purposes. This is not a paid subscription.
+                <IconAlert size={16} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} /> <strong>Dev Mode Active:</strong> You have Pro access for testing purposes. This is not a paid subscription.
               </div>
             )}
             
@@ -125,9 +183,9 @@ function Account({ onNavigate, onUpgrade }) {
               <div className="pro-features">
                 <h4>Pro Features Active:</h4>
                 <ul>
-                  <li>✅ Bulk Risk Calculator (up to 20 accounts)</li>
-                  <li>✅ NinjaTrader CSV Upload</li>
-                  <li>✅ Advanced risk analysis</li>
+                  <li><IconCheck size={14} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} /> Bulk Risk Calculator (up to 20 accounts)</li>
+                  <li><IconCheck size={14} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} /> NinjaTrader CSV Upload</li>
+                  <li><IconCheck size={14} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} /> Advanced risk analysis</li>
                 </ul>
               </div>
             )}
