@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import './HamburgerMenu.css';
 
-function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro }) {
+function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro, isDevMode }) {
+  const { user, signOut, handleGoogleSignIn } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const signInButtonRef = useRef(null);
+  const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 
   const handleNavigate = (page) => {
     onNavigate(page);
@@ -15,6 +19,56 @@ function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro }) {
     }
     setIsOpen(false);
   };
+
+  const handleSignOut = () => {
+    signOut();
+    setIsOpen(false);
+  };
+
+  // Initialize Google Sign-In button in menu if user is not signed in
+  useEffect(() => {
+    if (!user && clientId && isOpen && signInButtonRef.current) {
+      // Wait for Google Identity Services to load
+      const initGoogleSignIn = () => {
+        if (!window.google?.accounts) {
+          setTimeout(initGoogleSignIn, 100);
+          return;
+        }
+
+        try {
+          // Clear any existing button
+          if (signInButtonRef.current) {
+            signInButtonRef.current.innerHTML = '';
+          }
+
+          window.google.accounts.id.initialize({
+            client_id: clientId,
+            callback: (response) => {
+              handleGoogleSignIn(response.credential);
+              setIsOpen(false);
+            },
+          });
+
+          window.google.accounts.id.renderButton(signInButtonRef.current, {
+            theme: 'outline',
+            size: 'large',
+            text: 'signin_with',
+            width: '100%',
+          });
+        } catch (error) {
+          console.error('Error rendering Google Sign-In button in menu:', error);
+        }
+      };
+
+      // If Google script is already loaded, initialize immediately
+      if (window.google?.accounts) {
+        initGoogleSignIn();
+      } else {
+        // Otherwise wait for it to load
+        initGoogleSignIn();
+      }
+    }
+  }, [user, clientId, isOpen, handleGoogleSignIn]);
 
   return (
     <>
@@ -35,8 +89,8 @@ function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro }) {
           <div className="menu-header">
             <div className="menu-title-with-badge">
               <h2 className="menu-title">RiskLo</h2>
-              <span className={`menu-header-badge ${isPro ? 'menu-pro-badge' : 'menu-basic-badge'}`}>
-                {isPro ? 'Pro' : 'Basic'}
+              <span className={`menu-header-badge ${isPro ? 'menu-pro-badge' : 'menu-basic-badge'} ${isDevMode ? 'menu-dev-badge' : ''}`}>
+                {isPro ? (isDevMode ? 'Pro (Dev)' : 'Pro') : 'Basic'}
               </span>
             </div>
           </div>
@@ -105,6 +159,32 @@ function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro }) {
                 <span>How to Export CSV</span>
               </button>
             </li>
+            {!user && (
+              <li>
+                <div className="menu-sign-in-container">
+                  <div ref={signInButtonRef} className="menu-google-sign-in-button"></div>
+                </div>
+              </li>
+            )}
+            {user && (
+              <li>
+                <button
+                  className={`menu-item ${currentPage === 'account' ? 'active' : ''}`}
+                  onClick={() => handleNavigate('account')}
+                >
+                  <span className="menu-icon">👤</span>
+                  <span>Account</span>
+                </button>
+              </li>
+            )}
+            {user && (
+              <li>
+                <button className="menu-sign-out-btn" onClick={handleSignOut}>
+                  <span className="menu-icon">🚪</span>
+                  <span>Sign Out</span>
+                </button>
+              </li>
+            )}
           </ul>
         </nav>
       </div>
