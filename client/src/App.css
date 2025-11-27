@@ -290,29 +290,35 @@
     z-index: 10;
   }
 
-  /* Show user info on mobile when signed in, make it compact */
+  /* Show user info on mobile when signed in, make it compact and vertical */
   .header-sign-in-mobile .user-info {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.25rem;
     padding: 0.25rem 0.5rem;
   }
 
   .header-sign-in-mobile .user-info .user-details {
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: 0.15rem;
   }
 
   .header-sign-in-mobile .user-info .user-name {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     line-height: 1.2;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     max-width: 80px;
   }
 
   .header-sign-in-mobile .user-info .user-badge {
-    font-size: 0.55rem;
-    padding: 0.1rem 0.35rem;
+    font-size: 0.5rem;
+    padding: 0.1rem 0.3rem;
     line-height: 1.2;
   }
 
