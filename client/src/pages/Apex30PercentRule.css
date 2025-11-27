@@ -26,7 +26,72 @@
   font-size: 1.1rem;
   line-height: 1.8;
   color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 2rem;
+}
+
+.reference-links {
+  background: rgba(102, 126, 234, 0.1);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
   margin-bottom: 3rem;
+}
+
+.reference-links p {
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+.reference-links ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.reference-links li {
+  margin-bottom: 0.75rem;
+}
+
+.reference-links li:last-child {
+  margin-bottom: 0;
+}
+
+.reference-links a {
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.reference-links a:hover {
+  color: #764ba2;
+  text-decoration: underline;
+}
+
+.reference-links a::after {
+  content: '↗';
+  font-size: 0.85em;
+  opacity: 0.7;
+}
+
+.reference-link-inline {
+  font-size: 0.85em;
+  font-weight: normal;
+}
+
+.reference-link-inline a {
+  color: #667eea;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.reference-link-inline a:hover {
+  color: #764ba2;
+  text-decoration: underline;
 }
 
 .rule-section {
@@ -44,6 +109,10 @@
   margin-bottom: 1.5rem;
   padding-bottom: 0.75rem;
   border-bottom: 2px solid rgba(102, 126, 234, 0.5);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
 }
 
 .section-content h3 {

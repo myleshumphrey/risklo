@@ -266,11 +266,9 @@ function AppContent() {
         <header className="app-header">
           <div className="header-content">
             <div className="header-left">
-              {!user && (
-                <div className="header-sign-in-mobile">
-                  <GoogleSignIn />
-                </div>
-              )}
+              <div className="header-sign-in-mobile">
+                <GoogleSignIn />
+              </div>
               <div className="title-with-badge">
                 <h1 className="app-title">RiskLo</h1>
                 <span className={`header-badge ${isPro ? 'pro-badge-header' : 'basic-badge-header'}`}>
