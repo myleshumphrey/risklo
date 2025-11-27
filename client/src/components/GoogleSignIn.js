@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import './GoogleSignIn.css';
 
-function GoogleSignIn() {
+function GoogleSignIn({ onNavigate }) {
   const { user, isPro, isDevMode, handleGoogleSignIn } = useAuth();
   const buttonRef = useRef(null);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -80,7 +80,11 @@ function GoogleSignIn() {
       .slice(0, 2);
 
     return (
-      <div className="user-info">
+      <div 
+        className="user-info clickable-user-info" 
+        onClick={() => onNavigate && onNavigate('account')}
+        style={{ cursor: 'pointer' }}
+      >
         <div className="user-avatar">
           <span className="user-initials">{initials}</span>
         </div>

@@ -267,7 +267,7 @@ function AppContent() {
           <div className="header-content">
             <div className="header-left">
               <div className="header-sign-in-mobile">
-                <GoogleSignIn />
+                <GoogleSignIn onNavigate={setCurrentPage} />
               </div>
               <div className="title-with-badge">
                 <h1 className="app-title">RiskLo</h1>
@@ -295,7 +295,7 @@ function AppContent() {
             </div>
             <div className="header-right">
               <div className={`header-sign-in-desktop ${user ? 'signed-in' : ''}`}>
-                <GoogleSignIn />
+                <GoogleSignIn onNavigate={setCurrentPage} />
               </div>
             </div>
           </div>
