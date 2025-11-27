@@ -56,7 +56,7 @@
   display: flex !important;
 }
 
-/* Mobile: Show mobile version (button only), hide desktop */
+/* Mobile: Show mobile version (button when not signed in, user info when signed in), hide desktop */
 @media (max-width: 768px) {
   .header-sign-in-mobile {
     display: flex;
@@ -66,9 +66,11 @@
     display: none !important;
   }
   
-  /* On mobile, when signed in, hide user info and show button only */
+  /* Show user info on mobile when signed in */
   .header-sign-in-mobile .user-info {
-    display: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 }
 
@@ -288,8 +290,40 @@
     z-index: 10;
   }
 
+  /* Show user info on mobile when signed in, make it compact */
   .header-sign-in-mobile .user-info {
-    display: none; /* Don't show user info in mobile position */
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .header-sign-in-mobile .user-info .user-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .header-sign-in-mobile .user-info .user-name {
+    font-size: 0.7rem;
+    line-height: 1.2;
+    max-width: 80px;
+  }
+
+  .header-sign-in-mobile .user-info .user-badge {
+    font-size: 0.55rem;
+    padding: 0.1rem 0.35rem;
+    line-height: 1.2;
+  }
+
+  .header-sign-in-mobile .user-info .user-avatar {
+    width: 1.75rem;
+    height: 1.75rem;
+    flex-shrink: 0;
+  }
+
+  .header-sign-in-mobile .user-info .user-initials {
+    font-size: 0.7rem;
   }
 
   .header-sign-in-desktop {
