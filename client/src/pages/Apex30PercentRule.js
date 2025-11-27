@@ -12,9 +12,30 @@ function Apex30PercentRule({ onNavigate }) {
         <p className="page-intro">
           Apex Trader Funding has two important 30% rules that traders must understand: the <strong>30% Negative P&L Rule (MAE)</strong> and the <strong>30% Consistency Rule (Windfall)</strong>. Both are designed to promote consistent, responsible trading practices.
         </p>
+        
+        <div className="reference-links">
+          <p><strong>Reference the official Apex Trader Funding documentation:</strong></p>
+          <ul>
+            <li>
+              <a href="https://support.apextraderfunding.com/hc/en-us/articles/40463232267035-30-Negative-P-L-Rule-Maximum-Adverse-Excursion-MAE" target="_blank" rel="noopener noreferrer">
+                30% Negative P&L Rule (Maximum Adverse Excursion / MAE)
+              </a>
+            </li>
+            <li>
+              <a href="https://support.apextraderfunding.com/hc/en-us/articles/40463260337819-30-Consistency-Rule-Windfall" target="_blank" rel="noopener noreferrer">
+                30% Consistency Rule (Windfall)
+              </a>
+            </li>
+          </ul>
+        </div>
 
         <section className="rule-section">
-          <h2 className="section-title">30% Negative P&L Rule (Maximum Adverse Excursion / MAE)</h2>
+          <h2 className="section-title">
+            30% Negative P&L Rule (Maximum Adverse Excursion / MAE)
+            <span className="reference-link-inline">
+              {' '}(<a href="https://support.apextraderfunding.com/hc/en-us/articles/40463232267035-30-Negative-P-L-Rule-Maximum-Adverse-Excursion-MAE" target="_blank" rel="noopener noreferrer">Reference Apex Rule</a>)
+            </span>
+          </h2>
           <div className="section-content">
             <h3>What is it?</h3>
             <p>
@@ -84,7 +105,12 @@ function Apex30PercentRule({ onNavigate }) {
         </section>
 
         <section className="rule-section">
-          <h2 className="section-title">30% Consistency Rule (Windfall Rule)</h2>
+          <h2 className="section-title">
+            30% Consistency Rule (Windfall Rule)
+            <span className="reference-link-inline">
+              {' '}(<a href="https://support.apextraderfunding.com/hc/en-us/articles/40463260337819-30-Consistency-Rule-Windfall" target="_blank" rel="noopener noreferrer">Reference Apex Rule</a>)
+            </span>
+          </h2>
           <div className="section-content">
             <h3>What is it?</h3>
             <p>
