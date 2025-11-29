@@ -3,6 +3,7 @@
 const getApiBaseUrl = () => {
   // If explicitly set via environment variable, use that (for production)
   if (process.env.REACT_APP_API_URL) {
+    console.log('Using production API URL:', process.env.REACT_APP_API_URL);
     return process.env.REACT_APP_API_URL;
   }
   
@@ -12,15 +13,19 @@ const getApiBaseUrl = () => {
   
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     // Desktop browser - use localhost
+    console.log('Using localhost API URL');
     return 'http://localhost:5001';
   } else {
     // Mobile device or network access - use the same hostname with port 5001
     // This assumes your computer's IP is accessible from the network
-    return `http://${hostname}:5001`;
+    const apiUrl = `http://${hostname}:5001`;
+    console.log('Using network API URL:', apiUrl, '(hostname:', hostname, ')');
+    return apiUrl;
   }
 };
 
 const API_BASE_URL = getApiBaseUrl();
+console.log('API_BASE_URL initialized to:', API_BASE_URL);
 
 export const API_ENDPOINTS = {
   sheets: `${API_BASE_URL}/api/sheets`,
