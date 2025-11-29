@@ -58,9 +58,15 @@ function AppContent() {
     // Fetch sheet names on component mount
     const fetchSheetNames = async () => {
       try {
+        console.log('Fetching from:', API_ENDPOINTS.sheets);
         const response = await fetch(API_ENDPOINTS.sheets);
+        
+        if (!response.ok) {
+          throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        }
+        
         const data = await response.json();
-          if (data.success) {
+        if (data.success) {
           setSheetNames(data.sheets);
           if (data.sheets.length === 0) {
             setError('No strategies found. Make sure the Google Sheet is shared with the service account.');
@@ -70,7 +76,14 @@ function AppContent() {
         }
       } catch (err) {
         console.error('Failed to fetch sheet names:', err);
-        setError('Failed to connect to server. Make sure the backend is running.');
+        console.error('API URL:', API_ENDPOINTS.sheets);
+        console.error('Hostname:', window.location.hostname);
+        
+        if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+          setError(`Failed to connect to server at ${API_ENDPOINTS.sheets}. Make sure the backend is running and accessible from your network.`);
+        } else {
+          setError(err.message || 'Failed to connect to server. Make sure the backend is running.');
+        }
       } finally {
         setLoadingSheets(false);
       }

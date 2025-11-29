@@ -31,16 +31,24 @@ const allowedOrigins = [
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      console.log('CORS: Allowing request with no origin');
+      return callback(null, true);
+    }
+    
+    console.log('CORS: Checking origin:', origin);
     
     // Check if origin is in allowed list, or allow all if FRONTEND_URL not set
     if (process.env.FRONTEND_URL && !allowedOrigins.includes(origin)) {
       // For local network IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x), allow them
       if (/^http:\/\/(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(origin)) {
+        console.log('CORS: Allowing local network IP:', origin);
         return callback(null, true);
       }
+      console.log('CORS: Blocking origin:', origin);
       return callback(new Error('Not allowed by CORS'));
     }
+    console.log('CORS: Allowing origin:', origin);
     callback(null, true);
   },
   credentials: true

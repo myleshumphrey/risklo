@@ -306,14 +306,9 @@
     gap: 0.15rem;
   }
 
+  /* Hide user name on mobile */
   .header-sign-in-mobile .user-info .user-name {
-    font-size: 0.65rem;
-    line-height: 1.2;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 80px;
+    display: none;
   }
 
   .header-sign-in-mobile .user-info .user-badge {
