@@ -28,6 +28,7 @@ function AppContent() {
   const [riskMode, setRiskMode] = useState('risk'); // 'risk' or 'apexMae'
   const [riskMetrics, setRiskMetrics] = useState(null); // Metrics for Risk mode
   const [apexMaeMetrics, setApexMaeMetrics] = useState(null); // Metrics for 30% Drawdown mode
+  const [mobileProTab, setMobileProTab] = useState('bulk'); // 'bulk' or 'csv' - for mobile tabs only
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [sheetNames, setSheetNames] = useState([]);
@@ -217,30 +218,52 @@ function AppContent() {
               </div>
             )}
 
-            <BulkRiskCalculator 
-              isPro={isPro}
-              sheetNames={sheetNames}
-              riskMode={riskMode}
-              onUpgrade={() => setShowUpgradeModal(true)}
-              onPopulateRows={(setRowsFn) => {
-                // Store the setRows function so CsvUpload can use it
-                window.bulkCalculatorSetRows = setRowsFn;
-              }}
-            />
+            {/* Mobile Tabs - Only visible on mobile */}
+            <div className="pro-features-tabs-mobile">
+              <button 
+                className={`pro-tab ${mobileProTab === 'bulk' ? 'active' : ''}`}
+                onClick={() => setMobileProTab('bulk')}
+              >
+                Bulk Risk
+              </button>
+              <button 
+                className={`pro-tab ${mobileProTab === 'csv' ? 'active' : ''}`}
+                onClick={() => setMobileProTab('csv')}
+              >
+                CSV Upload
+              </button>
+            </div>
 
-            <CsvUpload 
-              isPro={isPro}
-              sheetNames={sheetNames}
-              riskMode={riskMode}
-              onNavigate={setCurrentPage}
-              onUpgrade={() => setShowUpgradeModal(true)}
-              onPopulateBulkRows={(rows) => {
-                // Populate bulk calculator rows
-                if (window.bulkCalculatorSetRows) {
-                  window.bulkCalculatorSetRows(rows);
-                }
-              }}
-            />
+            {/* Bulk Risk Calculator - Hidden on mobile when CSV tab is active */}
+            <div className={`pro-feature-section ${mobileProTab === 'bulk' ? 'mobile-active' : ''}`}>
+              <BulkRiskCalculator 
+                isPro={isPro}
+                sheetNames={sheetNames}
+                riskMode={riskMode}
+                onUpgrade={() => setShowUpgradeModal(true)}
+                onPopulateRows={(setRowsFn) => {
+                  // Store the setRows function so CsvUpload can use it
+                  window.bulkCalculatorSetRows = setRowsFn;
+                }}
+              />
+            </div>
+
+            {/* CSV Upload - Hidden on mobile when Bulk tab is active */}
+            <div className={`pro-feature-section ${mobileProTab === 'csv' ? 'mobile-active' : ''}`}>
+              <CsvUpload 
+                isPro={isPro}
+                sheetNames={sheetNames}
+                riskMode={riskMode}
+                onNavigate={setCurrentPage}
+                onUpgrade={() => setShowUpgradeModal(true)}
+                onPopulateBulkRows={(rows) => {
+                  // Populate bulk calculator rows
+                  if (window.bulkCalculatorSetRows) {
+                    window.bulkCalculatorSetRows(rows);
+                  }
+                }}
+              />
+            </div>
           </>
         );
     }

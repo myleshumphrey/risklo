@@ -411,5 +411,56 @@
   .app-main {
     padding: 1.5rem 0;
   }
+
+  /* Mobile-only tabs for Pro features */
+  .pro-features-tabs-mobile {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .pro-tab {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .pro-tab.active {
+    color: #ffffff;
+    border-bottom-color: #667eea;
+  }
+
+  .pro-tab:active {
+    opacity: 0.8;
+  }
+
+  /* Hide sections on mobile based on active tab */
+  .pro-feature-section {
+    display: block;
+  }
+
+  .pro-feature-section:not(.mobile-active) {
+    display: none;
+  }
+}
+
+/* Desktop: Show both sections, hide tabs */
+@media (min-width: 769px) {
+  .pro-features-tabs-mobile {
+    display: none;
+  }
+
+  .pro-feature-section {
+    display: block !important;
+  }
 }
 
