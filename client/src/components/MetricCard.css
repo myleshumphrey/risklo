@@ -53,3 +53,39 @@
   color: rgba(255, 255, 255, 0.5);
 }
 
+@media (max-width: 768px) {
+  .metric-card {
+    padding: 0.75rem;
+    border-radius: 8px;
+  }
+
+  .metric-header {
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .metric-icon-emoji {
+    font-size: 1rem;
+  }
+
+  .metric-icon-svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .metric-title {
+    font-size: 0.65rem;
+    letter-spacing: 0.3px;
+  }
+
+  .metric-value {
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .metric-subtitle {
+    font-size: 0.65rem;
+    line-height: 1.2;
+  }
+}
+
