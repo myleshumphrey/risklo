@@ -6,7 +6,7 @@ import { ACCOUNT_SIZE_PRESETS, DEFAULT_ACCOUNT_SIZE, DEFAULT_THRESHOLD, getThres
 import { sortStrategies } from '../utils/strategySort';
 import { IconLock } from './Icons';
 
-function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopulateRows, onUpgrade }) {
+function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopulateRows, onUpgrade, autoAnalyzeAfterPopulate }) {
   const [results, setResults] = useState(null);
   const [selectedResult, setSelectedResult] = useState(null);
 
@@ -37,6 +37,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
       onPopulateRows(setRows);
     }
   }, [onPopulateRows]);
+
   const [loading, setLoading] = useState(false);
 
   const addRow = () => {
@@ -89,7 +90,9 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
     setLoading(true);
     
     try {
@@ -97,9 +100,17 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
       const rowsWithIndex = rows.map((row, originalIndex) => ({ ...row, originalIndex: originalIndex + 1 }));
       const validRows = rowsWithIndex.filter(row => {
         if (riskMode === 'risk') {
-          return row.strategy && row.accountSize && row.contracts && row.maxDrawdown;
+          return row.strategy && 
+                 row.accountSize && 
+                 row.contracts && 
+                 row.maxDrawdown !== undefined && row.maxDrawdown !== null && row.maxDrawdown !== '';
         } else {
-          return row.strategy && row.accountSize && row.contracts && row.currentBalance && row.startOfDayProfit && row.safetyNet;
+          return row.strategy && 
+                 row.accountSize && 
+                 row.contracts && 
+                 row.currentBalance !== undefined && row.currentBalance !== null && row.currentBalance !== '' &&
+                 (row.startOfDayProfit !== undefined && row.startOfDayProfit !== null) &&
+                 row.safetyNet !== undefined && row.safetyNet !== null && row.safetyNet !== '';
         }
       });
 
@@ -108,7 +119,6 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
         setLoading(false);
         return;
       }
-
 
       // Analyze each row
       const analysisPromises = validRows.map(row => 
@@ -140,6 +150,59 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
       setLoading(false);
     }
   };
+
+  // Expose handleSubmit for external triggering (from CSV upload)
+  useEffect(() => {
+    window.triggerBulkAnalysis = () => {
+      // Notify CSV upload that analysis is starting
+      if (window.setAnalyzingState) {
+        window.setAnalyzingState(true);
+      }
+      
+      // Check if rows have required fields filled before triggering
+      const rowsWithIndex = rows.map((row, originalIndex) => ({ ...row, originalIndex: originalIndex + 1 }));
+      const validRows = rowsWithIndex.filter(row => {
+        if (riskMode === 'risk') {
+          return row.strategy && 
+                 row.accountSize && 
+                 row.contracts && 
+                 row.maxDrawdown !== undefined && row.maxDrawdown !== null && row.maxDrawdown !== '';
+        } else {
+          return row.strategy && 
+                 row.accountSize && 
+                 row.contracts && 
+                 row.currentBalance !== undefined && row.currentBalance !== null && row.currentBalance !== '' &&
+                 (row.startOfDayProfit !== undefined && row.startOfDayProfit !== null) &&
+                 row.safetyNet !== undefined && row.safetyNet !== null && row.safetyNet !== '';
+        }
+      });
+      
+      if (validRows.length > 0) {
+        // Small delay to ensure rows are fully populated in state
+        setTimeout(() => {
+          handleSubmit(null).finally(() => {
+            // Notify CSV upload that analysis is complete
+            setTimeout(() => {
+              if (window.setAnalyzingState) {
+                window.setAnalyzingState(false);
+              }
+            }, 500);
+          });
+        }, 500);
+      } else {
+        console.log('No valid rows found for auto-analysis. Rows:', rows);
+        console.log('Risk mode:', riskMode);
+        // Clear analyzing state if no valid rows
+        if (window.setAnalyzingState) {
+          window.setAnalyzingState(false);
+        }
+      }
+    };
+    
+    return () => {
+      delete window.triggerBulkAnalysis;
+    };
+  }, [rows, riskMode]); // Re-create function when rows or mode changes
 
   if (!isPro) {
     return (
