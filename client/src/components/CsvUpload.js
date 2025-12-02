@@ -8,7 +8,7 @@ import {
   detectCsvType 
 } from '../utils/ninjaTraderParser';
 
-function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate, onUpgrade }) {
+function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate, onUpgrade, onSwitchToBulkTab }) {
   const [accountsFile, setAccountsFile] = useState(null);
   const [strategiesFile, setStrategiesFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -120,6 +120,13 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
           onPopulateBulkRows(rows);
           setParseSuccess(`Successfully loaded ${rows.length} account/strategy combinations into the Bulk Risk Calculator!`);
           setIsAnalyzing(true);
+          
+          // Switch to bulk tab on mobile after successful parse
+          if (onSwitchToBulkTab) {
+            setTimeout(() => {
+              onSwitchToBulkTab();
+            }, 500);
+          }
           
           // Trigger auto-analysis after a longer delay to ensure state is updated
           setTimeout(() => {
