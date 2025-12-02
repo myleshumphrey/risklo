@@ -29,6 +29,7 @@ function AppContent() {
   const [riskMetrics, setRiskMetrics] = useState(null); // Metrics for Risk mode
   const [apexMaeMetrics, setApexMaeMetrics] = useState(null); // Metrics for 30% Drawdown mode
   const [mobileProTab, setMobileProTab] = useState('bulk'); // 'bulk' or 'csv' - for mobile tabs only
+  const [lastFormData, setLastFormData] = useState(null); // Store last form data for calculations
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [sheetNames, setSheetNames] = useState([]);
@@ -95,6 +96,7 @@ function AppContent() {
   const handleAnalyze = async (formData) => {
     setLoading(true);
     setError(null);
+    setLastFormData(formData); // Store form data for calculation details
     
     try {
       const response = await fetch(API_ENDPOINTS.analyze, {
@@ -201,7 +203,7 @@ function AppContent() {
             )}
             
             {metrics ? (
-              <Dashboard metrics={metrics} riskMode={riskMode} onNavigate={setCurrentPage} />
+              <Dashboard metrics={metrics} riskMode={riskMode} onNavigate={setCurrentPage} formData={lastFormData} />
             ) : (
               <div className="no-results-message">
                 <div className="no-results-content">

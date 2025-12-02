@@ -1,7 +1,7 @@
 import React from 'react';
 import './MetricCard.css';
 
-function MetricCard({ title, value, subtitle, icon, trend }) {
+function MetricCard({ title, value, subtitle, icon, trend, onClick, clickable }) {
   // If icon is a string (emoji), render it as-is for backward compatibility
   // Otherwise, render as React component
   const renderIcon = () => {
@@ -12,7 +12,11 @@ function MetricCard({ title, value, subtitle, icon, trend }) {
   };
 
   return (
-    <div className="metric-card">
+    <div 
+      className={`metric-card ${clickable ? 'clickable' : ''}`}
+      onClick={onClick}
+      style={{ cursor: clickable ? 'pointer' : 'default' }}
+    >
       <div className="metric-header">
         {renderIcon()}
         <h3 className="metric-title">{title}</h3>

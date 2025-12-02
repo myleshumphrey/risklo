@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './BulkRiskCalculator.css';
 import Dashboard from './Dashboard';
 import { API_ENDPOINTS } from '../config';
@@ -6,9 +6,10 @@ import { ACCOUNT_SIZE_PRESETS, DEFAULT_ACCOUNT_SIZE, DEFAULT_THRESHOLD, getThres
 import { sortStrategies } from '../utils/strategySort';
 import { IconLock } from './Icons';
 
-function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopulateRows, onUpgrade }) {
+function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopulateRows, onUpgrade, autoAnalyzeAfterPopulate }) {
   const [results, setResults] = useState(null);
   const [selectedResult, setSelectedResult] = useState(null);
+  const resultsRef = useRef(null);
 
   // Clear results when switching modes
   useEffect(() => {
@@ -37,6 +38,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
       onPopulateRows(setRows);
     }
   }, [onPopulateRows]);
+
   const [loading, setLoading] = useState(false);
 
   const addRow = () => {
@@ -88,8 +90,10 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = useCallback(async (e) => {
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
     setLoading(true);
     
     try {
@@ -97,9 +101,17 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
       const rowsWithIndex = rows.map((row, originalIndex) => ({ ...row, originalIndex: originalIndex + 1 }));
       const validRows = rowsWithIndex.filter(row => {
         if (riskMode === 'risk') {
-          return row.strategy && row.accountSize && row.contracts && row.maxDrawdown;
+          return row.strategy && 
+                 row.accountSize && 
+                 row.contracts && 
+                 row.maxDrawdown !== undefined && row.maxDrawdown !== null && row.maxDrawdown !== '';
         } else {
-          return row.strategy && row.accountSize && row.contracts && row.currentBalance && row.startOfDayProfit && row.safetyNet;
+          return row.strategy && 
+                 row.accountSize && 
+                 row.contracts && 
+                 row.currentBalance !== undefined && row.currentBalance !== null && row.currentBalance !== '' &&
+                 (row.startOfDayProfit !== undefined && row.startOfDayProfit !== null) &&
+                 row.safetyNet !== undefined && row.safetyNet !== null && row.safetyNet !== '';
         }
       });
 
@@ -108,7 +120,6 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
         setLoading(false);
         return;
       }
-
 
       // Analyze each row
       const analysisPromises = validRows.map(row => 
@@ -128,18 +139,79 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
       );
 
       const results = await Promise.all(analysisPromises);
-      setResults(results.map((result, index) => ({
+      const formattedResults = results.map((result, index) => ({
         ...validRows[index],
         accountNumber: validRows[index].originalIndex, // Use original table row number
         metrics: result.metrics
-      })));
+      }));
+      setResults(formattedResults);
+      
+      // Auto-scroll to results after a short delay to ensure DOM is updated
+      setTimeout(() => {
+        if (resultsRef.current) {
+          resultsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 300);
     } catch (err) {
       console.error('Bulk analysis error:', err);
       alert('Error analyzing bulk data. Please try again.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [rows, riskMode]);
+
+  // Expose handleSubmit for external triggering (from CSV upload)
+  useEffect(() => {
+    window.triggerBulkAnalysis = () => {
+      // Notify CSV upload that analysis is starting
+      if (window.setAnalyzingState) {
+        window.setAnalyzingState(true);
+      }
+      
+      // Check if rows have required fields filled before triggering
+      const rowsWithIndex = rows.map((row, originalIndex) => ({ ...row, originalIndex: originalIndex + 1 }));
+      const validRows = rowsWithIndex.filter(row => {
+        if (riskMode === 'risk') {
+          return row.strategy && 
+                 row.accountSize && 
+                 row.contracts && 
+                 row.maxDrawdown !== undefined && row.maxDrawdown !== null && row.maxDrawdown !== '';
+        } else {
+          return row.strategy && 
+                 row.accountSize && 
+                 row.contracts && 
+                 row.currentBalance !== undefined && row.currentBalance !== null && row.currentBalance !== '' &&
+                 (row.startOfDayProfit !== undefined && row.startOfDayProfit !== null) &&
+                 row.safetyNet !== undefined && row.safetyNet !== null && row.safetyNet !== '';
+        }
+      });
+      
+      if (validRows.length > 0) {
+        // Small delay to ensure rows are fully populated in state
+        setTimeout(() => {
+          handleSubmit(null).finally(() => {
+            // Notify CSV upload that analysis is complete
+            setTimeout(() => {
+              if (window.setAnalyzingState) {
+                window.setAnalyzingState(false);
+              }
+            }, 500);
+          });
+        }, 500);
+      } else {
+        console.log('No valid rows found for auto-analysis. Rows:', rows);
+        console.log('Risk mode:', riskMode);
+        // Clear analyzing state if no valid rows
+        if (window.setAnalyzingState) {
+          window.setAnalyzingState(false);
+        }
+      }
+    };
+    
+    return () => {
+      delete window.triggerBulkAnalysis;
+    };
+  }, [rows, riskMode, handleSubmit]); // Include handleSubmit in dependencies
 
   if (!isPro) {
     return (
@@ -169,7 +241,15 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
       </div>
 
       <form onSubmit={handleSubmit} className="bulk-form">
-        <div className="bulk-table-container">
+        <div className="bulk-table-container" style={{ position: 'relative' }}>
+          {loading && (
+            <div className="bulk-analyzing-overlay">
+              <div className="bulk-analyzing-content">
+                <div className="bulk-analyzing-spinner"></div>
+                <div className="bulk-analyzing-text">Analyzing...</div>
+              </div>
+            </div>
+          )}
           <table className="bulk-table">
             <thead>
               <tr>
@@ -361,7 +441,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
       </form>
 
       {results && (
-        <div className="bulk-results">
+        <div className="bulk-results" ref={resultsRef}>
           <h3>{riskMode === 'risk' ? 'Risk Results' : '30% Drawdown Results'}</h3>
           <div className="results-grid">
             {results.map((result, index) => (
