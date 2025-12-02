@@ -15,6 +15,15 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
   const [parseError, setParseError] = useState(null);
   const [parseSuccess, setParseSuccess] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Expose setIsAnalyzing to BulkRiskCalculator
+  React.useEffect(() => {
+    window.setAnalyzingState = setIsAnalyzing;
+    return () => {
+      delete window.setAnalyzingState;
+    };
+  }, []);
 
   const handleAccountsFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -110,14 +119,22 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
         if (onPopulateBulkRows) {
           onPopulateBulkRows(rows);
           setParseSuccess(`Successfully loaded ${rows.length} account/strategy combinations into the Bulk Risk Calculator!`);
+          setIsAnalyzing(true);
           
-          // Scroll to bulk calculator
+          // Trigger auto-analysis after a longer delay to ensure state is updated
+          setTimeout(() => {
+            if (window.triggerBulkAnalysis) {
+              window.triggerBulkAnalysis();
+            }
+          }, 800);
+          
+          // Scroll to bulk calculator after analysis starts
           setTimeout(() => {
             const bulkSection = document.querySelector('.bulk-calculator');
             if (bulkSection) {
               bulkSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
-          }, 500);
+          }, 1500);
         } else {
           throw new Error('Bulk calculator not available');
         }
@@ -339,11 +356,17 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
             <strong><IconCheck size={16} style={{ display: 'inline', marginRight: '0.25rem', verticalAlign: 'middle' }} /> Success:</strong> {parseSuccess}
           </div>
         )}
+        {isAnalyzing && (
+          <div className="analyzing-indicator">
+            <div className="spinner"></div>
+            <span>Analyzing accounts... This may take a moment.</span>
+          </div>
+        )}
 
         <button
           onClick={handleUpload}
           disabled={(!accountsFile && !strategiesFile) || uploading}
-          className="upload-button"
+          className={`upload-button ${accountsFile && strategiesFile && !uploading ? 'pulse-ready' : ''}`}
         >
           {uploading ? 'Processing...' : 'Parse & Load into Bulk Calculator'}
         </button>

@@ -104,6 +104,25 @@
   color: rgba(255, 255, 255, 0.4);
 }
 
+.select-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.select-spinner {
+  position: absolute;
+  right: 2.5rem;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(102, 126, 234, 0.3);
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  z-index: 1;
+  pointer-events: none;
+}
+
 .form-select {
   cursor: pointer;
   appearance: none;
@@ -111,6 +130,13 @@
   background-repeat: no-repeat;
   background-position: right 1rem center;
   padding-right: 2.5rem;
+  width: 100%;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .form-select:disabled {

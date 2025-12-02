@@ -96,22 +96,25 @@ function InputForm({ onSubmit, loading, sheetNames, loadingSheets, error, riskMo
             <label htmlFor="sheetName" className="form-label">
               Strategy <span className="required">*</span>
             </label>
-            <select
-              id="sheetName"
-              name="sheetName"
-              value={formData.sheetName}
-              onChange={handleChange}
-              className="form-input form-select"
-              required
-              disabled={loadingSheets}
-            >
-              <option value="">{loadingSheets ? 'Loading strategies...' : sheetNames.length === 0 ? 'No strategies found' : 'Select a strategy'}</option>
-              {sortStrategies(sheetNames).map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
+            <div className="select-wrapper">
+              {loadingSheets && <div className="select-spinner"></div>}
+              <select
+                id="sheetName"
+                name="sheetName"
+                value={formData.sheetName}
+                onChange={handleChange}
+                className="form-input form-select"
+                required
+                disabled={loadingSheets}
+              >
+                <option value="">{loadingSheets ? 'Loading strategies...' : sheetNames.length === 0 ? 'No strategies found' : 'Select a strategy'}</option>
+                {sortStrategies(sheetNames).map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </div>
             <small className="form-hint">
               {error ? (
                 <span style={{ color: '#ef4444' }}>{error}</span>
