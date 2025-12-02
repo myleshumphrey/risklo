@@ -366,7 +366,7 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
         <button
           onClick={handleUpload}
           disabled={(!accountsFile && !strategiesFile) || uploading}
-          className="upload-button"
+          className={`upload-button ${accountsFile && strategiesFile && !uploading ? 'pulse-ready' : ''}`}
         >
           {uploading ? 'Processing...' : 'Parse & Load into Bulk Calculator'}
         </button>
