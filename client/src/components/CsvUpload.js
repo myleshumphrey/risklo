@@ -217,6 +217,28 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
     }
   };
 
+  const handleRemoveAccountsFile = () => {
+    setAccountsFile(null);
+    setParseError(null);
+    setParseSuccess(null);
+    // Reset the file input
+    const input = document.getElementById('accounts-file-input');
+    if (input) {
+      input.value = '';
+    }
+  };
+
+  const handleRemoveStrategiesFile = () => {
+    setStrategiesFile(null);
+    setParseError(null);
+    setParseSuccess(null);
+    // Reset the file input
+    const input = document.getElementById('strategies-file-input');
+    if (input) {
+      input.value = '';
+    }
+  };
+
   if (!isPro) {
     return (
       <div className="csv-upload-gated">
@@ -333,13 +355,33 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
             {accountsFile && (
               <div className="file-item">
                 <span className="file-name"><IconChart size={16} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} /> {accountsFile.name}</span>
-                <span className="file-size">{(accountsFile.size / 1024).toFixed(2)} KB</span>
+                <div className="file-item-right">
+                  <span className="file-size">{(accountsFile.size / 1024).toFixed(2)} KB</span>
+                  <button 
+                    className="file-remove-btn" 
+                    onClick={handleRemoveAccountsFile}
+                    title="Remove file"
+                    aria-label="Remove accounts file"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
             )}
             {strategiesFile && (
               <div className="file-item">
                 <span className="file-name"><IconTrendUp size={16} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} /> {strategiesFile.name}</span>
-                <span className="file-size">{(strategiesFile.size / 1024).toFixed(2)} KB</span>
+                <div className="file-item-right">
+                  <span className="file-size">{(strategiesFile.size / 1024).toFixed(2)} KB</span>
+                  <button 
+                    className="file-remove-btn" 
+                    onClick={handleRemoveStrategiesFile}
+                    title="Remove file"
+                    aria-label="Remove strategies file"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
             )}
           </div>
