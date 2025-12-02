@@ -264,6 +264,10 @@ function AppContent() {
                     window.bulkCalculatorSetRows(rows);
                   }
                 }}
+                onSwitchToBulkTab={() => {
+                  // Switch to bulk tab on mobile after successful parse
+                  setMobileProTab('bulk');
+                }}
               />
             </div>
           </>
