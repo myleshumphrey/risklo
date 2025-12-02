@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './Dashboard.css';
 import MetricCard from './MetricCard';
 import RiskIndicator from './RiskIndicator';
+import CalculationModal from './CalculationModal';
 import { IconTrendDown, IconTrendUp, IconAlert, IconChart, IconScale, IconInfo, IconCheck } from './Icons';
 
-function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
+function Dashboard({ metrics, riskMode = 'risk', onNavigate, formData }) {
+  const [selectedMetric, setSelectedMetric] = useState(null);
   if (!metrics || metrics.error) {
     return (
       <div className="dashboard-error">
@@ -85,6 +87,8 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
               subtitle={`MAE Limit (${(metrics.apexMaeComparison.limitPercent * 100).toFixed(0)}% rule)`}
               icon="🛡️"
               trend={metrics.apexMaeComparison.exceedsMae ? 'negative' : 'neutral'}
+              clickable={true}
+              onClick={() => setSelectedMetric('apexMae')}
             />
           )}
           
@@ -94,6 +98,8 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
             subtitle={`${metrics.highestLossPercent}% of account (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`}
             icon={<IconTrendDown size={20} />}
             trend={metrics.apexMaeComparison?.exceedsMae ? 'negative' : 'neutral'}
+            clickable={true}
+            onClick={() => setSelectedMetric('highestLoss')}
           />
 
           {metrics.maxProfit !== undefined && metrics.maxProfit > 0 && (
@@ -103,6 +109,8 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
               subtitle={`${metrics.maxProfitPercent}% of account (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`}
               icon={<IconTrendUp size={20} />}
               trend="positive"
+              clickable={true}
+              onClick={() => setSelectedMetric('maxProfit')}
             />
           )}
         </div>
@@ -115,6 +123,8 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
             subtitle={metrics.riskScore < 40 ? 'Low Risk' : metrics.riskScore < 70 ? 'Moderate Risk' : 'High Risk'}
             icon={<IconAlert size={20} />}
             trend={metrics.riskScore < 40 ? 'neutral' : metrics.riskScore < 70 ? 'moderate' : 'negative'}
+            clickable={true}
+            onClick={() => setSelectedMetric('riskScore')}
           />
           
           <MetricCard
@@ -123,6 +133,8 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
             subtitle={`${metrics.highestLossPercent}% of account (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`}
             icon={<IconTrendDown size={20} />}
             trend="negative"
+            clickable={true}
+            onClick={() => setSelectedMetric('highestLoss')}
           />
           
           <MetricCard
@@ -131,6 +143,8 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
             subtitle={`${metrics.avgLossPercent}% of account (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`}
             icon={<IconChart size={20} />}
             trend="negative"
+            clickable={true}
+            onClick={() => setSelectedMetric('averageLoss')}
           />
           
           {metrics.maxProfit !== undefined && metrics.maxProfit > 0 && (
@@ -140,6 +154,8 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
               subtitle={`${metrics.maxProfitPercent}% of account (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`}
               icon={<IconTrendUp size={20} />}
               trend="positive"
+              clickable={true}
+              onClick={() => setSelectedMetric('maxProfit')}
             />
           )}
           
@@ -150,6 +166,8 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
               subtitle={`${metrics.avgProfitPercent}% of account (${metrics.numContracts || 1} contract${(metrics.numContracts || 1) > 1 ? 's' : ''})`}
               icon={<IconTrendUp size={20} />}
               trend="positive"
+              clickable={true}
+              onClick={() => setSelectedMetric('averageProfit')}
             />
           )}
           
@@ -182,6 +200,8 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
                 : `No breaches - $${parseFloat(metrics.drawdownBreach.margin).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} buffer`}
               icon="🛡️"
               trend={metrics.drawdownBreach.highestExceeds ? 'negative' : 'neutral'}
+              clickable={true}
+              onClick={() => setSelectedMetric('maxDrawdown')}
             />
           )}
         </div>
@@ -393,6 +413,14 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate }) {
       <div className="risk-message-box">
         <p className="risk-message-text">{metrics.riskMessage}</p>
       </div>
+
+      <CalculationModal
+        isOpen={selectedMetric !== null}
+        onClose={() => setSelectedMetric(null)}
+        metricType={selectedMetric}
+        metrics={metrics}
+        formData={formData}
+      />
     </div>
   );
 }

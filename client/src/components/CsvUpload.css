@@ -353,6 +353,51 @@
   cursor: not-allowed;
 }
 
+.upload-button.pulse-ready {
+  animation: pulse 2s ease-in-out infinite;
+  position: relative;
+}
+
+.upload-button.pulse-ready::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #10b981 0%, #34d399 50%, #10b981 100%);
+  opacity: 0;
+  animation: glow-pulse 2s ease-in-out infinite;
+  z-index: -1;
+  filter: blur(6px);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3),
+                0 0 0 0 rgba(16, 185, 129, 0.15);
+  }
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.5),
+                0 0 20px 8px rgba(16, 185, 129, 0.22),
+                0 0 40px 16px rgba(16, 185, 129, 0.11);
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(1.05);
+  }
+}
+
 .csv-note {
   margin-top: 1rem;
   padding: 1rem;
