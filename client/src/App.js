@@ -31,7 +31,6 @@ function AppContent() {
   const [apexMaeMetrics, setApexMaeMetrics] = useState(null); // Metrics for 30% Drawdown mode
   const [mobileProTab, setMobileProTab] = useState('bulk'); // 'bulk' or 'csv' - for mobile tabs only
   const [lastFormData, setLastFormData] = useState(null); // Store last form data for calculations
-  const [isAuthenticated, setIsAuthenticated] = useState(false); // Password authentication
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [sheetNames, setSheetNames] = useState([]);
