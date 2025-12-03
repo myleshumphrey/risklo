@@ -8,6 +8,7 @@ import CsvUpload from './components/CsvUpload';
 import Footer from './components/Footer';
 import HamburgerMenu from './components/HamburgerMenu';
 import DisclaimerModal from './components/DisclaimerModal';
+import PasswordModal from './components/PasswordModal';
 import GoogleSignIn from './components/GoogleSignIn';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import About from './pages/About';
@@ -363,6 +364,21 @@ function AppContent() {
 }
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = React.useState(() => {
+    // Check if user is already authenticated in this session
+    return sessionStorage.getItem('risklo_authenticated') === 'true';
+  });
+
+  // Show password modal if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <PasswordModal
+        isOpen={true}
+        onPasswordCorrect={() => setIsAuthenticated(true)}
+      />
+    );
+  }
+
   return (
     <AuthProvider>
       <AppContent />
