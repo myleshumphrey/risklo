@@ -443,39 +443,86 @@ function calculateRiskMetrics(data, accountSize, contracts, maxDrawdown, contrac
       ? Number(profitSinceLastPayout) 
       : (startOfDayProfit !== null && startOfDayProfit !== undefined ? Number(startOfDayProfit) : null);
     
+    // Ensure it's a valid number
+    const profitBalanceNum = profitBalanceForWindfall !== null && !isNaN(profitBalanceForWindfall) ? profitBalanceForWindfall : null;
+    
     const usesProfitSincePayout = (profitSinceLastPayout !== null && profitSinceLastPayout !== undefined && profitSinceLastPayout !== '');
     
-    if (profitBalanceForWindfall !== null && profitBalanceForWindfall > 0) {
-      // Calculate maximum profit allowed (30% of profit balance)
-      const maxProfitAllowed = profitBalanceForWindfall * 0.3;
-      const profitBuffer = maxProfitAllowed - maxProfitForSize;
-      
+    if (profitBalanceNum !== null && profitBalanceNum > 0) {
       // Check if highest profit day exceeds 30% of profit balance (since last payout)
-      const maxProfitPercentOfBalance = (maxProfitForSize / profitBalanceForWindfall) * 100;
+      const maxProfitPercentOfBalance = (maxProfitForSize / profitBalanceNum) * 100;
       const violatesWindfall = maxProfitPercentOfBalance > 30;
+      
+      // Calculate how much more profit is needed (if violating)
+      const additionalProfitNeeded = violatesWindfall 
+        ? Math.max(0, minTotalProfitRequired - profitBalanceNum)
+        : 0;
+      
+      // Calculate maximum profit you can make TODAY without violating the windfall rule
+      // If today's profit becomes the new highest day, it must be ≤ 30% of (current balance + today's profit)
+      // So: todayProfit ≤ 0.3 × (currentBalance + todayProfit)
+      // todayProfit ≤ 0.3 × currentBalance + 0.3 × todayProfit
+      // todayProfit - 0.3 × todayProfit ≤ 0.3 × currentBalance
+      // 0.7 × todayProfit ≤ 0.3 × currentBalance
+      // todayProfit ≤ (0.3 / 0.7) × currentBalance
+      // todayProfit ≤ 0.42857 × currentBalance ≈ 42.86% of current balance
+      const maxProfitTodayAllowed = profitBalanceNum * (0.3 / 0.7);
+      
+      // However, if historical highest day is already higher, we need to ensure that day doesn't exceed 30% of new total
+      // If historical highest > maxProfitTodayAllowed, then we need to calculate differently
+      // We need: historicalHighest ≤ 0.3 × (currentBalance + todayProfit)
+      // So: todayProfit ≥ (historicalHighest / 0.3) - currentBalance
+      // But if this is negative or very small, it means we can't make enough today to satisfy the rule
+      // Actually, if historical highest is already too high, we need to grow total balance first
+      
+      // The maximum profit today that keeps you safe:
+      // If today becomes highest day: maxProfitTodayAllowed (calculated above)
+      // But we also need to ensure historical highest doesn't violate: historicalHighest ≤ 0.3 × (currentBalance + todayProfit)
+      // So: todayProfit ≥ (historicalHighest / 0.3) - currentBalance
+      const minProfitTodayToSatisfyHistorical = (maxProfitForSize / 0.3) - profitBalanceNum;
+      
+      // Maximum profit today without violating rule:
+      // - If historical highest is already too high, you can't make enough today to fix it (need negative profit, which doesn't make sense)
+      // - Otherwise, you can make up to maxProfitTodayAllowed
+      let maxProfitToday = maxProfitTodayAllowed;
+      let maxProfitTodayMessage = '';
+      
+      if (violatesWindfall) {
+        // Historical highest already violates, so making profit today won't help until you reach minTotalProfitRequired
+        // But we can still calculate what you CAN make today without making it worse
+        // If today becomes the new highest: todayProfit ≤ 0.3 × (currentBalance + todayProfit)
+        maxProfitToday = maxProfitTodayAllowed;
+        maxProfitTodayMessage = `You can make up to $${maxProfitToday.toFixed(2)} today without violating the rule (if today becomes your highest day). However, your historical highest day ($${maxProfitForSize.toFixed(2)}) already violates the rule, so you need $${additionalProfitNeeded.toFixed(2)} more total profit before requesting payout.`;
+      } else {
+        // Currently safe, calculate max profit today
+        maxProfitToday = maxProfitTodayAllowed;
+        maxProfitTodayMessage = `You can make up to $${maxProfitToday.toFixed(2)} today without violating the windfall rule (if today becomes your highest day).`;
+      }
       
       windfallRule = {
         maxProfitDay: maxProfitForSize,
-        maxProfitAllowed: maxProfitAllowed.toFixed(2),
-        profitBalanceForWindfall: profitBalanceForWindfall.toFixed(2),
-        profitBuffer: profitBuffer.toFixed(2),
+        profitBalanceForWindfall: profitBalanceNum.toFixed(2),
         minTotalProfitRequired: minTotalProfitRequired.toFixed(2),
+        additionalProfitNeeded: additionalProfitNeeded.toFixed(2),
+        maxProfitTodayAllowed: maxProfitToday.toFixed(2),
+        maxProfitTodayMessage,
         maxProfitPercentOfBalance: maxProfitPercentOfBalance.toFixed(2),
         violatesWindfall,
         windfallStatus: violatesWindfall ? 'VIOLATES' : 'SAFE',
         usesProfitSincePayout,
         windfallMessage: violatesWindfall
-          ? `⚠️ Highest profit day ($${maxProfitForSize.toFixed(2)}) exceeds 30% of ${usesProfitSincePayout ? 'profit since last payout' : 'profit balance'} (${maxProfitPercentOfBalance.toFixed(2)}%). To request payout, you need at least $${minTotalProfitRequired.toFixed(2)} total profit.`
-          : `✅ Highest profit day ($${maxProfitForSize.toFixed(2)}) is within 30% of ${usesProfitSincePayout ? 'profit since last payout' : 'profit balance'} (${maxProfitPercentOfBalance.toFixed(2)}%). Minimum total profit required: $${minTotalProfitRequired.toFixed(2)}.`
+          ? `⚠️ Highest profit day ($${maxProfitForSize.toFixed(2)}) exceeds 30% of ${usesProfitSincePayout ? 'profit since last payout' : 'profit balance'} (${maxProfitPercentOfBalance.toFixed(2)}%). To request payout, you need at least $${minTotalProfitRequired.toFixed(2)} total profit (need $${additionalProfitNeeded.toFixed(2)} more).`
+          : `✅ Highest profit day ($${maxProfitForSize.toFixed(2)}) is within 30% of ${usesProfitSincePayout ? 'profit since last payout' : 'profit balance'} (${maxProfitPercentOfBalance.toFixed(2)}%). You can request payout once you reach $${minTotalProfitRequired.toFixed(2)} total profit.`
       };
     } else {
       // Calculate minimum total profit required even without profit balance
       windfallRule = {
         maxProfitDay: maxProfitForSize,
-        maxProfitAllowed: null,
         profitBalanceForWindfall: null,
-        profitBuffer: null,
         minTotalProfitRequired: minTotalProfitRequired.toFixed(2),
+        additionalProfitNeeded: null,
+        maxProfitTodayAllowed: null, // Can't calculate without profit balance
+        maxProfitTodayMessage: 'Enter your profit balance above to calculate maximum profit you can make today.',
         maxProfitPercentOfBalance: null,
         violatesWindfall: null,
         windfallStatus: 'INFO',

@@ -295,7 +295,7 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate, formData }) {
         </div>
       )}
 
-      {riskMode === 'apexMae' && metrics.windfallRule && (
+      {false && riskMode === 'apexMae' && metrics.windfallRule && (
         <div className="apex-mae-simplified-box" style={{ 
           borderColor: metrics.windfallRule.violatesWindfall === true ? '#ef4444' : metrics.windfallRule.violatesWindfall === false ? '#10b981' : '#f59e0b',
           backgroundColor: metrics.windfallRule.violatesWindfall === true ? 'rgba(239, 68, 68, 0.1)' : metrics.windfallRule.violatesWindfall === false ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)'
@@ -326,27 +326,37 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate, formData }) {
           </div>
           
           <div className="apex-mae-simplified-content">
-            {metrics.windfallRule.maxProfitAllowed ? (
+            {metrics.windfallRule.maxProfitTodayAllowed !== null && metrics.windfallRule.maxProfitTodayAllowed !== undefined ? (
               <div className="apex-mae-key-metric">
-                <div className="apex-mae-metric-label">Maximum Profit Allowed (Windfall Limit)</div>
-                <div className="apex-mae-metric-value" style={{ color: metrics.windfallRule.violatesWindfall ? '#ef4444' : '#10b981' }}>
-                  ${parseFloat(metrics.windfallRule.maxProfitAllowed).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <div className="apex-mae-metric-label">Maximum Profit You Can Make Today</div>
+                <div className="apex-mae-metric-value" style={{ color: metrics.windfallRule.violatesWindfall ? '#f59e0b' : '#10b981' }}>
+                  ${parseFloat(metrics.windfallRule.maxProfitTodayAllowed).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
                 <div className="apex-mae-metric-subtitle">
-                  30% of ${parseFloat(metrics.windfallRule.profitBalanceForWindfall).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  Without violating windfall rule (if today becomes highest day)
                 </div>
               </div>
             ) : (
               <div className="apex-mae-key-metric">
-                <div className="apex-mae-metric-label">Highest Profit Day</div>
-                <div className="apex-mae-metric-value" style={{ color: '#10b981' }}>
-                  ${metrics.windfallRule.maxProfitDay.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <div className="apex-mae-metric-label">Maximum Profit You Can Make Today</div>
+                <div className="apex-mae-metric-value" style={{ color: '#f59e0b' }}>
+                  N/A
                 </div>
                 <div className="apex-mae-metric-subtitle">
-                  Maximum single-day profit from historical data
+                  Enter profit balance to calculate
                 </div>
               </div>
             )}
+
+            <div className="apex-mae-key-metric">
+              <div className="apex-mae-metric-label">Highest Historical Profit Day</div>
+              <div className="apex-mae-metric-value" style={{ color: metrics.windfallRule.violatesWindfall ? '#ef4444' : '#10b981' }}>
+                ${metrics.windfallRule.maxProfitDay.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+              <div className="apex-mae-metric-subtitle">
+                Maximum single-day profit from historical data
+              </div>
+            </div>
 
             <div className="apex-mae-comparison">
               <div className="apex-mae-comparison-item">
@@ -356,12 +366,45 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate, formData }) {
                 </span>
               </div>
               
+              {metrics.windfallRule.profitBalanceForWindfall && (
+                <div className="apex-mae-comparison-item">
+                  <span className="comparison-label">Current Profit Balance:</span>
+                  <span className="comparison-value">
+                    ${parseFloat(metrics.windfallRule.profitBalanceForWindfall).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
+              
               {metrics.windfallRule.maxProfitPercentOfBalance !== null && (
                 <div className="apex-mae-comparison-item">
                   <span className="comparison-label">Highest Day as % of Profit Balance:</span>
                   <span className={`comparison-value ${metrics.windfallRule.violatesWindfall ? 'exceeds' : 'safe'}`}>
                     {metrics.windfallRule.maxProfitPercentOfBalance}%
                   </span>
+                </div>
+              )}
+              
+              {metrics.windfallRule.additionalProfitNeeded && parseFloat(metrics.windfallRule.additionalProfitNeeded) > 0 && (
+                <div className="apex-mae-comparison-item">
+                  <span className="comparison-label">Additional Profit Needed for Payout:</span>
+                  <span className="comparison-value exceeds">
+                    ${parseFloat(metrics.windfallRule.additionalProfitNeeded).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
+              
+              {metrics.windfallRule.maxProfitTodayMessage && (
+                <div className="apex-mae-info" style={{
+                  marginTop: '1rem',
+                  padding: '1rem',
+                  background: 'rgba(102, 126, 234, 0.15)',
+                  borderLeft: '4px solid #667eea',
+                  borderRadius: '8px',
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  fontSize: '0.95rem',
+                  lineHeight: '1.6'
+                }}>
+                  <strong><IconInfo size={16} style={{ display: 'inline', marginRight: '0.25rem', verticalAlign: 'middle' }} /> Today's Limit:</strong> {metrics.windfallRule.maxProfitTodayMessage}
                 </div>
               )}
               

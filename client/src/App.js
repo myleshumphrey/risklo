@@ -326,13 +326,13 @@ function AppContent() {
                   className={`mode-toggle-btn ${riskMode === 'risk' ? 'active' : ''}`}
                   onClick={() => handleModeChange('risk')}
                 >
-                  Risk
+                  Drawdown Risk
                 </button>
                 <button
                   className={`mode-toggle-btn ${riskMode === 'apexMae' ? 'active' : ''}`}
                   onClick={() => handleModeChange('apexMae')}
                 >
-                  30% Drawdown
+                  30% Rule
                 </button>
               </div>
             </div>
