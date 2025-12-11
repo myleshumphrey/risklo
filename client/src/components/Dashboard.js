@@ -3,7 +3,7 @@ import './Dashboard.css';
 import MetricCard from './MetricCard';
 import RiskIndicator from './RiskIndicator';
 import CalculationModal from './CalculationModal';
-import { IconTrendDown, IconTrendUp, IconAlert, IconChart, IconScale, IconInfo, IconCheck } from './Icons';
+import { IconTrendDown, IconTrendUp, IconAlert, IconChart, IconScale, IconInfo, IconCheck, IconLightbulb } from './Icons';
 
 function Dashboard({ metrics, riskMode = 'risk', onNavigate, formData }) {
   const [selectedMetric, setSelectedMetric] = useState(null);
@@ -51,6 +51,51 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate, formData }) {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* What to Fix Section - Show when there's a risk issue */}
+      {((riskMode === 'risk' && (metrics.blowAccountStatus === 'NO GO' || metrics.blowAccountStatus === 'CAUTION' || metrics.riskScore >= 60)) || 
+        (riskMode === 'apexMae' && metrics.apexMaeComparison?.exceedsMae)) && (
+        <div className="what-to-fix-section">
+          <div className="what-to-fix-header">
+            <IconLightbulb size={20} style={{ color: '#f59e0b' }} />
+            <h3 className="what-to-fix-title">What to Fix</h3>
+          </div>
+          <div className="what-to-fix-content">
+            <ul className="what-to-fix-list">
+              {/* Suggestion 1: Reduce Contracts */}
+              {formData?.contracts && Number(formData.contracts) > 1 && (
+                <li className="what-to-fix-item">
+                  <strong>Reduce Contracts:</strong> Consider reducing from <strong>{formData.contracts}</strong> contract{Number(formData.contracts) > 1 ? 's' : ''} to{' '}
+                  {riskMode === 'risk' && metrics.drawdownBreach?.maxDrawdown ? (
+                    <strong>{Math.max(1, Math.floor((metrics.drawdownBreach.maxDrawdown / (metrics.highestLoss / Number(formData.contracts || 1))) * 0.9))}</strong>
+                  ) : riskMode === 'apexMae' && metrics.apexMaeComparison?.maxMaePerTrade ? (
+                    <strong>{Math.max(1, Math.floor((metrics.apexMaeComparison.maxMaePerTrade / (metrics.highestLoss / Number(formData.contracts || 1))) * 0.9))}</strong>
+                  ) : (
+                    <strong>{Math.max(1, Math.floor(Number(formData.contracts) * 0.5))}</strong>
+                  )}
+                  {' '}contract{Math.max(1, Math.floor(Number(formData.contracts) * 0.5)) > 1 ? 's' : ''} to lower your risk exposure.
+                </li>
+              )}
+              
+              {/* Suggestion 2: Switch to MNQ */}
+              {formData?.contractType === 'NQ' && (
+                <li className="what-to-fix-item">
+                  <strong>Switch to Micro Contracts (MNQ):</strong> MNQ contracts are 1/10th the size of NQ contracts, which means{' '}
+                  {formData?.contracts ? `your current ${formData.contracts} NQ contract${Number(formData.contracts) > 1 ? 's' : ''}` : 'your NQ position'}{' '}
+                  would be equivalent to <strong>{Number(formData?.contracts || 1) * 10}</strong> MNQ contracts. This gives you{' '}
+                  <strong>10x more granular control</strong> over your position size and can help you stay within risk limits.
+                </li>
+              )}
+              
+              {/* Suggestion 3: Consider Alternative Strategies */}
+              <li className="what-to-fix-item">
+                <strong>Consider Alternative Strategies:</strong> This strategy may not align with your risk tolerance or account size. 
+                Try analyzing other strategies from the dropdown to find one with lower historical drawdowns that better matches your risk profile.
+              </li>
+            </ul>
+          </div>
         </div>
       )}
 
