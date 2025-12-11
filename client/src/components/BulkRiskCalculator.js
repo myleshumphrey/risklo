@@ -79,10 +79,18 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
       
       // Auto-calculate start-of-day profit when current balance or account size changes
       if (riskMode === 'apexMae' && (field === 'currentBalance' || field === 'accountSize')) {
-        const currentBalance = Number(updatedRow.currentBalance || 0);
-        const accountSize = Number(updatedRow.accountSize || 0);
+        const currentBalance = Math.floor(Number(updatedRow.currentBalance || 0) * 100) / 100; // Round down to 2 decimal places
+        const accountSize = Math.floor(Number(updatedRow.accountSize || 0) * 100) / 100; // Round down to 2 decimal places
         if (currentBalance > 0 && accountSize > 0) {
-          updatedRow.startOfDayProfit = Math.max(0, currentBalance - accountSize);
+          updatedRow.startOfDayProfit = Math.max(0, Math.floor((currentBalance - accountSize) * 100) / 100); // Round down to 2 decimal places
+        }
+      }
+      
+      // Round down numeric fields to 2 decimal places to avoid validation errors
+      if (field === 'currentBalance' || field === 'maxDrawdown' || field === 'startOfDayProfit' || field === 'safetyNet') {
+        const numValue = Number(updatedRow[field]);
+        if (!isNaN(numValue) && updatedRow[field] !== '') {
+          updatedRow[field] = Math.floor(numValue * 100) / 100; // Round down to 2 decimal places
         }
       }
       
