@@ -30,9 +30,10 @@ export function parseAccountsCsv(csvText) {
     if (values.length < Math.max(displayNameIdx, netLiquidationIdx) + 1) continue;
 
     const displayName = values[displayNameIdx]?.trim();
-    const netLiquidation = parseFloat(values[netLiquidationIdx]?.replace(/[^0-9.-]/g, '') || '0');
-    const cashValue = cashValueIdx >= 0 ? parseFloat(values[cashValueIdx]?.replace(/[^0-9.-]/g, '') || '0') : netLiquidation;
-    const trailingDrawdown = trailingDrawdownIdx >= 0 ? parseFloat(values[trailingDrawdownIdx]?.replace(/[^0-9.-]/g, '') || '0') : 0;
+    // Round down to 2 decimal places: Math.floor(value * 100) / 100
+    const netLiquidation = Math.floor(parseFloat(values[netLiquidationIdx]?.replace(/[^0-9.-]/g, '') || '0') * 100) / 100;
+    const cashValue = cashValueIdx >= 0 ? Math.floor(parseFloat(values[cashValueIdx]?.replace(/[^0-9.-]/g, '') || '0') * 100) / 100 : netLiquidation;
+    const trailingDrawdown = trailingDrawdownIdx >= 0 ? Math.floor(parseFloat(values[trailingDrawdownIdx]?.replace(/[^0-9.-]/g, '') || '0') * 100) / 100 : 0;
 
     if (!displayName || displayName === '' || isNaN(netLiquidation) || netLiquidation <= 0) {
       continue; // Skip invalid rows
@@ -49,7 +50,7 @@ export function parseAccountsCsv(csvText) {
       trailingDrawdown,
       accountSize,
       safetyNet,
-      startOfDayProfit: netLiquidation - accountSize
+      startOfDayProfit: Math.floor((netLiquidation - accountSize) * 100) / 100 // Round down to 2 decimal places
     });
   }
 
@@ -201,10 +202,10 @@ export function matchAccountsToStrategies(accounts, strategies, availableSheetNa
       contractType: strat.contractType,
       accountSize: account.accountSize,
       contracts: strat.contracts,
-      maxDrawdown: account.trailingDrawdown || 0,
-      currentBalance: account.netLiquidation,
-      startOfDayProfit: account.startOfDayProfit,
-      safetyNet: account.safetyNet,
+      maxDrawdown: Math.floor((account.trailingDrawdown || 0) * 100) / 100, // Round down to 2 decimal places
+      currentBalance: Math.floor(account.netLiquidation * 100) / 100, // Round down to 2 decimal places
+      startOfDayProfit: Math.floor(account.startOfDayProfit * 100) / 100, // Round down to 2 decimal places
+      safetyNet: Math.floor(account.safetyNet * 100) / 100, // Round down to 2 decimal places
       profitSinceLastPayout: '' // Not available in CSV
     });
   });
