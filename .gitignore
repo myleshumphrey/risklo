@@ -5,8 +5,11 @@ server/node_modules/
 
 # Environment variables
 server/.env
+server/.env.backup
 server/credentials.json
 *.env
+*.env.backup
+*.backup
 *.json
 !package.json
 !package-lock.json
