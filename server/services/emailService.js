@@ -1,58 +1,63 @@
-const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 
 /**
  * Email Service for RiskLo
  * 
  * Sends risk summary emails to users after CSV analysis.
+ * Uses SendGrid API (more reliable than SMTP in cloud environments like Railway).
  * 
  * Configuration via environment variables:
- * - EMAIL_FROM: Sender email address (required)
- * - SMTP_HOST: SMTP server hostname (e.g., smtp.gmail.com)
- * - SMTP_PORT: SMTP port (default: 587)
- * - SMTP_USER: SMTP username/email
- * - SMTP_PASS: SMTP password or app password
+ * - EMAIL_FROM: Sender email address (required, must be verified in SendGrid)
+ * - SMTP_PASS: SendGrid API key (starts with SG.)
  * 
- * For Gmail: Use an App Password (not regular password)
- * For other providers: Check their SMTP settings
+ * Note: SMTP_HOST, SMTP_PORT, SMTP_USER are no longer needed when using SendGrid API.
+ * The API key is passed as SMTP_PASS for backward compatibility.
  */
 
-let transporter = null;
+let isInitialized = false;
 
-// Initialize email transporter
+// Initialize SendGrid
 function initializeTransporter() {
-  // If already initialized, return existing transporter
-  if (transporter) {
-    return transporter;
+  // If already initialized, return true
+  if (isInitialized) {
+    return true;
   }
 
   const emailFrom = process.env.EMAIL_FROM;
-  const smtpHost = process.env.SMTP_HOST;
-  const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
-  const smtpUser = process.env.SMTP_USER;
-  const smtpPass = process.env.SMTP_PASS;
+  const sendgridApiKey = process.env.SMTP_PASS; // Using SMTP_PASS for SendGrid API key
 
   // Check if email is configured
-  if (!emailFrom || !smtpHost || !smtpUser || !smtpPass) {
-    console.warn('Email service not configured. Set EMAIL_FROM, SMTP_HOST, SMTP_USER, and SMTP_PASS environment variables.');
-    return null;
+  if (!emailFrom || !sendgridApiKey) {
+    console.warn('Email service not configured. Missing environment variables:');
+    console.warn('  EMAIL_FROM:', emailFrom ? '✓ Set' : '✗ Missing');
+    console.warn('  SMTP_PASS (SendGrid API Key):', sendgridApiKey ? '✓ Set' : '✗ Missing');
+    return false;
+  }
+
+  // Validate API key format
+  if (!sendgridApiKey.startsWith('SG.')) {
+    console.warn('Warning: SMTP_PASS should be a SendGrid API key starting with "SG."');
   }
 
   try {
-    transporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: smtpPort,
-      secure: smtpPort === 465, // true for 465, false for other ports
-      auth: {
-        user: smtpUser,
-        pass: smtpPass,
-      },
+    sgMail.setApiKey(sendgridApiKey);
+    isInitialized = true;
+    
+    console.log('SendGrid email service initialized successfully');
+    console.log('Email config:', {
+      from: emailFrom,
+      apiKeySet: true,
+      apiKeyLength: sendgridApiKey.length,
+      apiKeyPrefix: sendgridApiKey.substring(0, 3)
     });
-
-    console.log('Email transporter initialized successfully');
-    return transporter;
+    return true;
   } catch (error) {
-    console.error('Error initializing email transporter:', error);
-    return null;
+    console.error('Error initializing SendGrid:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code
+    });
+    return false;
   }
 }
 
@@ -103,10 +108,10 @@ function getRiskLevelClass(riskLevel) {
  * @returns {Promise<void>}
  */
 async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk') {
-  const emailTransporter = initializeTransporter();
+  const isConfigured = initializeTransporter();
   
-  if (!emailTransporter) {
-    throw new Error('Email service is not configured. Please set EMAIL_FROM, SMTP_HOST, SMTP_USER, and SMTP_PASS environment variables.');
+  if (!isConfigured) {
+    throw new Error('Email service is not configured. Please set EMAIL_FROM and SMTP_PASS (SendGrid API key) environment variables.');
   }
 
   if (!results || results.length === 0) {
@@ -439,32 +444,51 @@ async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk') {
   try {
     console.log('Attempting to send email to:', toEmail);
     console.log('Email from:', emailFrom);
-    console.log('SMTP config:', {
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587', 10),
-      user: process.env.SMTP_USER,
-      passSet: !!process.env.SMTP_PASS
-    });
+    console.log('Using SendGrid API');
     
-    const info = await emailTransporter.sendMail({
-      from: emailFrom,
+    const msg = {
       to: toEmail,
+      from: emailFrom,
       subject: 'RiskLo Summary: Updated Risk for Your Accounts',
       html: htmlBody,
       text: textBody,
-    });
+    };
 
-    console.log('Risk summary email sent successfully:', info.messageId);
-    return { success: true, messageId: info.messageId };
+    const response = await sgMail.send(msg);
+
+    console.log('Risk summary email sent successfully');
+    console.log('SendGrid response:', {
+      statusCode: response[0]?.statusCode,
+      headers: response[0]?.headers
+    });
+    
+    return { success: true, messageId: response[0]?.headers['x-message-id'] || 'sent' };
   } catch (error) {
     console.error('Error sending risk summary email:', error);
     console.error('Error details:', {
       message: error.message,
       code: error.code,
-      command: error.command,
-      response: error.response,
-      responseCode: error.responseCode
+      response: error.response?.body,
+      statusCode: error.response?.statusCode,
+      stack: error.stack
     });
+    
+    // More specific error messages for SendGrid
+    if (error.response) {
+      const { statusCode, body } = error.response;
+      console.error(`SendGrid API error: ${statusCode}`);
+      if (body && body.errors) {
+        console.error('SendGrid errors:', body.errors);
+      }
+      if (statusCode === 401) {
+        console.error('Authentication failed. Check SMTP_PASS (SendGrid API key).');
+      } else if (statusCode === 403) {
+        console.error('Authorization failed. Check API key permissions.');
+      } else if (statusCode === 400) {
+        console.error('Bad request. Check EMAIL_FROM is verified in SendGrid.');
+      }
+    }
+    
     throw error;
   }
 }
