@@ -17,6 +17,8 @@ if (process.env.STRIPE_SECRET_KEY) {
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Email service uses SendGrid API (not SMTP) for better reliability in cloud environments
+
 // Hardcoded spreadsheet ID
 const SPREADSHEET_ID = '1PCU-1ZjBEkAF1LE3Z1tbajCg3hOBzpKxx--z9QU8sAE';
 
