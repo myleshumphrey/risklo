@@ -6,10 +6,15 @@ function Footer() {
     e.preventDefault();
     e.stopPropagation();
     
-    // Force download the desktop app
+    // Link to GitHub release (for large file hosting)
+    // Update this URL after creating the GitHub release
+    const releaseUrl = 'https://github.com/myleshumphrey/risklo/releases/latest/download/RiskLoWatcher.exe';
+    
+    // Try GitHub release first, fallback to local if available
     const link = document.createElement('a');
-    link.href = '/downloads/RiskLoWatcher.exe';
+    link.href = releaseUrl;
     link.download = 'RiskLoWatcher.exe';
+    link.target = '_blank';
     link.style.display = 'none';
     document.body.appendChild(link);
     link.click();

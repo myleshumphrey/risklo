@@ -47,3 +47,6 @@ coverage/
 client/public/downloads/*.exe
 !client/public/downloads/*.zip
 
+
+# Local Netlify folder
+.netlify
