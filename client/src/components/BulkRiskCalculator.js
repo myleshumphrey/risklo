@@ -200,7 +200,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
     } finally {
       setLoading(false);
     }
-  }, [rows, riskMode]);
+  }, [rows, riskMode, user]);
 
   // Expose handleSubmit for external triggering (from CSV upload)
   useEffect(() => {
