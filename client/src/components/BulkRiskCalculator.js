@@ -5,16 +5,22 @@ import { API_ENDPOINTS } from '../config';
 import { ACCOUNT_SIZE_PRESETS, DEFAULT_ACCOUNT_SIZE, DEFAULT_THRESHOLD, getThresholdForAccountSize } from '../utils/accountSizes';
 import { sortStrategies } from '../utils/strategySort';
 import { IconLock } from './Icons';
+import { useAuth } from '../contexts/AuthContext';
 
 function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopulateRows, onUpgrade, autoAnalyzeAfterPopulate }) {
+  const { user } = useAuth();
   const [results, setResults] = useState(null);
   const [selectedResult, setSelectedResult] = useState(null);
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailError, setEmailError] = useState(null);
   const resultsRef = useRef(null);
 
   // Clear results when switching modes
   useEffect(() => {
     setResults(null);
     setSelectedResult(null);
+    setEmailSent(false);
+    setEmailError(null);
   }, [riskMode]);
 
   const [rows, setRows] = useState([
@@ -153,6 +159,34 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
         metrics: result.metrics
       }));
       setResults(formattedResults);
+      
+      // Send email summary if user is logged in
+      if (user?.email) {
+        try {
+          const emailResponse = await fetch(API_ENDPOINTS.sendRiskSummary, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: user.email,
+              results: formattedResults,
+              riskMode: riskMode
+            })
+          });
+          
+          const emailData = await emailResponse.json();
+          if (emailData.success && emailData.emailSent) {
+            setEmailSent(true);
+            setEmailError(null);
+          } else {
+            setEmailSent(false);
+            setEmailError(emailData.message || 'Email could not be sent');
+          }
+        } catch (emailErr) {
+          console.error('Error sending email summary:', emailErr);
+          setEmailSent(false);
+          setEmailError('Failed to send email summary');
+        }
+      }
       
       // Auto-scroll to results after a short delay to ensure DOM is updated
       setTimeout(() => {
@@ -451,6 +485,34 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
       {results && (
         <div className="bulk-results" ref={resultsRef}>
           <h3>{riskMode === 'risk' ? 'Risk Results' : '30% Drawdown Results'}</h3>
+          
+          {/* Email confirmation message */}
+          {emailSent && user?.email && (
+            <div className="email-confirmation" style={{
+              padding: '1rem',
+              marginBottom: '1.5rem',
+              background: 'rgba(16, 185, 129, 0.1)',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              borderRadius: '8px',
+              color: '#10b981'
+            }}>
+              <strong>✓ Email sent:</strong> We've processed your CSVs and emailed a risk summary to <strong>{user.email}</strong>.
+            </div>
+          )}
+          
+          {emailError && user?.email && (
+            <div className="email-error" style={{
+              padding: '1rem',
+              marginBottom: '1.5rem',
+              background: 'rgba(245, 158, 11, 0.1)',
+              border: '1px solid rgba(245, 158, 11, 0.3)',
+              borderRadius: '8px',
+              color: '#f59e0b'
+            }}>
+              <strong>⚠ Note:</strong> Analysis completed successfully, but we couldn't send the email summary. {emailError}
+            </div>
+          )}
+          
           <div className="results-grid">
             {results.map((result, index) => (
               <div 
