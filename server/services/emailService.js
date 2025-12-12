@@ -184,14 +184,14 @@ async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk') {
         border-radius: 12px;
         padding: 2rem;
         margin-bottom: 2rem;
-        color: white;
+        color: #000000;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       ">
         <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
           <div style="font-size: 2.5rem;">⚠️</div>
-          <h2 style="margin: 0; font-size: 1.5rem; font-weight: 700;">High Risk Alert: ${totalHighRisk} Account${totalHighRisk > 1 ? 's' : ''} Require Attention</h2>
+          <h2 style="margin: 0; font-size: 1.5rem; font-weight: 700; color: #000000;">High Risk Alert: ${totalHighRisk} Account${totalHighRisk > 1 ? 's' : ''} Require Attention</h2>
         </div>
-        <p style="margin: 0; font-size: 1.1rem; opacity: 0.95; margin-bottom: 1rem;">
+        <p style="margin: 0; font-size: 1.1rem; margin-bottom: 1rem; color: #000000;">
           ${noGoCount > 0 
             ? `<strong>${noGoCount} account${noGoCount > 1 ? 's' : ''} show NO GO status</strong> - these configurations exceed your risk limits and should be adjusted immediately.`
             : ''
@@ -201,18 +201,18 @@ async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk') {
             : ''
           }
         </p>
-        <div style="background: rgba(255, 255, 255, 0.15); border-radius: 8px; padding: 1rem; margin-top: 1rem;">
-          <p style="margin: 0 0 0.5rem 0; font-weight: 600; font-size: 0.95rem;">Accounts Requiring Action:</p>
-          <ul style="margin: 0; padding-left: 1.5rem; font-size: 0.95rem;">
+        <div style="background: rgba(255, 255, 255, 0.3); border-radius: 8px; padding: 1rem; margin-top: 1rem;">
+          <p style="margin: 0 0 0.5rem 0; font-weight: 600; font-size: 0.95rem; color: #000000;">Accounts Requiring Action:</p>
+          <ul style="margin: 0; padding-left: 1.5rem; font-size: 0.95rem; color: #000000;">
             ${highRiskAccounts.map(acc => `
-              <li style="margin-bottom: 0.5rem;">
+              <li style="margin-bottom: 0.5rem; color: #000000;">
                 <strong>${acc.name}</strong> - ${acc.strategy} 
                 (Risk: ${acc.riskLevel}, Score: ${acc.riskScore}/100)
               </li>
             `).join('')}
           </ul>
         </div>
-        <p style="margin: 1rem 0 0 0; font-size: 0.95rem; opacity: 0.9;">
+        <p style="margin: 1rem 0 0 0; font-size: 0.95rem; color: #000000;">
           <strong>Recommended Actions:</strong> Reduce contract sizes, switch to micro contracts (MNQ), or consider alternative strategies with lower historical drawdowns.
         </p>
       </div>
