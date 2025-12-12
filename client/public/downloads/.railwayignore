@@ -1,0 +1,13 @@
+# Ignore desktop app (C#) - Railway only needs to build Node.js backend
+desktop-app/
+*.cs
+*.csproj
+*.sln
+
+# Ignore frontend (Netlify handles that)
+client/
+
+# Ignore other non-backend files
+ninjatrader-addon/
+*.md
+!README.md
