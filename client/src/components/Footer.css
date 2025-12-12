@@ -41,6 +41,100 @@
   margin: 0;
 }
 
+.footer-addon-section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: rgba(0, 120, 215, 0.1);
+  border: 1px solid rgba(0, 120, 215, 0.3);
+  border-radius: 12px;
+}
+
+.addon-info {
+  text-align: center;
+}
+
+.addon-title {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.recommended-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #000;
+  background: linear-gradient(135deg, #00ff88, #00cc6a);
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.addon-description {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.addon-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.download-button {
+  background: linear-gradient(135deg, #0078d4 0%, #005a9e 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.download-button.primary {
+  background: linear-gradient(135deg, #00ff88, #00cc6a);
+  color: #000;
+  box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+}
+
+.download-button:hover {
+  background: linear-gradient(135deg, #005a9e 0%, #004578 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 120, 212, 0.4);
+}
+
+.download-button.primary:hover {
+  box-shadow: 0 6px 20px rgba(0, 255, 136, 0.5);
+  background: linear-gradient(135deg, #00ff88, #00dd77);
+}
+
+.setup-link {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.setup-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: white;
+}
+
 .footer-copyright {
   text-align: center;
   padding-top: 1rem;

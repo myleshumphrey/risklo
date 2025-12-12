@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>RiskLoWatcher</AssemblyName>
+    <Version>1.0.0</Version>
+    <Authors>RiskLo</Authors>
+    <Company>RiskLo</Company>
+    <Product>RiskLo Watcher</Product>
+    <Description>Automatically uploads NinjaTrader CSV exports to RiskLo for risk analysis</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="8.0.3" />
+    <PackageReference Include="Microsoft.VisualBasic" Version="10.3.0" />
+  </ItemGroup>
+
+</Project>
+
