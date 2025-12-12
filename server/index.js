@@ -885,6 +885,71 @@ app.get('/api/stripe/verify-session', async (req, res) => {
   }
 });
 
+// ============================================
+// EMAIL SERVICE ENDPOINTS
+// ============================================
+
+const { sendRiskSummaryEmail } = require('./services/emailService');
+
+/**
+ * Send risk summary email after CSV analysis
+ * POST /api/send-risk-summary
+ * Body: { email: string, results: Array, riskMode: string }
+ * 
+ * This endpoint is called after the frontend completes bulk CSV analysis.
+ * It sends a formatted email summary of all analyzed accounts to the user.
+ * 
+ * Email configuration (set via environment variables):
+ * - EMAIL_FROM: Sender email address
+ * - SMTP_HOST: SMTP server hostname (e.g., smtp.gmail.com)
+ * - SMTP_PORT: SMTP port (default: 587)
+ * - SMTP_USER: SMTP username/email
+ * - SMTP_PASS: SMTP password or app password
+ */
+app.post('/api/send-risk-summary', async (req, res) => {
+  try {
+    const { email, results, riskMode } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    if (!results || !Array.isArray(results) || results.length === 0) {
+      return res.status(400).json({ error: 'Results array is required and must not be empty' });
+    }
+
+    // Send email (don't fail the request if email fails)
+    let emailSent = false;
+    let emailErrorMessage = null;
+    try {
+      console.log('Sending risk summary email to:', email);
+      console.log('Number of results:', results.length);
+      await sendRiskSummaryEmail(email, results, riskMode || 'risk');
+      emailSent = true;
+      console.log('Email sent successfully');
+    } catch (emailError) {
+      console.error('Failed to send risk summary email:', emailError);
+      emailErrorMessage = emailError.message || 'Unknown error';
+      // Log but don't fail - the analysis was successful
+    }
+
+    res.json({
+      success: true,
+      emailSent,
+      message: emailSent 
+        ? 'Risk summary email sent successfully' 
+        : `Analysis completed but email could not be sent: ${emailErrorMessage || 'check server logs'}`,
+      emailError: emailErrorMessage || null,
+    });
+  } catch (error) {
+    console.error('Error in send-risk-summary endpoint:', error);
+    res.status(500).json({ 
+      error: 'Failed to process request', 
+      message: error.message 
+    });
+  }
+});
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
