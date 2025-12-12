@@ -34,5 +34,6 @@ export const API_ENDPOINTS = {
   proStatus: (email) => `${API_BASE_URL}/api/auth/pro-status?email=${encodeURIComponent(email)}`,
   createCheckoutSession: `${API_BASE_URL}/api/stripe/create-checkout-session`,
   verifySession: (sessionId) => `${API_BASE_URL}/api/stripe/verify-session?session_id=${encodeURIComponent(sessionId)}`,
+  sendRiskSummary: `${API_BASE_URL}/api/send-risk-summary`,
 };
 
