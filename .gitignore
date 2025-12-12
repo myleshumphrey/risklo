@@ -43,3 +43,10 @@ coverage/
 # Misc
 *.log
 
+# Large binary files
+client/public/downloads/*.exe
+!client/public/downloads/*.zip
+
+
+# Local Netlify folder
+.netlify

@@ -1,0 +1,19 @@
+RiskLo Watcher Desktop App - Building Notice
+============================================
+
+The RiskLoWatcher.exe file is currently being built and will be available soon.
+
+To build the app:
+1. You need a Windows computer with .NET 6.0 SDK installed
+2. Navigate to the desktop-app folder in the repository
+3. Run: build.bat
+4. Copy the resulting .exe file to this directory
+
+See desktop-app/BUILD_NOW.md for detailed instructions.
+
+Expected file location after building:
+client/public/downloads/RiskLoWatcher.exe
+
+Once built, users can download it from:
+https://risklo.io/downloads/RiskLoWatcher.exe
+

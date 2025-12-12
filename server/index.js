@@ -960,6 +960,179 @@ app.post('/api/send-risk-summary', async (req, res) => {
   }
 });
 
+// New endpoint: Auto-upload CSVs from Desktop App
+app.post('/api/upload-csv-auto', express.json({ limit: '10mb' }), async (req, res) => {
+  try {
+    console.log('Received CSV auto-upload from RiskLo Watcher');
+    
+    const { accountCsv, strategyCsv, userEmail } = req.body;
+    
+    if (!accountCsv || !strategyCsv) {
+      return res.status(400).json({ error: 'Both accountCsv and strategyCsv are required' });
+    }
+    
+    console.log('Account CSV length:', accountCsv.length);
+    console.log('Strategy CSV length:', strategyCsv.length);
+    console.log('User email:', userEmail || 'not provided');
+    
+    // Parse CSVs
+    const { parseAccountsCsv, parseStrategiesCsv, matchAccountsToStrategies } = require('./utils/csvParser');
+    
+    let accounts, strategies, rows;
+    try {
+      accounts = parseAccountsCsv(accountCsv);
+      strategies = parseStrategiesCsv(strategyCsv);
+      console.log(`Parsed ${accounts.length} accounts and ${strategies.length} strategies`);
+    } catch (parseError) {
+      console.error('CSV parsing error:', parseError);
+      return res.status(400).json({ error: 'Failed to parse CSV files', details: parseError.message });
+    }
+    
+    // Get available sheet names from Google Sheets
+    let sheetNames = [];
+    try {
+      const sheets = google.sheets({ version: 'v4', auth });
+      const sheetMetadata = await sheets.spreadsheets.get({
+        spreadsheetId: SPREADSHEET_ID,
+      });
+      
+      sheetNames = sheetMetadata.data.sheets
+        .map(sheet => sheet.properties.title)
+        .filter(name => {
+          // Filter out date-formatted sheets (MM.YYYY) and "Current results" sheets
+          const isDateFormat = /^\d{2}\.\d{4}$/.test(name);
+          const isCurrentResults = name.toLowerCase().includes('current results');
+          return !isDateFormat && !isCurrentResults;
+        });
+      
+      console.log(`Found ${sheetNames.length} available strategies`);
+    } catch (sheetError) {
+      console.error('Error fetching sheet names:', sheetError);
+      // Continue without sheet names - strategies will use exact names from CSV
+    }
+    
+    // Match accounts to strategies
+    rows = matchAccountsToStrategies(accounts, strategies, sheetNames);
+    console.log(`Created ${rows.length} account/strategy combinations`);
+    
+    // Calculate risk for each row
+    const results = [];
+    for (const row of rows) {
+      if (!row.strategy || row.strategy === '') {
+        // No strategy assigned - skip risk calculation
+        results.push({
+          accountNumber: row.accountNumber,
+          accountName: row.accountName,
+          strategy: 'No strategy assigned',
+          error: 'No strategy data available',
+          ...row
+        });
+        continue;
+      }
+      
+      try {
+        // Fetch data from Google Sheets for this strategy
+        const sheets = google.sheets({ version: 'v4', auth });
+        const response = await sheets.spreadsheets.values.get({
+          spreadsheetId: SPREADSHEET_ID,
+          range: `'${row.strategy}'!A:G`,
+        });
+        
+        const data = response.data.values;
+        
+        if (!data || data.length < 3) {
+          results.push({
+            accountNumber: row.accountNumber,
+            accountName: row.accountName,
+            strategy: row.strategy,
+            error: 'Insufficient data in strategy sheet',
+            ...row
+          });
+          continue;
+        }
+        
+        // Calculate risk metrics
+        const metrics = calculateRiskMetrics(
+          data,
+          row.currentBalance,
+          row.numContracts,
+          row.maxDrawdown,
+          row.contractType,
+          row.startOfDayProfit,
+          row.safetyNet,
+          row.startOfDayProfit // profitSinceLastPayout
+        );
+        
+        if (metrics.error) {
+          results.push({
+            accountNumber: row.accountNumber,
+            accountName: row.accountName,
+            strategy: row.strategy,
+            error: metrics.error,
+            ...row
+          });
+          continue;
+        }
+        
+        results.push({
+          accountNumber: row.accountNumber,
+          accountName: row.accountName,
+          strategy: row.strategy,
+          contractType: row.contractType,
+          numContracts: row.numContracts,
+          currentBalance: row.currentBalance,
+          maxDrawdown: row.maxDrawdown,
+          accountSize: row.accountSize,
+          startOfDayProfit: row.startOfDayProfit,
+          safetyNet: row.safetyNet,
+          ...metrics
+        });
+        
+      } catch (fetchError) {
+        console.error(`Error fetching data for strategy ${row.strategy}:`, fetchError);
+        results.push({
+          accountNumber: row.accountNumber,
+          accountName: row.accountName,
+          strategy: row.strategy,
+          error: `Failed to fetch strategy data: ${fetchError.message}`,
+          ...row
+        });
+      }
+    }
+    
+    console.log(`Calculated risk for ${results.length} accounts`);
+    
+    // Send email if userEmail is provided
+    let emailSent = false;
+    if (userEmail) {
+      try {
+        await sendRiskSummaryEmail(userEmail, results, 'risk');
+        emailSent = true;
+        console.log('Email sent successfully to:', userEmail);
+      } catch (emailError) {
+        console.error('Error sending email:', emailError);
+        // Don't fail the request if email fails
+      }
+    }
+    
+    res.json({ 
+      success: true, 
+      message: emailSent 
+        ? 'CSVs processed successfully. Risk summary email sent.'
+        : 'CSVs processed successfully. Provide userEmail in request to receive email summary.',
+      accountsProcessed: accounts.length,
+      strategiesProcessed: strategies.length,
+      resultsCalculated: results.length,
+      emailSent,
+      results: results.slice(0, 5) // Return first 5 results as preview
+    });
+    
+  } catch (error) {
+    console.error('Error processing CSV auto-upload:', error);
+    res.status(500).json({ error: 'Failed to process CSV upload', details: error.message });
+  }
+});
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });

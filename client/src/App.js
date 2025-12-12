@@ -18,6 +18,7 @@ import Apex30PercentRule from './pages/Apex30PercentRule';
 import HowToExportCsv from './pages/HowToExportCsv';
 import Account from './pages/Account';
 import TermsAndConditions from './pages/TermsAndConditions';
+import DesktopAppGuide from './pages/DesktopAppGuide';
 import { API_ENDPOINTS } from './config';
 import { IconChart } from './components/Icons';
 
@@ -179,6 +180,8 @@ function AppContent() {
         return <Apex30PercentRule onNavigate={setCurrentPage} />;
       case 'how-to-export-csv':
         return <HowToExportCsv onNavigate={setCurrentPage} />;
+      case 'desktopAppGuide':
+        return <DesktopAppGuide onNavigate={setCurrentPage} />;
       case 'account':
         return <Account onNavigate={setCurrentPage} onUpgrade={() => setShowUpgradeModal(true)} />;
       case 'terms-and-conditions':
