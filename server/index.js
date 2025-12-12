@@ -929,7 +929,15 @@ app.post('/api/send-risk-summary', async (req, res) => {
       console.log('Email sent successfully');
     } catch (emailError) {
       console.error('Failed to send risk summary email:', emailError);
+      console.error('Email error stack:', emailError.stack);
       emailErrorMessage = emailError.message || 'Unknown error';
+      
+      // Log specific error types
+      if (emailError.message && emailError.message.includes('not configured')) {
+        console.error('EMAIL CONFIGURATION ERROR: Check Railway environment variables');
+        console.error('Required variables: EMAIL_FROM, SMTP_HOST, SMTP_USER, SMTP_PASS');
+      }
+      
       // Log but don't fail - the analysis was successful
     }
 
