@@ -961,6 +961,7 @@ app.post('/api/send-risk-summary', async (req, res) => {
 });
 
 // New endpoint: Auto-upload CSVs from Desktop App
+// Updated: 2025-12-12 - CSV auto-upload endpoint for RiskLo Watcher desktop app
 app.post('/api/upload-csv-auto', express.json({ limit: '10mb' }), async (req, res) => {
   try {
     console.log('Received CSV auto-upload from RiskLo Watcher');
