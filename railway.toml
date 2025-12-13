@@ -1,7 +1,11 @@
 [build]
 builder = "nixpacks"
 buildCommand = "cd server && npm install"
+# Only watch server directory for changes
+watchPatterns = ["server/**"]
 
 [deploy]
 startCommand = "cd server && npm start"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
 
