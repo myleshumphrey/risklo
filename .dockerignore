@@ -1,0 +1,17 @@
+# Exclude C# desktop app from Docker/nixpacks build
+desktop-app/
+*.cs
+*.csproj
+*.sln
+
+# Exclude frontend (Netlify handles that)
+client/
+
+# Exclude other non-backend files
+ninjatrader-addon/
+*.md
+!README.md
+
+# Keep server directory
+!server/
+
