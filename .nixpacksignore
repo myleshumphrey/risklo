@@ -1,0 +1,8 @@
+# Files and directories to ignore during nixpacks build
+desktop-app/
+*.cs
+*.csproj
+*.sln
+client/
+ninjatrader-addon/
+

@@ -1,0 +1,19 @@
+# Nixpacks configuration to force Node.js build only
+# This prevents nixpacks from auto-detecting C# projects
+
+[variables]
+# Disable auto-detection of other languages
+NIXPACKS_NO_AUTO_DETECT = "1"
+
+[phases.setup]
+nixPkgs = ["nodejs-18_x"]
+
+[phases.install]
+cmds = ["cd server && npm install"]
+
+[phases.build]
+cmds = []
+
+[start]
+cmd = "cd server && npm start"
+
