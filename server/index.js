@@ -4,6 +4,8 @@ const { google } = require('googleapis');
 const Stripe = require('stripe');
 require('dotenv').config();
 
+// Railway deployment trigger - 2025-12-13
+
 // Initialize Stripe (only if secret key is provided)
 let stripe = null;
 if (process.env.STRIPE_SECRET_KEY) {
