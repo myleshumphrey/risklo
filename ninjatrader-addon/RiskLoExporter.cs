@@ -22,6 +22,7 @@ using NinjaTrader.NinjaScript;
 using NinjaTrader.Core.FloatingPoint;
 using NinjaTrader.NinjaScript.Indicators;
 using NinjaTrader.NinjaScript.DrawingTools;
+using System.Diagnostics;
 #endregion
 
 //This namespace holds AddOns in this folder and is required. Do not change it.
@@ -42,6 +43,7 @@ namespace NinjaTrader.NinjaScript.AddOns
         private Button addRowButton;
         private Button removeRowButton;
         private Button exportButton;
+        private Button quickExportButton;
         private CheckBox autoExportCheckBox;
         private TextBox autoExportTimeTextBox;
         private TextBlock statusTextBlock;
@@ -202,10 +204,12 @@ namespace NinjaTrader.NinjaScript.AddOns
             };
             var exportPanel = new StackPanel { Margin = new Thickness(10) };
             
+            var buttonStack = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 10) };
+            
             exportButton = new Button 
             { 
                 Content = "Export CSVs Now", 
-                Margin = new Thickness(0, 0, 0, 10),
+                Margin = new Thickness(0, 0, 10, 0),
                 Padding = new Thickness(15, 8, 15, 8),
                 FontSize = 14,
                 FontWeight = FontWeights.Bold,
@@ -213,7 +217,23 @@ namespace NinjaTrader.NinjaScript.AddOns
                 Foreground = new SolidColorBrush(Colors.White)
             };
             exportButton.Click += ExportButton_Click;
-            exportPanel.Children.Add(exportButton);
+            buttonStack.Children.Add(exportButton);
+            
+            quickExportButton = new Button 
+            { 
+                Content = "Auto Export Account & Strategy CSVs", 
+                Margin = new Thickness(0, 0, 0, 0),
+                Padding = new Thickness(15, 8, 15, 8),
+                FontSize = 14,
+                FontWeight = FontWeights.Bold,
+                Background = new SolidColorBrush(Color.FromRgb(0, 120, 215)),
+                Foreground = new SolidColorBrush(Colors.White),
+                ToolTip = "Automatically exports Account and Strategy Performance data from NinjaTrader. No manual entry needed - reads directly from NinjaTrader's data."
+            };
+            quickExportButton.Click += QuickExportButton_Click;
+            buttonStack.Children.Add(quickExportButton);
+            
+            exportPanel.Children.Add(buttonStack);
             
             var autoExportPanel = new StackPanel { Orientation = Orientation.Horizontal };
             autoExportCheckBox = new CheckBox 
@@ -374,6 +394,221 @@ namespace NinjaTrader.NinjaScript.AddOns
         private async void ExportButton_Click(object sender, RoutedEventArgs e)
         {
             await Task.Run(() => ExportCsvs());
+        }
+        
+        private async void QuickExportButton_Click(object sender, RoutedEventArgs e)
+        {
+            await Task.Run(() => QuickExportAllAccounts());
+        }
+        
+        private void QuickExportAllAccounts()
+        {
+            try
+            {
+                Dispatcher.Invoke(() => UpdateStatus("Auto-exporting Account & Strategy Performance data...", isError: false));
+                
+                // Ensure export directory exists
+                if (!Directory.Exists(EXPORT_DIRECTORY))
+                {
+                    Directory.CreateDirectory(EXPORT_DIRECTORY);
+                }
+
+                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                
+                // Export Accounts CSV - read directly from NinjaTrader Account Performance
+                string accountsFilePath = Path.Combine(EXPORT_DIRECTORY, $"RiskLo_Accounts_{timestamp}.csv");
+                ExportAccountsFromPerformance(accountsFilePath);
+                
+                // Export Strategies CSV - read directly from NinjaTrader Strategy Performance
+                string strategiesFilePath = Path.Combine(EXPORT_DIRECTORY, $"RiskLo_Strategies_{timestamp}.csv");
+                ExportStrategiesFromPerformance(strategiesFilePath);
+                
+                lastExportTime = DateTime.Now;
+                lastExportPath = EXPORT_DIRECTORY;
+                
+                Dispatcher.Invoke(() =>
+                {
+                    int accountsExported = Account.All.Count(a => a != null);
+                    int strategiesExported = GetActiveStrategiesCount();
+                    
+                    string statusMsg = $"Auto-export completed! Exported {accountsExported} account(s)";
+                    if (strategiesExported > 0)
+                    {
+                        statusMsg += $" and {strategiesExported} active strategy/strategies";
+                    }
+                    else
+                    {
+                        statusMsg += ". Note: No active strategies found";
+                    }
+                    
+                    UpdateStatus(statusMsg, isError: false);
+                    lastExportTextBlock.Text = $"Last export: {lastExportTime.Value:yyyy-MM-dd HH:mm:ss}\nPath: {lastExportPath}";
+                    SaveSettings();
+                });
+            }
+            catch (Exception ex)
+            {
+                Dispatcher.Invoke(() => UpdateStatus($"Auto-export error: {ex.Message}", isError: true));
+            }
+        }
+        
+        private int GetActiveStrategiesCount()
+        {
+            try
+            {
+                int count = 0;
+                foreach (var account in Account.All.Where(a => a != null))
+                {
+                    var strategies = account.Strategies.Where(s => s != null && s.State == State.Active).ToList();
+                    count += strategies.Count;
+                }
+                return count;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+        
+        private void ExportAccountsFromPerformance(string filePath)
+        {
+            var csv = new StringBuilder();
+            csv.AppendLine("Display name,Net liquidation,Trailing max drawdown");
+            
+            foreach (var account in Account.All.Where(a => a != null))
+            {
+                string displayName = account.DisplayName ?? "";
+                double netLiquidation = 0;
+                
+                try
+                {
+                    netLiquidation = account.Get(AccountItem.NetLiquidation, Currency.UsDollar);
+                    if (netLiquidation == 0)
+                    {
+                        netLiquidation = account.Get(AccountItem.CashValue, Currency.UsDollar);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Dispatcher.Invoke(() => 
+                        UpdateStatus($"Warning: Could not get Net Liquidation for {displayName}: {ex.Message}", isError: false));
+                }
+                
+                // Trailing max drawdown from saved settings (or 0)
+                double trailingDrawdown = accountTrailingDrawdowns.ContainsKey(displayName) 
+                    ? accountTrailingDrawdowns[displayName] 
+                    : 0;
+                
+                netLiquidation = Math.Floor(netLiquidation * 100) / 100;
+                trailingDrawdown = Math.Floor(trailingDrawdown * 100) / 100;
+                
+                csv.AppendLine($"{EscapeCsvValue(displayName)},{netLiquidation:F2},{trailingDrawdown:F2}");
+            }
+            
+            File.WriteAllText(filePath, csv.ToString());
+        }
+        
+        private void ExportStrategiesFromPerformance(string filePath)
+        {
+            var csv = new StringBuilder();
+            csv.AppendLine("Strategy,Instrument,Account display name");
+            
+            foreach (var account in Account.All.Where(a => a != null))
+            {
+                string accountName = account.DisplayName ?? "";
+                
+                try
+                {
+                    // Get all active strategies for this account
+                    var strategies = account.Strategies.Where(s => s != null && s.State == State.Active).ToList();
+                    
+                    foreach (var strategy in strategies)
+                    {
+                        string strategyName = strategy.Name ?? "";
+                        string instrument = "NQ"; // Default
+                        
+                        try
+                        {
+                            if (strategy.Instrument != null)
+                            {
+                                string instrumentName = strategy.Instrument.FullName ?? "";
+                                if (instrumentName.ToUpper().Contains("MNQ"))
+                                {
+                                    instrument = "MNQ";
+                                }
+                                else if (instrumentName.ToUpper().Contains("NQ"))
+                                {
+                                    instrument = "NQ";
+                                }
+                            }
+                        }
+                        catch
+                        {
+                            // Use default if we can't determine
+                        }
+                        
+                        if (!string.IsNullOrWhiteSpace(strategyName))
+                        {
+                            csv.AppendLine($"{EscapeCsvValue(strategyName)},{instrument},{EscapeCsvValue(accountName)}");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Dispatcher.Invoke(() => 
+                        UpdateStatus($"Warning: Could not get strategies for {accountName}: {ex.Message}", isError: false));
+                }
+            }
+            
+            File.WriteAllText(filePath, csv.ToString());
+        }
+        
+        private void ExportAllAccountsCsv(string filePath)
+        {
+            var csv = new StringBuilder();
+            
+            // Header
+            csv.AppendLine("Display name,Net liquidation,Trailing max drawdown");
+            
+            // Get all accounts
+            var accounts = Account.All.Where(a => a != null).ToList();
+            
+            foreach (var account in accounts)
+            {
+                string displayName = account.DisplayName ?? "";
+                
+                // Get net liquidation value
+                double netLiquidation = 0;
+                try
+                {
+                    netLiquidation = account.Get(AccountItem.NetLiquidation, Currency.UsDollar);
+                    if (netLiquidation == 0)
+                    {
+                        netLiquidation = account.Get(AccountItem.CashValue, Currency.UsDollar);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Dispatcher.Invoke(() => 
+                        UpdateStatus($"Warning: Could not get Net Liquidation for {displayName}: {ex.Message}", isError: false));
+                }
+                
+                // Get trailing max drawdown (from saved settings, or default to 0)
+                double trailingDrawdown = 0;
+                if (accountTrailingDrawdowns.ContainsKey(displayName))
+                {
+                    trailingDrawdown = accountTrailingDrawdowns[displayName];
+                }
+                // If not set, use 0 (will be handled by RiskLo backend)
+                
+                // Round down to 2 decimal places
+                netLiquidation = Math.Floor(netLiquidation * 100) / 100;
+                trailingDrawdown = Math.Floor(trailingDrawdown * 100) / 100;
+                
+                csv.AppendLine($"{EscapeCsvValue(displayName)},{netLiquidation:F2},{trailingDrawdown:F2}");
+            }
+            
+            File.WriteAllText(filePath, csv.ToString());
         }
 
         private void ExportCsvs()
@@ -542,7 +777,8 @@ namespace NinjaTrader.NinjaScript.AddOns
                             // Only export once per day
                             if (lastExportTime == null || lastExportTime.Value.Date < now.Date)
                             {
-                                Task.Run(() => ExportCsvs());
+                                // Use QuickExport for auto-export (reads from Performance data automatically)
+                                Task.Run(() => QuickExportAllAccounts());
                             }
                         }
                     }
