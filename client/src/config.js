@@ -14,11 +14,11 @@ const getApiBaseUrl = () => {
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     // Desktop browser - use localhost
     console.log('Using localhost API URL');
-    return 'http://localhost:5001';
+    return 'http://localhost:5000';
   } else {
-    // Mobile device or network access - use the same hostname with port 5001
+    // Mobile device or network access - use the same hostname with port 5000
     // This assumes your computer's IP is accessible from the network
-    const apiUrl = `http://${hostname}:5001`;
+    const apiUrl = `http://${hostname}:5000`;
     console.log('Using network API URL:', apiUrl, '(hostname:', hostname, ')');
     return apiUrl;
   }

@@ -115,9 +115,13 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
           throw new Error('No matching accounts and strategies found. Make sure strategy names match your Google Sheet names.');
         }
 
-        // Populate bulk calculator
+        // Populate bulk calculator with rows and CSV file names
         if (onPopulateBulkRows) {
-          onPopulateBulkRows(rows);
+          const csvFileNames = {
+            accountCsv: accountsFile ? accountsFile.name : null,
+            strategyCsv: strategiesFile ? strategiesFile.name : null
+          };
+          onPopulateBulkRows(rows, csvFileNames);
           setParseSuccess(`Successfully loaded ${rows.length} account/strategy combinations into the Bulk Risk Calculator!`);
           setIsAnalyzing(true);
           

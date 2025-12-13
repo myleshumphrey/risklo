@@ -249,6 +249,7 @@ function AppContent() {
                 onUpgrade={() => setShowUpgradeModal(true)}
                 onPopulateRows={(setRowsFn) => {
                   // Store the setRows function so CsvUpload can use it
+                  // The function accepts (rows, csvFileNames) parameters
                   window.bulkCalculatorSetRows = setRowsFn;
                 }}
               />
@@ -262,10 +263,10 @@ function AppContent() {
                 riskMode={riskMode}
                 onNavigate={setCurrentPage}
                 onUpgrade={() => setShowUpgradeModal(true)}
-                onPopulateBulkRows={(rows) => {
-                  // Populate bulk calculator rows
+                onPopulateBulkRows={(rows, csvFileNames) => {
+                  // Populate bulk calculator rows with CSV file names
                   if (window.bulkCalculatorSetRows) {
-                    window.bulkCalculatorSetRows(rows);
+                    window.bulkCalculatorSetRows(rows, csvFileNames);
                   }
                 }}
                 onSwitchToBulkTab={() => {

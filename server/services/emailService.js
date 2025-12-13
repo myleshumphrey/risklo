@@ -105,9 +105,10 @@ function getRiskLevelClass(riskLevel) {
  * @param {string} toEmail - Recipient email address
  * @param {Array} results - Array of account risk results
  * @param {string} riskMode - 'risk' or 'apexMae'
+ * @param {Object} csvFileNames - Optional object with { accountCsv: string, strategyCsv: string }
  * @returns {Promise<void>}
  */
-async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk') {
+async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk', csvFileNames = null) {
   const isConfigured = initializeTransporter();
   
   if (!isConfigured) {
@@ -120,6 +121,28 @@ async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk') {
 
   const emailFrom = process.env.EMAIL_FROM;
   const appBaseUrl = process.env.APP_BASE_URL || process.env.FRONTEND_URL || 'https://risklo.io';
+
+  // Build CSV file names text for email
+  let csvNamesText = '';
+  if (csvFileNames) {
+    console.log('Processing CSV file names:', csvFileNames);
+    const names = [];
+    if (csvFileNames.accountCsv) {
+      // Extract just the filename from path if it's a full path
+      const accountName = csvFileNames.accountCsv.split(/[/\\]/).pop();
+      names.push(accountName);
+    }
+    if (csvFileNames.strategyCsv) {
+      const strategyName = csvFileNames.strategyCsv.split(/[/\\]/).pop();
+      names.push(strategyName);
+    }
+    if (names.length > 0) {
+      csvNamesText = ` (${names.join(' and ')})`;
+      console.log('CSV names text for email:', csvNamesText);
+    }
+  } else {
+    console.log('No CSV file names provided');
+  }
 
   // Analyze results for summary
   let lowRiskCount = 0;
@@ -364,7 +387,7 @@ async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk') {
     </head>
     <body>
       <h1>RiskLo Risk Summary</h1>
-      <p class="intro">Here is your latest RiskLo risk summary based on your uploaded CSVs.</p>
+      <p class="intro">Here is your latest RiskLo risk summary based on your uploaded CSVs${csvNamesText}.</p>
       
       ${summarySection}
       
@@ -399,7 +422,7 @@ async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk') {
 
   // Build plain text fallback
   let textBody = 'RiskLo Risk Summary\n\n';
-  textBody += 'Here is your latest RiskLo risk summary based on your uploaded CSVs.\n\n';
+  textBody += `Here is your latest RiskLo risk summary based on your uploaded CSVs${csvNamesText ? ` ${csvNamesText}` : ''}.\n\n`;
   
   // Add summary to text version
   if (lowRiskCount > 0 && (highRiskCount === 0 && noGoCount === 0)) {
