@@ -236,7 +236,7 @@ async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk', csvFile
           </ul>
         </div>
         <p style="margin: 1rem 0 0 0; font-size: 0.95rem; color: #ffffff;">
-          <strong>Recommended Actions:</strong> Reduce contract sizes, switch to micro contracts (MNQ), or consider alternative strategies with lower historical drawdowns.
+          <strong>Recommended Actions:</strong> First, try reducing contract sizes or switching to micro contracts (MNQ) for better position control. If you're already trading 1 MNQ contract, consider alternative strategies with lower historical drawdowns. <strong>Consult with the Vector Algorithmics team</strong> to determine which strategy would best align with your risk tolerance and account size.
         </p>
       </div>
     `;
