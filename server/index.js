@@ -912,7 +912,7 @@ const { sendRiskSummaryEmail } = require('./services/emailService');
  */
 app.post('/api/send-risk-summary', async (req, res) => {
   try {
-    const { email, results, riskMode } = req.body;
+    const { email, results, riskMode, csvFileNames } = req.body;
 
     if (!email) {
       return res.status(400).json({ error: 'Email is required' });
@@ -928,7 +928,8 @@ app.post('/api/send-risk-summary', async (req, res) => {
     try {
       console.log('Sending risk summary email to:', email);
       console.log('Number of results:', results.length);
-      await sendRiskSummaryEmail(email, results, riskMode || 'risk');
+      console.log('CSV file names:', csvFileNames || 'not provided');
+      await sendRiskSummaryEmail(email, results, riskMode || 'risk', csvFileNames || null);
       emailSent = true;
       console.log('Email sent successfully');
     } catch (emailError) {
@@ -968,7 +969,7 @@ app.post('/api/upload-csv-auto', express.json({ limit: '10mb' }), async (req, re
   try {
     console.log('Received CSV auto-upload from RiskLo Watcher');
     
-    const { accountCsv, strategyCsv, userEmail } = req.body;
+    const { accountCsv, strategyCsv, userEmail, accountCsvFileName, strategyCsvFileName } = req.body;
     
     if (!accountCsv || !strategyCsv) {
       return res.status(400).json({ error: 'Both accountCsv and strategyCsv are required' });
@@ -1077,18 +1078,19 @@ app.post('/api/upload-csv-auto', express.json({ limit: '10mb' }), async (req, re
           continue;
         }
         
+        // Format result to match email service expectations (same format as frontend)
+        // The email service expects: accountName, strategy, contracts, contractType, accountSize, maxDrawdown, safetyNet, metrics (nested)
         results.push({
           accountNumber: row.accountNumber,
           accountName: row.accountName,
           strategy: row.strategy,
+          contracts: row.numContracts, // Email service expects 'contracts', not 'numContracts'
           contractType: row.contractType,
-          numContracts: row.numContracts,
-          currentBalance: row.currentBalance,
-          maxDrawdown: row.maxDrawdown,
           accountSize: row.accountSize,
-          startOfDayProfit: row.startOfDayProfit,
+          maxDrawdown: row.maxDrawdown,
           safetyNet: row.safetyNet,
-          ...metrics
+          startOfDayProfit: row.startOfDayProfit,
+          metrics: metrics // Wrap metrics in 'metrics' object for email service (same as frontend format)
         });
         
       } catch (fetchError) {
@@ -1106,10 +1108,20 @@ app.post('/api/upload-csv-auto', express.json({ limit: '10mb' }), async (req, re
     console.log(`Calculated risk for ${results.length} accounts`);
     
     // Send email if userEmail is provided
+    // Determine risk mode: if results have safetyNet and startOfDayProfit, use 'apexMae', otherwise 'risk'
+    const hasApexMaeData = results.some(r => r.safetyNet !== undefined && r.startOfDayProfit !== undefined);
+    const riskMode = hasApexMaeData ? 'apexMae' : 'risk';
+    
     let emailSent = false;
     if (userEmail) {
       try {
-        await sendRiskSummaryEmail(userEmail, results, 'risk');
+        console.log(`Sending email in ${riskMode} mode to:`, userEmail);
+        // Pass CSV file names to email service
+        const csvFileNames = {
+          accountCsv: accountCsvFileName || 'Accounts.csv',
+          strategyCsv: strategyCsvFileName || 'Strategies.csv'
+        };
+        await sendRiskSummaryEmail(userEmail, results, riskMode, csvFileNames);
         emailSent = true;
         console.log('Email sent successfully to:', userEmail);
       } catch (emailError) {

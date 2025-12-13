@@ -13,6 +13,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
   const [selectedResult, setSelectedResult] = useState(null);
   const [emailSent, setEmailSent] = useState(false);
   const [emailError, setEmailError] = useState(null);
+  const [csvFileNames, setCsvFileNames] = useState(null); // Track CSV file names
   const resultsRef = useRef(null);
 
   // Clear results when switching modes
@@ -41,7 +42,13 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
   // Expose setRows to parent component via callback
   useEffect(() => {
     if (onPopulateRows) {
-      onPopulateRows(setRows);
+      // Expose a function that accepts rows and optional CSV file names
+      onPopulateRows((newRows, fileNames) => {
+        setRows(newRows);
+        if (fileNames) {
+          setCsvFileNames(fileNames);
+        }
+      });
     }
   }, [onPopulateRows]);
 
@@ -163,13 +170,15 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
       // Send email summary if user is logged in
       if (user?.email) {
         try {
+          console.log('Sending email with CSV file names:', csvFileNames);
           const emailResponse = await fetch(API_ENDPOINTS.sendRiskSummary, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               email: user.email,
               results: formattedResults,
-              riskMode: riskMode
+              riskMode: riskMode,
+              csvFileNames: csvFileNames || null
             })
           });
           
@@ -200,7 +209,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
     } finally {
       setLoading(false);
     }
-  }, [rows, riskMode, user]);
+  }, [rows, riskMode, user, csvFileNames]);
 
   // Expose handleSubmit for external triggering (from CSV upload)
   useEffect(() => {
