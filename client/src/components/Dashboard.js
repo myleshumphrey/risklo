@@ -89,11 +89,18 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate, formData }) {
                 </li>
               )}
               
-              {/* Suggestion 3: Consider Alternative Strategies */}
-              <li className="what-to-fix-item">
-                <strong>Consider Alternative Strategies:</strong> This strategy may not align with your risk tolerance or account size. 
-                Try analyzing other strategies from the dropdown to find one with lower historical drawdowns that better matches your risk profile.
-              </li>
+              {/* Suggestion 3: Consider Alternative Strategies (Last Resort) */}
+              {formData?.contractType === 'MNQ' && Number(formData?.contracts || 1) === 1 ? (
+                <li className="what-to-fix-item">
+                  <strong>Consider Alternative Strategies:</strong> Since you're already trading <strong>1 MNQ contract</strong> (the smallest position size), switching to a different strategy may be your best option. 
+                  <strong> Consult with the Vector Algorithmics team</strong> to determine which strategy would best align with your risk tolerance and account size. They can help you find a strategy with lower historical drawdowns that better matches your risk profile.
+                </li>
+              ) : (
+                <li className="what-to-fix-item">
+                  <strong>Consider Alternative Strategies (Last Resort):</strong> If reducing contracts or switching to MNQ isn't sufficient, this strategy may not align with your risk tolerance or account size. 
+                  Try analyzing other strategies from the dropdown to find one with lower historical drawdowns. If you're unsure which strategy to choose, <strong>consult with the Vector Algorithmics team</strong> for guidance on the best strategy for your situation.
+                </li>
+              )}
             </ul>
           </div>
         </div>
