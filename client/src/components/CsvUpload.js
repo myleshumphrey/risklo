@@ -287,50 +287,6 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
         </div>
       </div>
 
-      <div id="risklo-exporter-instructions" className="exporter-instructions">
-        <div className="instructions-header">
-          <h3>Quick Start with RiskLoExporter AddOn</h3>
-        </div>
-        <div className="instructions-steps">
-          <div className="instruction-step">
-            <div className="step-number">1</div>
-            <div className="step-content">
-              <strong>Download and install the RiskLoExporter AddOn</strong>
-              <p>Download the ZIP file from the footer below, extract it, then run <code>INSTALL_RiskLoExporter.bat</code> (or <code>.ps1</code> for PowerShell) as Administrator. The installer will automatically set everything up!</p>
-            </div>
-          </div>
-          <div className="instruction-step">
-            <div className="step-number">2</div>
-            <div className="step-content">
-              <strong>Open RiskLo Exporter in NinjaTrader</strong>
-              <p>In NinjaTrader, go to: <strong>Tools → NinjaScript Editor → Open RiskLoExporter.cs</strong></p>
-            </div>
-          </div>
-          <div className="instruction-step">
-            <div className="step-number">3</div>
-            <div className="step-content">
-              <strong>Configure and Export</strong>
-              <p>Select your account, enter trailing max drawdown, configure your strategies, then click <strong>"Export CSVs Now"</strong></p>
-            </div>
-          </div>
-          <div className="instruction-step">
-            <div className="step-number">4</div>
-            <div className="step-content">
-              <strong>Upload to RiskLo</strong>
-              <p>Upload the two generated CSV files below:
-                <ul>
-                  <li><code>RiskLo_Accounts_*.csv</code></li>
-                  <li><code>RiskLo_Strategies_*.csv</code></li>
-                </ul>
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="instructions-note">
-          <p>💡 <strong>Tip:</strong> Enable "Auto export daily" in the AddOn to automatically generate CSVs at a set time each day.</p>
-        </div>
-      </div>
-
       <div 
         className={`csv-upload-area ${isDragging ? 'dragging' : ''}`}
         onDragOver={handleDragOver}

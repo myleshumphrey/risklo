@@ -269,15 +269,20 @@ async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk', csvFile
     const strategy = result.strategy || 'Unknown';
     const contracts = result.contracts || 1;
     const contractType = result.contractType || 'NQ';
-    const accountSize = result.accountSize ? `$${parseFloat(result.accountSize).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A';
+    // User-requested: show cash value (not account size)
+    const cashValue = (result.cashValue !== undefined && result.cashValue !== null)
+      ? `$${parseFloat(result.cashValue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      : (result.currentBalance !== undefined && result.currentBalance !== null)
+        ? `$${parseFloat(result.currentBalance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        : 'N/A';
     
     const metrics = result.metrics || {};
     const riskLevel = formatRiskLevel(metrics);
     const riskClass = getRiskLevelClass(riskLevel);
     const riskScore = metrics.riskScore !== undefined ? metrics.riskScore : 'N/A';
     
-    // Max trailing drawdown (for Risk mode)
-    const maxDrawdown = riskMode === 'risk' && result.maxDrawdown 
+    // User-requested: Always show trailing drawdown if available (even in apexMae mode)
+    const maxDrawdown = result.maxDrawdown 
       ? `$${parseFloat(result.maxDrawdown).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
       : 'N/A';
     
@@ -298,8 +303,9 @@ async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk', csvFile
         <td>${warningIcon}${accountName}</td>
         <td>${strategy}</td>
         <td>${contracts} × ${contractType}</td>
-        <td>${accountSize}</td>
-        <td>${riskMode === 'risk' ? maxDrawdown : safetyNet}</td>
+        <td>${cashValue}</td>
+        <td>${maxDrawdown}</td>
+        ${riskMode === 'apexMae' ? `<td>${safetyNet}</td>` : ``}
         <td class="${riskClass}"><strong>${riskLevel}</strong></td>
         <td>${riskScore}</td>
         <td class="${goNoGoClass}"><strong>${goNoGo}</strong></td>
@@ -398,8 +404,9 @@ async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk', csvFile
             <th>Account Name</th>
             <th>Strategy</th>
             <th>Contracts</th>
-            <th>Account Size</th>
-            <th>${riskMode === 'risk' ? 'Max Trailing DD' : 'Safety Net'}</th>
+            <th>Cash Value</th>
+            <th>Max Trailing DD</th>
+            ${riskMode === 'apexMae' ? `<th>Safety Net</th>` : ``}
             <th>Risk Level</th>
             <th>Risk Score</th>
             <th>GO/NO-GO</th>
@@ -451,15 +458,28 @@ async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk', csvFile
     const strategy = result.strategy || 'Unknown';
     const contracts = result.contracts || 1;
     const contractType = result.contractType || 'NQ';
-    const accountSize = result.accountSize ? `$${parseFloat(result.accountSize).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A';
+    const cashValue = (result.cashValue !== undefined && result.cashValue !== null)
+      ? `$${parseFloat(result.cashValue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      : (result.currentBalance !== undefined && result.currentBalance !== null)
+        ? `$${parseFloat(result.currentBalance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        : 'N/A';
     
     const metrics = result.metrics || {};
     const riskLevel = formatRiskLevel(metrics);
     const riskScore = metrics.riskScore !== undefined ? metrics.riskScore : 'N/A';
     const goNoGo = riskLevel === 'NO GO' || riskLevel === 'HIGH' ? 'NO-GO' : 'GO';
+
+    const maxDrawdown = result.maxDrawdown
+      ? `$${parseFloat(result.maxDrawdown).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      : 'N/A';
+    const safetyNet = riskMode === 'apexMae' && result.safetyNet
+      ? `$${parseFloat(result.safetyNet).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      : 'N/A';
     
     textBody += `Account: ${accountName} | Strategy: ${strategy} | Contracts: ${contracts} × ${contractType} | `;
-    textBody += `Account Size: ${accountSize} | Risk: ${riskLevel} (${riskScore}) | GO/NO-GO: ${goNoGo}\n`;
+    textBody += `Cash Value: ${cashValue} | Max Trailing DD: ${maxDrawdown}`;
+    if (riskMode === 'apexMae') textBody += ` | Safety Net: ${safetyNet}`;
+    textBody += ` | Risk: ${riskLevel} (${riskScore}) | GO/NO-GO: ${goNoGo}\n`;
   });
   
   textBody += `\nView details in RiskLo: ${appBaseUrl}\n`;

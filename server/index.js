@@ -1086,7 +1086,9 @@ app.post('/api/upload-csv-auto', express.json({ limit: '10mb' }), async (req, re
           strategy: row.strategy,
           contracts: row.numContracts, // Email service expects 'contracts', not 'numContracts'
           contractType: row.contractType,
+          // Keep accountSize for internal/debug if needed, but email will display cashValue instead.
           accountSize: row.accountSize,
+          cashValue: row.cashValue,
           maxDrawdown: row.maxDrawdown,
           safetyNet: row.safetyNet,
           startOfDayProfit: row.startOfDayProfit,
