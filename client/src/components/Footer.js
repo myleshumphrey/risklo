@@ -26,28 +26,6 @@ function Footer() {
     window.dispatchEvent(new CustomEvent('navigate', { detail: 'desktopAppGuide' }));
   };
 
-  const handleDownloadClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    // Only download when button is explicitly clicked
-    const link = document.createElement('a');
-    link.href = '/downloads/RiskLoExporter.zip';
-    link.download = 'RiskLoExporter.zip';
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleSetupInstructionsClick = () => {
-    // Scroll to setup instructions or open modal
-    const instructionsElement = document.getElementById('risklo-exporter-instructions');
-    if (instructionsElement) {
-      instructionsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
-
   return (
     <footer className="app-footer">
       <div className="footer-content">
@@ -68,24 +46,6 @@ function Footer() {
               </button>
               <button className="setup-link" onClick={handleDesktopAppGuide}>
                 User Guide
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* NinjaTrader AddOn Section - Alternative */}
-        <div className="footer-addon-section">
-          <div className="addon-info">
-            <h3 className="addon-title">RiskLoExporter (NinjaTrader AddOn)</h3>
-            <p className="addon-description">
-              Alternative: NinjaTrader AddOn for exporting account and strategy data to CSV files.
-            </p>
-            <div className="addon-buttons">
-              <button className="download-button" onClick={handleDownloadClick}>
-                Download AddOn
-              </button>
-              <button className="setup-link" onClick={handleSetupInstructionsClick}>
-                Setup Instructions
               </button>
             </div>
           </div>

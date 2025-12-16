@@ -183,7 +183,9 @@ function matchAccountsToStrategies(accounts, strategies, availableSheetNames) {
         strategy: '',
         contractType: 'MNQ',
         numContracts: 1,
+        // Keep net liquidation for calculations, but also carry cash value for email/display.
         currentBalance: account.netLiquidation,
+        cashValue: account.cashValue,
         maxDrawdown: account.trailingDrawdown || 1500,
         accountSize: account.accountSize,
         startOfDayProfit: account.startOfDayProfit,
@@ -214,6 +216,7 @@ function matchAccountsToStrategies(accounts, strategies, availableSheetNames) {
           contractType: strat.instrument,
           numContracts: 1,
           currentBalance: account.netLiquidation,
+          cashValue: account.cashValue,
           maxDrawdown: Math.floor((account.trailingDrawdown || 1500) * 100) / 100,
           accountSize: account.accountSize,
           startOfDayProfit: Math.floor(account.startOfDayProfit * 100) / 100,

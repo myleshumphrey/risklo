@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AddOn>
+  <Name>RiskLoExporter</Name>
+  <Description>Automatically exports Account and Strategy Performance data from NinjaTrader to CSV files for RiskLo risk analysis. No manual entry needed - reads directly from NinjaTrader's live data.</Description>
+  <Author>RiskLo</Author>
+  <Version>1.0.0</Version>
+  <Category>AddOn</Category>
+  <Assembly>RiskLoExporter.cs</Assembly>
+</AddOn>
+
