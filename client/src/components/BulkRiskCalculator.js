@@ -154,7 +154,8 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
               contracts: parseFloat(row.contracts),
               maxDrawdown: riskMode === 'risk' ? parseFloat(row.maxDrawdown) : null,
               startOfDayProfit: riskMode === 'apexMae' ? parseFloat(row.startOfDayProfit) : null,
-              safetyNet: riskMode === 'apexMae' ? parseFloat(row.safetyNet) : null
+              // Safety net is derived from account size; keep sending it for calculations, but don't show it in the UI.
+              safetyNet: riskMode === 'apexMae' ? getThresholdForAccountSize(Number(row.accountSize)) : null
             })
         }).then(res => res.json())
       );
@@ -316,7 +317,6 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
                   <>
                     <th>Current Balance ($)</th>
                     <th>Start-of-Day Profit ($)</th>
-                    <th>Safety Net ($)</th>
                   </>
                 )}
                 <th></th>
@@ -437,15 +437,6 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
                           style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', cursor: 'not-allowed' }}
                         />
                       </td>
-                      <td>
-                        <input
-                          type="number"
-                          value={row.safetyNet}
-                          readOnly
-                          className="bulk-input"
-                          style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', cursor: 'not-allowed' }}
-                        />
-                      </td>
                     </>
                   )}
                   <td>
@@ -484,7 +475,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
               if (riskMode === 'risk') {
                 return r.strategy && r.accountSize && r.contracts && r.maxDrawdown;
               } else {
-                return r.strategy && r.accountSize && r.contracts && r.startOfDayProfit && r.safetyNet;
+                return r.strategy && r.accountSize && r.contracts && r.startOfDayProfit !== undefined && r.startOfDayProfit !== null;
               }
             }).length} Configuration(s)`}
           </button>
@@ -494,6 +485,19 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
       {results && (
         <div className="bulk-results" ref={resultsRef}>
           <h3>{riskMode === 'risk' ? 'Risk Results' : '30% Drawdown Results'}</h3>
+
+          {/* Blown warning (30% Drawdown mode) */}
+          {riskMode === 'apexMae' && results.some(r => {
+            const profit = Number(r.startOfDayProfit);
+            const currentBal = Number(r.currentBalance);
+            const acctSize = Number(r.accountSize);
+            const computedProfit = Number.isFinite(profit) ? profit : (Number.isFinite(currentBal) && Number.isFinite(acctSize) ? (currentBal - acctSize) : NaN);
+            return Number.isFinite(computedProfit) && computedProfit < 0;
+          }) && (
+            <div className="bulk-blown-warning">
+              <strong>BLOWN:</strong> One or more accounts are below the trailing threshold (negative profit balance). These accounts should be treated as blown and require immediate attention.
+            </div>
+          )}
           
           {/* Email confirmation message */}
           {emailSent && user?.email && (
@@ -524,9 +528,24 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
           
           <div className="results-grid">
             {results.map((result, index) => (
+              (() => {
+                const profit = Number(result.startOfDayProfit);
+                const currentBal = Number(result.currentBalance);
+                const acctSize = Number(result.accountSize);
+                const computedProfit = Number.isFinite(profit) ? profit : (Number.isFinite(currentBal) && Number.isFinite(acctSize) ? (currentBal - acctSize) : NaN);
+                const isBlown = riskMode === 'apexMae' && Number.isFinite(computedProfit) && computedProfit < 0;
+                const exceedsMae = !!result.metrics?.apexMaeComparison?.exceedsMae;
+                const statusText = riskMode === 'apexMae'
+                  ? (isBlown ? 'BLOWN' : (exceedsMae ? 'NO GO' : 'GO'))
+                  : (result.metrics?.blowAccountStatus || 'N/A');
+                const statusColor = riskMode === 'apexMae'
+                  ? (isBlown ? '#ef4444' : (exceedsMae ? '#ef4444' : '#10b981'))
+                  : (result.metrics?.blowAccountColor || '#6b7280');
+
+                return (
               <div 
                 key={index} 
-                className="result-card"
+                className={`result-card ${isBlown ? 'blown' : ''}`}
                 onClick={() => setSelectedResult(result)}
               >
                 <div className="result-header">
@@ -544,15 +563,10 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
                   <span 
                     className="result-status"
                     style={{ 
-                      color: riskMode === 'apexMae' 
-                        ? (result.metrics?.apexMaeComparison?.exceedsMae ? '#ef4444' : '#10b981')
-                        : (result.metrics?.blowAccountColor || '#6b7280')
+                      color: statusColor
                     }}
                   >
-                    {riskMode === 'apexMae' 
-                      ? (result.metrics?.apexMaeComparison?.exceedsMae ? 'NO GO' : 'GO')
-                      : (result.metrics?.blowAccountStatus || 'N/A')
-                    }
+                    {statusText}
                   </span>
                 </div>
                 <div className="result-metrics">
@@ -609,6 +623,8 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
                 </div>
                 <div className="result-click-hint">Click for details →</div>
               </div>
+                );
+              })()
             ))}
           </div>
         </div>
