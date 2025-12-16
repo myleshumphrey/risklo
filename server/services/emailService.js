@@ -287,9 +287,7 @@ async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk', csvFile
       : 'N/A';
     
     // Safety net (for 30% Drawdown mode)
-    const safetyNet = riskMode === 'apexMae' && result.safetyNet
-      ? `$${parseFloat(result.safetyNet).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-      : 'N/A';
+    // Safety net removed from email per request (it tends to be the same and isn't useful in the summary).
     
     // GO/NO GO status
     const goNoGo = riskLevel === 'NO GO' || riskLevel === 'HIGH' ? 'NO GO' : 'GO';
@@ -305,7 +303,6 @@ async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk', csvFile
         <td>${contracts} × ${contractType}</td>
         <td>${cashValue}</td>
         <td>${maxDrawdown}</td>
-        ${riskMode === 'apexMae' ? `<td>${safetyNet}</td>` : ``}
         <td class="${riskClass}"><strong>${riskLevel}</strong></td>
         <td>${riskScore}</td>
         <td class="${goNoGoClass}"><strong>${goNoGo}</strong></td>
@@ -406,7 +403,6 @@ async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk', csvFile
             <th>Contracts</th>
             <th>Cash Value</th>
             <th>Max Trailing DD</th>
-            ${riskMode === 'apexMae' ? `<th>Safety Net</th>` : ``}
             <th>Risk Level</th>
             <th>Risk Score</th>
             <th>GO/NO-GO</th>
@@ -472,13 +468,10 @@ async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk', csvFile
     const maxDrawdown = result.maxDrawdown
       ? `$${parseFloat(result.maxDrawdown).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
       : 'N/A';
-    const safetyNet = riskMode === 'apexMae' && result.safetyNet
-      ? `$${parseFloat(result.safetyNet).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-      : 'N/A';
+    // Safety net removed from email per request.
     
     textBody += `Account: ${accountName} | Strategy: ${strategy} | Contracts: ${contracts} × ${contractType} | `;
     textBody += `Cash Value: ${cashValue} | Max Trailing DD: ${maxDrawdown}`;
-    if (riskMode === 'apexMae') textBody += ` | Safety Net: ${safetyNet}`;
     textBody += ` | Risk: ${riskLevel} (${riskScore}) | GO/NO-GO: ${goNoGo}\n`;
   });
   
