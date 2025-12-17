@@ -93,6 +93,7 @@ function formatRiskLevel(metrics) {
  * Get risk level color class for HTML
  */
 function getRiskLevelClass(riskLevel) {
+  if (riskLevel === 'BLOWN') return 'risk-high';
   if (riskLevel === 'NO GO' || riskLevel === 'HIGH') return 'risk-high';
   if (riskLevel === 'CAUTION' || riskLevel === 'MEDIUM') return 'risk-medium';
   if (riskLevel === 'GO' || riskLevel === 'LOW') return 'risk-low';
@@ -150,11 +151,30 @@ async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk', csvFile
   let noGoCount = 0;
   const highRiskAccounts = [];
   
+  // Track blown accounts (negative trailing DD)
+  let blownCount = 0;
+  const blownAccounts = [];
+
   results.forEach((result) => {
     const metrics = result.metrics || {};
-    const riskLevel = formatRiskLevel(metrics);
+    const maxTrailingDdNum = Number(result.maxDrawdown);
+    const isBlown = Number.isFinite(maxTrailingDdNum) && maxTrailingDdNum < 0;
+    const riskLevel = isBlown ? 'BLOWN' : formatRiskLevel(metrics);
     
-    if (riskLevel === 'LOW' || riskLevel === 'GO') {
+    if (isBlown) {
+      blownCount++;
+      blownAccounts.push({
+        name: result.accountName || `Account #${result.accountNumber || 'Unknown'}`,
+        strategy: result.strategy || 'Unknown',
+        maxTrailingDd: result.maxDrawdown
+      });
+      highRiskAccounts.push({
+        name: result.accountName || `Account #${result.accountNumber || 'Unknown'}`,
+        strategy: result.strategy || 'Unknown',
+        riskLevel: riskLevel,
+        riskScore: metrics.riskScore !== undefined ? metrics.riskScore : 'N/A'
+      });
+    } else if (riskLevel === 'LOW' || riskLevel === 'GO') {
       lowRiskCount++;
     } else if (riskLevel === 'HIGH' || riskLevel === 'CAUTION') {
       highRiskCount++;
@@ -177,7 +197,7 @@ async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk', csvFile
 
   // Build summary section HTML
   let summarySection = '';
-  if (lowRiskCount > 0 && (highRiskCount === 0 && noGoCount === 0)) {
+  if (lowRiskCount > 0 && (highRiskCount === 0 && noGoCount === 0) && blownCount === 0) {
     // All accounts are low risk - positive message
     summarySection = `
       <div style="
@@ -198,9 +218,9 @@ async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk', csvFile
         </p>
       </div>
     `;
-  } else if (noGoCount > 0 || highRiskCount > 0) {
+  } else if (blownCount > 0 || noGoCount > 0 || highRiskCount > 0) {
     // High risk detected - warning message
-    const totalHighRisk = noGoCount + highRiskCount;
+    const totalHighRisk = blownCount + noGoCount + highRiskCount;
     summarySection = `
       <div style="
         background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
@@ -215,6 +235,10 @@ async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk', csvFile
           <h2 style="margin: 0; font-size: 1.5rem; font-weight: 700; color: #ffffff;">High Risk Alert: ${totalHighRisk} Account${totalHighRisk > 1 ? 's' : ''} Require Attention</h2>
         </div>
         <p style="margin: 0; font-size: 1.1rem; margin-bottom: 1rem; color: #ffffff;">
+          ${blownCount > 0 
+            ? `<strong>${blownCount} account${blownCount > 1 ? 's' : ''} show BLOWN status</strong> - trailing drawdown is negative. These accounts should be treated as blown.`
+            : ''
+          }
           ${noGoCount > 0 
             ? `<strong>${noGoCount} account${noGoCount > 1 ? 's' : ''} show NO GO status</strong> - these configurations exceed your risk limits and should be adjusted immediately.`
             : ''
@@ -277,7 +301,9 @@ async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk', csvFile
         : 'N/A';
     
     const metrics = result.metrics || {};
-    const riskLevel = formatRiskLevel(metrics);
+    const maxTrailingDdNum = Number(result.maxDrawdown);
+    const isBlown = Number.isFinite(maxTrailingDdNum) && maxTrailingDdNum < 0;
+    const riskLevel = isBlown ? 'BLOWN' : formatRiskLevel(metrics);
     const riskClass = getRiskLevelClass(riskLevel);
     const riskScore = metrics.riskScore !== undefined ? metrics.riskScore : 'N/A';
     
@@ -290,11 +316,11 @@ async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk', csvFile
     // Safety net removed from email per request (it tends to be the same and isn't useful in the summary).
     
     // GO/NO GO status
-    const goNoGo = riskLevel === 'NO GO' || riskLevel === 'HIGH' ? 'NO GO' : 'GO';
-    const goNoGoClass = goNoGo === 'NO GO' ? 'status-no-go' : 'status-go';
+    const goNoGo = isBlown ? 'BLOWN' : (riskLevel === 'NO GO' || riskLevel === 'HIGH' ? 'NO GO' : 'GO');
+    const goNoGoClass = (goNoGo === 'NO GO' || goNoGo === 'BLOWN') ? 'status-no-go' : 'status-go';
     
     // Warning icon for high risk
-    const warningIcon = (riskLevel === 'NO GO' || riskLevel === 'HIGH') ? '⚠️ ' : '';
+    const warningIcon = (riskLevel === 'BLOWN' || riskLevel === 'NO GO' || riskLevel === 'HIGH') ? '⚠️ ' : '';
     
     tableRows += `
       <tr class="${riskClass}">
