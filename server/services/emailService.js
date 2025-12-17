@@ -197,92 +197,64 @@ async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk', csvFile
 
   // Build summary section HTML
   let summarySection = '';
+  // Note: Mobile email clients (especially Gmail on iOS) can render gradient/flex blocks as "split" boxes.
+  // Use simple table-based blocks with inline styles for consistent rendering.
   if (lowRiskCount > 0 && (highRiskCount === 0 && noGoCount === 0) && blownCount === 0) {
-    // All accounts are low risk - positive message
     summarySection = `
-      <div style="
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        border-radius: 12px;
-        padding: 2rem;
-        margin-bottom: 2rem;
-        color: white;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      ">
-        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-          <div style="font-size: 2.5rem;">✅</div>
-          <h2 style="margin: 0; font-size: 1.5rem; font-weight: 700;">All Accounts Show Low Risk</h2>
-        </div>
-        <p style="margin: 0; font-size: 1.1rem; opacity: 0.95;">
-          Great news! All ${lowRiskCount} account${lowRiskCount > 1 ? 's' : ''} analyzed show <strong>low risk levels</strong> and are within safe drawdown limits. 
-          Your current configurations appear to be well-aligned with your risk tolerance.
-        </p>
-      </div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate; border-spacing:0; margin:0 0 24px 0; background:#059669; border-radius:12px;">
+        <tr>
+          <td style="padding:18px 18px 16px 18px; color:#ffffff;">
+            <div style="font-size:16px; font-weight:800; margin:0 0 8px 0;">All Accounts Show Low Risk</div>
+            <div style="font-size:14px; line-height:1.5; margin:0;">
+              Great news! All ${lowRiskCount} account${lowRiskCount > 1 ? 's' : ''} analyzed show <strong>low risk levels</strong> and are within safe drawdown limits.
+            </div>
+          </td>
+        </tr>
+      </table>
     `;
   } else if (blownCount > 0 || noGoCount > 0 || highRiskCount > 0) {
-    // High risk detected - warning message
     const totalHighRisk = blownCount + noGoCount + highRiskCount;
     summarySection = `
-      <div style="
-        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        border-radius: 12px;
-        padding: 2rem;
-        margin-bottom: 2rem;
-        color: #ffffff;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      ">
-        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-          <div style="font-size: 2.5rem;">⚠️</div>
-          <h2 style="margin: 0; font-size: 1.5rem; font-weight: 700; color: #ffffff;">High Risk Alert: ${totalHighRisk} Account${totalHighRisk > 1 ? 's' : ''} Require Attention</h2>
-        </div>
-        <p style="margin: 0; font-size: 1.1rem; margin-bottom: 1rem; color: #ffffff;">
-          ${blownCount > 0 
-            ? `<strong>${blownCount} account${blownCount > 1 ? 's' : ''} show BLOWN status</strong> - trailing drawdown is negative. These accounts should be treated as blown.`
-            : ''
-          }
-          ${noGoCount > 0 
-            ? `<strong>${noGoCount} account${noGoCount > 1 ? 's' : ''} show NO GO status</strong> - these configurations exceed your risk limits and should be adjusted immediately.`
-            : ''
-          }
-          ${highRiskCount > 0 
-            ? `${noGoCount > 0 ? ' Additionally, ' : ''}<strong>${highRiskCount} account${highRiskCount > 1 ? 's' : ''} show HIGH RISK</strong> - consider reducing contracts or switching strategies.`
-            : ''
-          }
-        </p>
-        <div style="background: rgba(255, 255, 255, 0.15); border-radius: 8px; padding: 1rem; margin-top: 1rem;">
-          <p style="margin: 0 0 0.5rem 0; font-weight: 600; font-size: 0.95rem; color: #ffffff;">Accounts Requiring Action:</p>
-          <ul style="margin: 0; padding-left: 1.5rem; font-size: 0.95rem; color: #ffffff;">
-            ${highRiskAccounts.map(acc => `
-              <li style="margin-bottom: 0.5rem; color: #ffffff;">
-                <strong>${acc.name}</strong> - ${acc.strategy} 
-                (Risk: ${acc.riskLevel}, Score: ${acc.riskScore}/100)
-              </li>
-            `).join('')}
-          </ul>
-        </div>
-        <p style="margin: 1rem 0 0 0; font-size: 0.95rem; color: #ffffff;">
-          <strong>Recommended Actions:</strong> First, try reducing contract sizes or switching to micro contracts (MNQ) for better position control. If you're already trading 1 MNQ contract, consider alternative strategies with lower historical drawdowns. <strong>Consult with the Vector Algorithmics team</strong> to determine which strategy would best align with your risk tolerance and account size.
-        </p>
-      </div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate; border-spacing:0; margin:0 0 24px 0; background:#dc2626; border-radius:12px;">
+        <tr>
+          <td style="padding:18px; color:#ffffff;">
+            <div style="font-size:16px; font-weight:800; margin:0 0 10px 0;">High Risk Alert: ${totalHighRisk} Account${totalHighRisk > 1 ? 's' : ''} Require Attention</div>
+            <div style="font-size:14px; line-height:1.5; margin:0 0 12px 0;">
+              ${blownCount > 0 ? `<strong>${blownCount} account${blownCount > 1 ? 's' : ''} show BLOWN status</strong> (negative trailing drawdown). ` : ``}
+              ${noGoCount > 0 ? `<strong>${noGoCount} account${noGoCount > 1 ? 's' : ''} show NO GO status</strong>. ` : ``}
+              ${highRiskCount > 0 ? `<strong>${highRiskCount} account${highRiskCount > 1 ? 's' : ''} show HIGH RISK</strong>.` : ``}
+            </div>
+
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate; border-spacing:0; background:rgba(255,255,255,0.14); border-radius:10px;">
+              <tr>
+                <td style="padding:14px; color:#ffffff;">
+                  <div style="font-weight:700; font-size:14px; margin:0 0 8px 0;">Accounts Requiring Action:</div>
+                  <div style="font-size:14px; line-height:1.5;">
+                    ${highRiskAccounts.map(acc => `• <strong>${acc.name}</strong> — ${acc.strategy} (Risk: ${acc.riskLevel}, Score: ${acc.riskScore}/100)`).join('<br />')}
+                  </div>
+                </td>
+              </tr>
+            </table>
+
+            <div style="font-size:13px; line-height:1.5; margin:12px 0 0 0;">
+              <strong>Recommended Actions:</strong> Reduce contracts first or switch to MNQ. If you're already on 1 MNQ contract, consult the Vector Algorithmics team to pick a lower-drawdown strategy.
+            </div>
+          </td>
+        </tr>
+      </table>
     `;
   } else if (lowRiskCount > 0) {
-    // Mixed results - mostly low risk
     summarySection = `
-      <div style="
-        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-        border-radius: 12px;
-        padding: 2rem;
-        margin-bottom: 2rem;
-        color: white;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      ">
-        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-          <div style="font-size: 2.5rem;">📊</div>
-          <h2 style="margin: 0; font-size: 1.5rem; font-weight: 700;">Mixed Risk Profile</h2>
-        </div>
-        <p style="margin: 0; font-size: 1.1rem; opacity: 0.95;">
-          ${lowRiskCount} account${lowRiskCount > 1 ? 's' : ''} show low risk, but please review the detailed table below for complete risk assessment of all accounts.
-        </p>
-      </div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate; border-spacing:0; margin:0 0 24px 0; background:#d97706; border-radius:12px;">
+        <tr>
+          <td style="padding:18px; color:#ffffff;">
+            <div style="font-size:16px; font-weight:800; margin:0 0 8px 0;">Mixed Risk Profile</div>
+            <div style="font-size:14px; line-height:1.5; margin:0;">
+              ${lowRiskCount} account${lowRiskCount > 1 ? 's' : ''} show low risk, but please review the detailed table below.
+            </div>
+          </td>
+        </tr>
+      </table>
     `;
   }
 
