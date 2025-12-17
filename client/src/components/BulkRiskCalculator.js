@@ -492,10 +492,13 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
             const currentBal = Number(r.currentBalance);
             const acctSize = Number(r.accountSize);
             const computedProfit = Number.isFinite(profit) ? profit : (Number.isFinite(currentBal) && Number.isFinite(acctSize) ? (currentBal - acctSize) : NaN);
-            return Number.isFinite(computedProfit) && computedProfit < 0;
+            const dd = Number(r.maxDrawdown);
+            const isNegativeProfit = Number.isFinite(computedProfit) && computedProfit < 0;
+            const isNegativeTrailingDd = Number.isFinite(dd) && dd < 0;
+            return isNegativeProfit || isNegativeTrailingDd;
           }) && (
             <div className="bulk-blown-warning">
-              <strong>BLOWN:</strong> One or more accounts are below the trailing threshold (negative profit balance). These accounts should be treated as blown and require immediate attention.
+              <strong>BLOWN:</strong> One or more accounts show a negative trailing drawdown value (or negative profit balance). These accounts should be treated as blown and require immediate attention.
             </div>
           )}
           
@@ -533,7 +536,8 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
                 const currentBal = Number(result.currentBalance);
                 const acctSize = Number(result.accountSize);
                 const computedProfit = Number.isFinite(profit) ? profit : (Number.isFinite(currentBal) && Number.isFinite(acctSize) ? (currentBal - acctSize) : NaN);
-                const isBlown = riskMode === 'apexMae' && Number.isFinite(computedProfit) && computedProfit < 0;
+                const dd = Number(result.maxDrawdown);
+                const isBlown = riskMode === 'apexMae' && ((Number.isFinite(computedProfit) && computedProfit < 0) || (Number.isFinite(dd) && dd < 0));
                 const exceedsMae = !!result.metrics?.apexMaeComparison?.exceedsMae;
                 const statusText = riskMode === 'apexMae'
                   ? (isBlown ? 'BLOWN' : (exceedsMae ? 'NO GO' : 'GO'))
