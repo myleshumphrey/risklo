@@ -213,6 +213,41 @@ function HowWeCalculate({ onNavigate }) {
         </section>
 
         <section className="calculation-section">
+          <h2 className="section-title">Payout Planner (Calendar + Daily Targets)</h2>
+          <div className="section-content">
+            <p>
+              RiskLo’s Payout Planner turns the 30% Consistency Rule into actionable numbers and a date you can plan around.
+              It uses the highest profit day from the selected strategy’s historical results and combines it with your current profit balance
+              (profit since last payout, if provided).
+            </p>
+
+            <h3>Core Formulas</h3>
+            <div className="formula-box">
+              <div className="formula">
+                <strong>Minimum Total Profit Required = Highest Profit Day ÷ 0.30</strong><br />
+                <strong>Remaining Profit Needed = max(0, Minimum Total Profit Required − Profit Balance)</strong><br />
+                <strong>Profit Per Day Target = Remaining Profit Needed ÷ Trading Days Required</strong>
+              </div>
+            </div>
+
+            <h3>Earliest Payout Request Date</h3>
+            <p>
+              The calendar counts <strong>US trading days</strong> starting from your selected Start Date (counting the start day if it’s a trading day).
+              RiskLo excludes:
+            </p>
+            <ul>
+              <li><strong>Weekends</strong> (Saturday/Sunday)</li>
+              <li><strong>US market holidays</strong> (NYSE closures), including:
+                New Year’s Day (observed), MLK Day, Presidents Day, Good Friday, Memorial Day, Juneteenth (observed),
+                Independence Day (observed), Labor Day, Thanksgiving, and Christmas (observed).</li>
+            </ul>
+            <p className="note">
+              This is a planning tool. Always confirm payout eligibility and rules directly with Apex, as policies can change.
+            </p>
+          </div>
+        </section>
+
+        <section className="calculation-section">
           <h2 className="section-title">Risk Score Calculation</h2>
           <div className="section-content">
             <p>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import Dashboard from './components/Dashboard';
 import InputForm from './components/InputForm';
@@ -36,6 +36,7 @@ function AppContent() {
   const [error, setError] = useState(null);
   const [sheetNames, setSheetNames] = useState([]);
   const [loadingSheets, setLoadingSheets] = useState(true);
+  const [sheetsConnectUrl, setSheetsConnectUrl] = useState(null);
 
   // Get current metrics based on mode
   const metrics = riskMode === 'risk' ? riskMetrics : apexMaeMetrics;
@@ -58,42 +59,76 @@ function AppContent() {
     }
   }, [user]);
 
-  useEffect(() => {
-    // Fetch sheet names on component mount
-    const fetchSheetNames = async () => {
-      try {
-        console.log('Fetching from:', API_ENDPOINTS.sheets);
-        const response = await fetch(API_ENDPOINTS.sheets);
-        
-        if (!response.ok) {
-          throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+  const fetchSheetNames = useCallback(async () => {
+    setLoadingSheets(true);
+    setSheetsConnectUrl(null);
+
+    try {
+      const url = user?.email
+        ? `${API_ENDPOINTS.sheets}?email=${encodeURIComponent(user.email)}`
+        : API_ENDPOINTS.sheets;
+
+      console.log('Fetching from:', url);
+      const response = await fetch(url);
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        // Special handling for user-based OAuth gating
+        if (data?.requiresOAuth) {
+          setSheetNames(data.sampleSheets || []);
+          setSheetsConnectUrl(data.authUrl || null);
+          setError(data.error || 'Connect Google to load strategies from the Results Spreadsheet.');
+          return;
         }
-        
-        const data = await response.json();
-        if (data.success) {
-          setSheetNames(data.sheets);
-          if (data.sheets.length === 0) {
-            setError('No strategies found. Make sure the Google Sheet is shared with the service account.');
-          }
-        } else {
-          setError(data.error || 'Failed to load strategies');
-        }
-      } catch (err) {
-        console.error('Failed to fetch sheet names:', err);
-        console.error('API URL:', API_ENDPOINTS.sheets);
-        console.error('Hostname:', window.location.hostname);
-        
-        if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-          setError(`Failed to connect to server at ${API_ENDPOINTS.sheets}. Make sure the backend is running and accessible from your network.`);
-        } else {
-          setError(err.message || 'Failed to connect to server. Make sure the backend is running.');
-        }
-      } finally {
-        setLoadingSheets(false);
+        throw new Error(data?.error || `Server returned ${response.status}: ${response.statusText}`);
       }
-    };
+
+      if (data.success) {
+        setSheetNames(data.sheets || []);
+        if ((data.sheets || []).length === 0) {
+          setError('No strategies found.');
+        } else {
+          setError(null);
+        }
+      } else {
+        setError(data.error || 'Failed to load strategies');
+      }
+    } catch (err) {
+      console.error('Failed to fetch sheet names:', err);
+      console.error('API URL:', API_ENDPOINTS.sheets);
+      console.error('Hostname:', window.location.hostname);
+
+      if (err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError')) {
+        setError(`Failed to connect to server at ${API_ENDPOINTS.sheets}. Make sure the backend is running and accessible from your network.`);
+      } else {
+        setError(err.message || 'Failed to connect to server. Make sure the backend is running.');
+      }
+    } finally {
+      setLoadingSheets(false);
+    }
+  }, [user?.email]);
+
+  // Fetch sheet names on mount and when signed-in user changes
+  useEffect(() => {
     fetchSheetNames();
-  }, []);
+  }, [fetchSheetNames]);
+
+  // If user just finished Google Sheets connect flow, refresh strategy list
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const connect = params.get('sheetsConnect');
+    if (!connect) return;
+
+    if (connect === 'success') {
+      // Refresh strategies and clear query params
+      fetchSheetNames();
+      params.delete('sheetsConnect');
+      params.delete('email');
+      const newQuery = params.toString();
+      const newUrl = `${window.location.pathname}${newQuery ? `?${newQuery}` : ''}`;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [fetchSheetNames]);
 
   const handleAnalyze = async (formData) => {
     setLoading(true);
@@ -108,6 +143,7 @@ function AppContent() {
         },
         body: JSON.stringify({
           ...formData,
+          userEmail: user?.email || null,
           startOfDayProfit: formData.startOfDayProfit || null,
           safetyNet: formData.safetyNet || null,
           profitSinceLastPayout: formData.profitSinceLastPayout || null
@@ -190,6 +226,12 @@ function AppContent() {
       default:
         return (
           <>
+            {error && (
+              <div className="error-message">
+                {error}
+              </div>
+            )}
+
             <InputForm 
               onSubmit={handleAnalyze} 
               loading={loading}
@@ -198,13 +240,9 @@ function AppContent() {
               error={error && sheetNames.length === 0 ? error : null}
               riskMode={riskMode}
               onNavigate={setCurrentPage}
+              sheetsConnectUrl={sheetsConnectUrl}
+              userEmail={user?.email || null}
             />
-            
-            {error && (
-              <div className="error-message">
-                {error}
-              </div>
-            )}
             
             {metrics ? (
               <Dashboard metrics={metrics} riskMode={riskMode} onNavigate={setCurrentPage} formData={lastFormData} />
@@ -247,6 +285,7 @@ function AppContent() {
                 sheetNames={sheetNames}
                 riskMode={riskMode}
                 onUpgrade={() => setShowUpgradeModal(true)}
+                sheetsConnectUrl={sheetsConnectUrl}
                 onPopulateRows={(setRowsFn) => {
                   // Store the setRows function so CsvUpload can use it
                   // The function accepts (rows, csvFileNames) parameters

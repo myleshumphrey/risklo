@@ -2,6 +2,8 @@
  * Priority order for strategies (most used first)
  */
 const STRATEGY_PRIORITY = [
+  'Sample Strategy (Demo)',
+  'Grass Fed Prime Beef 2.1',
   'Grass Fed Prime Beef 2.0',
   'Grass Fed Prime Beef',
   'BeefBowl',

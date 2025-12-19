@@ -1,0 +1,138 @@
+.payout-planner {
+  margin-top: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.payout-planner-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.payout-planner-title {
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.payout-planner-subtitle {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.payout-planner-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.payout-planner-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.payout-planner-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 1.25rem;
+}
+
+.payout-label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+}
+
+.payout-value {
+  color: #ffffff;
+  font-size: 1.9rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.payout-subtext {
+  margin-top: 0.5rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+.payout-planner-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.4fr;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.payout-control {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 1rem;
+}
+
+.payout-control-label {
+  display: block;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.payout-control-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  outline: none;
+}
+
+.payout-control-input:focus {
+  border-color: rgba(102, 126, 234, 0.7);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.22);
+}
+
+.payout-control-hint {
+  margin-top: 0.5rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+.payout-control-result {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.payout-date {
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 1.35rem;
+}
+
+@media (max-width: 900px) {
+  .payout-planner-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .payout-planner-controls {
+    grid-template-columns: 1fr;
+  }
+}
+
+

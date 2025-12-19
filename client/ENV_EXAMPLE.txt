@@ -1,0 +1,14 @@
+# RiskLo frontend environment variables (Netlify env vars or client/.env.local)
+#
+# NOTE: Create React App reads variables starting with REACT_APP_*
+
+# Backend base URL (production example)
+# REACT_APP_API_URL=https://risklo-production.up.railway.app
+
+# Local dev (RiskLo backend defaults to 5001 on macOS)
+REACT_APP_API_URL=http://localhost:5001
+
+# Google Identity Services (Sign in)
+REACT_APP_GOOGLE_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com
+
+

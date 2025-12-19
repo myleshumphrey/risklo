@@ -46,6 +46,10 @@ function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro, isDevMode })
             client_id: clientId,
             callback: (response) => {
               handleGoogleSignIn(response.credential);
+              // Immediate cleanup to prevent the Google-rendered button from "flashing" after first sign-in
+              if (signInButtonRef.current) {
+                signInButtonRef.current.innerHTML = '';
+              }
               setIsOpen(false);
             },
           });
@@ -68,6 +72,11 @@ function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro, isDevMode })
         // Otherwise wait for it to load
         initGoogleSignIn();
       }
+    }
+
+    // Cleanup: if the menu closes or the user signs in, remove any rendered Google button
+    if ((user || !isOpen) && signInButtonRef.current) {
+      signInButtonRef.current.innerHTML = '';
     }
   }, [user, clientId, isOpen, handleGoogleSignIn]);
 

@@ -10,6 +10,13 @@ STRIPE_PRICE_RISKLO_PRO=price_... (your Stripe Price ID for RiskLo Pro)
 APP_BASE_URL=https://risklo.io (or your production URL)
 FRONTEND_URL=https://risklo.io (or your production URL)
 GOOGLE_CREDENTIALS_JSON={...} (your Google service account JSON)
+USE_USER_SHEETS_OAUTH=true (enable per-user access to a restricted spreadsheet)
+RESULTS_SPREADSHEET_ID=1rqGGpl5SJ_34L72yCCcSZIoUrD_ggGn5LfJ_BGFjDQY (your restricted “Results” spreadsheet ID)
+GOOGLE_OAUTH_CLIENT_ID=... (OAuth Web Client ID)
+GOOGLE_OAUTH_CLIENT_SECRET=... (OAuth Web Client Secret)
+GOOGLE_OAUTH_REDIRECT_URI=https://YOUR_BACKEND_DOMAIN/api/google-sheets/oauth/callback
+TOKEN_ENCRYPTION_KEY=... (base64 32-byte key; recommended)
+OAUTH_STATE_SECRET=... (random string; recommended)
 ```
 
 ## Frontend (Netlify)

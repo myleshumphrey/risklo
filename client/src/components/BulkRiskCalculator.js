@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './BulkRiskCalculator.css';
 import Dashboard from './Dashboard';
-import { API_ENDPOINTS } from '../config';
+import { API_BASE_URL, API_ENDPOINTS } from '../config';
 import { ACCOUNT_SIZE_PRESETS, DEFAULT_ACCOUNT_SIZE, DEFAULT_THRESHOLD, getThresholdForAccountSize } from '../utils/accountSizes';
 import { sortStrategies } from '../utils/strategySort';
 import { IconLock } from './Icons';
 import { useAuth } from '../contexts/AuthContext';
 
-function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopulateRows, onUpgrade, autoAnalyzeAfterPopulate }) {
+function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopulateRows, onUpgrade, autoAnalyzeAfterPopulate, sheetsConnectUrl }) {
   const { user } = useAuth();
   const [results, setResults] = useState(null);
   const [selectedResult, setSelectedResult] = useState(null);
@@ -152,6 +152,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
               contractType: row.contractType,
               accountSize: parseFloat(row.accountSize),
               contracts: parseFloat(row.contracts),
+              userEmail: user?.email || null,
               maxDrawdown: riskMode === 'risk' ? parseFloat(row.maxDrawdown) : null,
               startOfDayProfit: riskMode === 'apexMae' ? parseFloat(row.startOfDayProfit) : null,
               // Safety net is derived from account size; keep sending it for calculations, but don't show it in the UI.
@@ -291,6 +292,26 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
         <h2 className="bulk-title">Bulk Risk Assessment (RiskLo Pro)</h2>
         <p className="bulk-subtitle">Analyze multiple account configurations at once</p>
       </div>
+
+      {sheetNames.length === 0 && sheetsConnectUrl && user?.email && (
+        <div className="bulk-connect-sheets-banner">
+          <div className="bulk-connect-sheets-text">
+            Connect your Google access to load strategies from the Results Spreadsheet.
+          </div>
+          <button
+            type="button"
+            className="bulk-connect-sheets-btn"
+            onClick={() => {
+              const fullUrl = sheetsConnectUrl.startsWith('http')
+                ? sheetsConnectUrl
+                : `${API_BASE_URL}${sheetsConnectUrl}`;
+              window.location.href = fullUrl;
+            }}
+          >
+            Connect
+          </button>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="bulk-form">
         <div className="bulk-table-container" style={{ position: 'relative' }}>

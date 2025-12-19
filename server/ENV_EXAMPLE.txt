@@ -1,0 +1,38 @@
+# RiskLo backend environment variables (copy into Railway Variables or into server/.env)
+#
+# NOTE: Do NOT commit real secrets to git.
+
+# Enable per-user Google access to a restricted spreadsheet ("Shared with me" member gating)
+USE_USER_SHEETS_OAUTH=true
+
+# Restricted "real results" spreadsheet ID (you provided)
+RESULTS_SPREADSHEET_ID=1rqGGpl5SJ_34L72yCCcSZIoUrD_ggGn5LfJ_BGFjDQY
+
+# App URLs (used for redirects + CORS)
+APP_BASE_URL=http://localhost:3000
+FRONTEND_URL=http://localhost:3000
+
+# Google OAuth (per-user Sheets access)
+GOOGLE_OAUTH_CLIENT_ID=YOUR_OAUTH_WEB_CLIENT_ID.apps.googleusercontent.com
+GOOGLE_OAUTH_CLIENT_SECRET=YOUR_OAUTH_CLIENT_SECRET
+GOOGLE_OAUTH_REDIRECT_URI=http://localhost:5001/api/google-sheets/oauth/callback
+
+# Recommended security (token encryption + OAuth state signing)
+# Generate a key with:
+#   node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+TOKEN_ENCRYPTION_KEY=PASTE_BASE64_32_BYTE_KEY_HERE
+OAUTH_STATE_SECRET=PASTE_RANDOM_SECRET_HERE
+
+# Optional (only needed if USE_USER_SHEETS_OAUTH=false):
+# GOOGLE_CREDENTIALS_JSON={"type":"service_account",...}
+# GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/credentials.json
+
+# Optional Stripe paywall:
+# STRIPE_SECRET_KEY=sk_live_...
+# STRIPE_PRICE_RISKLO_PRO=price_...
+
+# Optional SendGrid email:
+# SENDGRID_API_KEY=SG...
+# EMAIL_FROM=RiskLo <no-reply@risklo.io>
+
+
