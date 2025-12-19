@@ -3,6 +3,7 @@ import './Dashboard.css';
 import MetricCard from './MetricCard';
 import RiskIndicator from './RiskIndicator';
 import CalculationModal from './CalculationModal';
+import PayoutPlanner from './PayoutPlanner';
 import { IconTrendDown, IconTrendUp, IconAlert, IconChart, IconScale, IconInfo, IconCheck, IconLightbulb } from './Icons';
 
 function Dashboard({ metrics, riskMode = 'risk', onNavigate, formData }) {
@@ -345,6 +346,10 @@ function Dashboard({ metrics, riskMode = 'risk', onNavigate, formData }) {
             </div>
           </div>
         </div>
+      )}
+
+      {riskMode === 'apexMae' && metrics.windfallRule && (
+        <PayoutPlanner metrics={metrics} />
       )}
 
       {false && riskMode === 'apexMae' && metrics.windfallRule && (

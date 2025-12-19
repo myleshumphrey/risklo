@@ -137,6 +137,45 @@
   letter-spacing: 2px;
 }
 
+.bulk-connect-sheets-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 0 1rem 0;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.bulk-connect-sheets-text {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+.bulk-connect-sheets-btn {
+  padding: 0.45rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(34, 197, 94, 0.55);
+  background: rgba(34, 197, 94, 0.92);
+  color: #0b1220;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 120ms ease, filter 120ms ease, opacity 120ms ease;
+}
+
+.bulk-connect-sheets-btn:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+.bulk-connect-sheets-btn:active {
+  transform: translateY(0);
+  opacity: 0.95;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);

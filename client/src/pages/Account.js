@@ -27,6 +27,10 @@ function Account({ onNavigate, onUpgrade }) {
             client_id: clientId,
             callback: (response) => {
               handleGoogleSignIn(response.credential);
+              // Immediate cleanup to prevent the Google-rendered button from lingering after first sign-in
+              if (signInButtonRef.current) {
+                signInButtonRef.current.innerHTML = '';
+              }
             },
           });
 
@@ -46,6 +50,11 @@ function Account({ onNavigate, onUpgrade }) {
       } else {
         initGoogleSignIn();
       }
+    }
+
+    // Cleanup: once signed in, ensure the old rendered Google button is removed
+    if (user && signInButtonRef.current) {
+      signInButtonRef.current.innerHTML = '';
     }
   }, [user, clientId, handleGoogleSignIn]);
 

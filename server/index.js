@@ -3,6 +3,13 @@ const cors = require('cors');
 const { google } = require('googleapis');
 const Stripe = require('stripe');
 require('dotenv').config();
+const {
+  getAuthUrlForEmail,
+  exchangeCodeAndStore,
+  getAuthorizedClientForEmail,
+  hasToken,
+  deleteRefreshToken,
+} = require('./services/googleSheetsUserOAuth');
 
 // Railway deployment trigger - 2025-12-13
 
@@ -17,12 +24,54 @@ if (process.env.STRIPE_SECRET_KEY) {
 }
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+// Default to 5001 for local dev because macOS often reserves 5000 (AirTunes/Control Center).
+const PORT = process.env.PORT || 5001;
 
 // Email service uses SendGrid API (not SMTP) for better reliability in cloud environments
 
 // Hardcoded spreadsheet ID
 const SPREADSHEET_ID = '1PCU-1ZjBEkAF1LE3Z1tbajCg3hOBzpKxx--z9QU8sAE';
+// If you want to read the real (restricted) Vector Results spreadsheet, set RESULTS_SPREADSHEET_ID
+const RESULTS_SPREADSHEET_ID = process.env.RESULTS_SPREADSHEET_ID || SPREADSHEET_ID;
+// When enabled, strategies + analysis require per-user OAuth (only users with access can load data)
+const USE_USER_SHEETS_OAUTH = process.env.USE_USER_SHEETS_OAUTH === 'true';
+
+// Always available demo option (works even without Vector access)
+const SAMPLE_STRATEGY_NAME = 'Sample Strategy (Demo)';
+
+function buildSampleSheetData() {
+  // Generate sheet-like rows (2 header rows + data rows with Mon-Fri in columns C-G).
+  // Values are per-1-contract NQ-style dollars; contractType + contracts scale still applies.
+  const header1 = ['Date', '', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+  const header2 = ['', '', '', '', '', '', ''];
+
+  // 8 weeks of demo data (40 days)
+  const daily = [
+    850, -420, 510, -310, 220,
+    -680, 740, 180, -260, 390,
+    610, -520, 330, -910, 480,
+    260, 540, -360, 120, -450,
+    710, -280, 410, -630, 190,
+    520, 160, -740, 310, -290,
+    430, -510, 260, 680, -340,
+    -820, 590, 210, -260, 440,
+  ];
+
+  const rows = [];
+  const start = new Date('2025-10-06T00:00:00Z'); // Monday
+
+  for (let i = 0; i < daily.length; i += 5) {
+    const weekIdx = i / 5;
+    const d = new Date(start);
+    d.setUTCDate(start.getUTCDate() + weekIdx * 7);
+    const dateStr = d.toISOString().slice(0, 10);
+
+    const week = daily.slice(i, i + 5).map((v) => (v < 0 ? `-${Math.abs(v)}` : `${v}`));
+    rows.push([dateStr, '', ...week]);
+  }
+
+  return [header1, header2, ...rows];
+}
 
 // CORS configuration - allow requests from Netlify domain, localhost, and local network IPs
 const allowedOrigins = [
@@ -120,11 +169,11 @@ function filterSheetNames(sheetNames) {
   });
 }
 
-async function getSheetNames() {
+async function getSheetNames(authClient, spreadsheetId) {
   try {
-    const sheets = google.sheets({ version: 'v4', auth });
+    const sheets = google.sheets({ version: 'v4', auth: authClient });
     const response = await sheets.spreadsheets.get({
-      spreadsheetId: SPREADSHEET_ID,
+      spreadsheetId: spreadsheetId,
     });
     
     const allSheetNames = response.data.sheets
@@ -140,13 +189,13 @@ async function getSheetNames() {
 }
 
 // Helper function to get sheet data
-async function getSheetData(sheetName) {
+async function getSheetData(sheetName, authClient, spreadsheetId) {
   try {
-    const sheets = google.sheets({ version: 'v4', auth });
+    const sheets = google.sheets({ version: 'v4', auth: authClient });
     // Get all data from the sheet (assuming data starts from row 3 based on the image)
     const range = `${sheetName}!A:Z`;
     const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: SPREADSHEET_ID,
+      spreadsheetId: spreadsheetId,
       range,
     });
     return response.data.values;
@@ -159,6 +208,63 @@ async function getSheetData(sheetName) {
     throw error;
   }
 }
+
+async function getServiceAccountClient() {
+  // google.auth.GoogleAuth instance `auth` is already configured above.
+  return await auth.getClient();
+}
+
+function buildSheetsConnectUrl(req, email) {
+  // Relative URL is fine; frontend will follow redirects.
+  return `/api/google-sheets/oauth/start?email=${encodeURIComponent(email || '')}`;
+}
+
+// --- Per-user Google OAuth endpoints (restricted sheet access) ---
+app.get('/api/google-sheets/oauth/start', (req, res) => {
+  try {
+    const email = String(req.query.email || '').trim();
+    if (!email) return res.status(400).send('Missing email');
+    const url = getAuthUrlForEmail(email);
+    return res.redirect(url);
+  } catch (e) {
+    console.error('OAuth start error:', e);
+    return res.status(500).send('Failed to start OAuth');
+  }
+});
+
+app.get('/api/google-sheets/oauth/callback', async (req, res) => {
+  try {
+    const { code, state, error } = req.query;
+    const appBaseUrl = process.env.APP_BASE_URL || process.env.FRONTEND_URL || 'https://risklo.io';
+
+    if (error) {
+      return res.redirect(`${appBaseUrl}?sheetsConnect=error&reason=${encodeURIComponent(String(error))}`);
+    }
+    if (!code || !state) {
+      return res.redirect(`${appBaseUrl}?sheetsConnect=error&reason=${encodeURIComponent('missing_code_or_state')}`);
+    }
+
+    const result = await exchangeCodeAndStore(String(code), String(state));
+    return res.redirect(`${appBaseUrl}?sheetsConnect=success&email=${encodeURIComponent(result.email)}`);
+  } catch (e) {
+    console.error('OAuth callback error:', e);
+    const appBaseUrl = process.env.APP_BASE_URL || process.env.FRONTEND_URL || 'https://risklo.io';
+    return res.redirect(`${appBaseUrl}?sheetsConnect=error&reason=${encodeURIComponent(e.message || 'unknown')}`);
+  }
+});
+
+app.get('/api/google-sheets/oauth/status', (req, res) => {
+  const email = String(req.query.email || '').trim();
+  if (!email) return res.status(400).json({ error: 'Missing email' });
+  return res.json({ connected: hasToken(email) });
+});
+
+app.post('/api/google-sheets/oauth/disconnect', (req, res) => {
+  const email = String(req.body?.email || '').trim();
+  if (!email) return res.status(400).json({ error: 'Missing email' });
+  deleteRefreshToken(email);
+  return res.json({ success: true });
+});
 
 // Helper function to parse numeric values, handling currency formatting
 function parseNumericValue(cellValue) {
@@ -627,8 +733,34 @@ app.get('/api/debug/:sheetName', async (req, res) => {
 // API endpoint to fetch all sheet names
 app.get('/api/sheets', async (req, res) => {
   try {
-    const sheetNames = await getSheetNames();
-    res.json({ success: true, sheets: sheetNames });
+    const email = String(req.query.email || '').trim();
+
+    if (USE_USER_SHEETS_OAUTH) {
+      if (!email) {
+        return res.status(401).json({
+          success: false,
+          requiresOAuth: true,
+          error: 'Vector Algorithmics strategies are available to members only. Sign in with Google to continue, or try the Sample Strategy (Demo).',
+          sampleSheets: [SAMPLE_STRATEGY_NAME],
+        });
+      }
+      if (!hasToken(email)) {
+        return res.status(401).json({
+          success: false,
+          requiresOAuth: true,
+          authUrl: buildSheetsConnectUrl(req, email),
+          error: 'To load Vector strategies, connect your Google account that has access to the Vector Results Spreadsheet. Or try the Sample Strategy (Demo).',
+          sampleSheets: [SAMPLE_STRATEGY_NAME],
+        });
+      }
+      const userClient = getAuthorizedClientForEmail(email);
+      const sheetNames = await getSheetNames(userClient, RESULTS_SPREADSHEET_ID);
+      return res.json({ success: true, sheets: [SAMPLE_STRATEGY_NAME, ...sheetNames] });
+    }
+
+    const client = await getServiceAccountClient();
+    const sheetNames = await getSheetNames(client, SPREADSHEET_ID);
+    res.json({ success: true, sheets: [SAMPLE_STRATEGY_NAME, ...sheetNames] });
   } catch (error) {
     console.error('Error fetching sheet names:', error);
     
@@ -640,10 +772,17 @@ app.get('/api/sheets', async (req, res) => {
       errorMessage = 'Permission denied. Make sure you shared the Google Sheet with the service account email.';
     } else if (error.message.includes('404') || error.message.includes('not found')) {
       errorMessage = 'Spreadsheet not found. Check that the spreadsheet ID is correct and the sheet is shared.';
+    } else if (
+      error.message.includes('Google Sheets API has not been used') ||
+      error.message.includes('sheets.googleapis.com') ||
+      error.message.toLowerCase().includes('is disabled')
+    ) {
+      errorMessage = 'Google Sheets API is disabled for your Google Cloud project. Enable the "Google Sheets API" in Google Cloud Console (APIs & Services → Library), then try again.';
     }
     
     res.status(500).json({ 
       error: errorMessage,
+      requiresOAuth: USE_USER_SHEETS_OAUTH && (error.message || '').includes('403'),
       message: error.message,
       details: 'Check server logs for more information'
     });
@@ -680,8 +819,43 @@ app.post('/api/analyze', async (req, res) => {
     const startOfDayProfit = req.body.startOfDayProfit ? parseFloat(req.body.startOfDayProfit) : null;
     const safetyNet = req.body.safetyNet ? parseFloat(req.body.safetyNet) : null;
     const profitSinceLastPayout = req.body.profitSinceLastPayout ? parseFloat(req.body.profitSinceLastPayout) : null;
-    
-    const data = await getSheetData(sheetName);
+
+    // Always allow demo strategy without any auth
+    if (sheetName === SAMPLE_STRATEGY_NAME) {
+      const sampleData = buildSampleSheetData();
+      const metrics = calculateRiskMetrics(
+        sampleData,
+        parseFloat(accountSize),
+        parseFloat(contracts),
+        maxDrawdown,
+        contractType,
+        startOfDayProfit,
+        safetyNet,
+        profitSinceLastPayout
+      );
+      return res.json({ success: true, metrics, demo: true });
+    }
+
+    // Optional: per-user Sheets access (member gating)
+    const userEmail = String(req.body.userEmail || '').trim();
+    let sheetsClient = null;
+    let spreadsheetId = SPREADSHEET_ID;
+
+    if (USE_USER_SHEETS_OAUTH) {
+      if (!userEmail) {
+        return res.status(401).json({ error: 'Sign in to analyze Vector strategies, or use the Sample Strategy (Demo).' });
+      }
+      if (!hasToken(userEmail)) {
+        return res.status(401).json({ error: 'Google Sheets not connected for this user.', requiresOAuth: true });
+      }
+      const userClient = getAuthorizedClientForEmail(userEmail);
+      sheetsClient = userClient;
+      spreadsheetId = RESULTS_SPREADSHEET_ID;
+    } else {
+      sheetsClient = await getServiceAccountClient();
+    }
+
+    const data = await getSheetData(sheetName, sheetsClient, spreadsheetId);
     
     // If metrics has an error, include debug info
     const metrics = calculateRiskMetrics(data, parseFloat(accountSize), parseFloat(contracts), maxDrawdown, contractType, startOfDayProfit, safetyNet, profitSinceLastPayout);

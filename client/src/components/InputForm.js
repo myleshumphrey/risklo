@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import './InputForm.css';
 import { ACCOUNT_SIZE_PRESETS, DEFAULT_ACCOUNT_SIZE, DEFAULT_THRESHOLD, getThresholdForAccountSize } from '../utils/accountSizes';
 import { sortStrategies } from '../utils/strategySort';
+import { API_BASE_URL } from '../config';
 
-function InputForm({ onSubmit, loading, sheetNames, loadingSheets, error, riskMode, onNavigate }) {
+function InputForm({ onSubmit, loading, sheetNames, loadingSheets, error, riskMode, onNavigate, sheetsConnectUrl, userEmail }) {
   const [formData, setFormData] = useState({
     sheetName: '',
     contractType: 'MNQ', // Default to MNQ
@@ -117,7 +118,26 @@ function InputForm({ onSubmit, loading, sheetNames, loadingSheets, error, riskMo
             </div>
             <small className="form-hint">
               {error ? (
-                <span style={{ color: '#ef4444' }}>{error}</span>
+                <span style={{ color: '#ef4444' }}>
+                  {error}{' '}
+                  {sheetsConnectUrl && userEmail && (
+                    <>
+                      {' '}
+                      <button
+                        type="button"
+                        className="connect-sheets-btn"
+                        onClick={() => {
+                          const fullUrl = sheetsConnectUrl.startsWith('http')
+                            ? sheetsConnectUrl
+                            : `${API_BASE_URL}${sheetsConnectUrl}`;
+                          window.location.href = fullUrl;
+                        }}
+                      >
+                        Connect Results Spreadsheet
+                      </button>
+                    </>
+                  )}
+                </span>
               ) : (
                 'Select the strategy you want to analyze'
               )}
