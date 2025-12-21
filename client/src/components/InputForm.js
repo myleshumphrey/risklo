@@ -139,7 +139,26 @@ function InputForm({ onSubmit, loading, sheetNames, loadingSheets, error, riskMo
                   )}
                 </span>
               ) : (
-                'Select the strategy you want to analyze'
+                <>
+                  Select the strategy you want to analyze
+                  {sheetsConnectUrl && userEmail && (
+                    <>
+                      {' '}
+                      <button
+                        type="button"
+                        className="connect-sheets-btn"
+                        onClick={() => {
+                          const fullUrl = sheetsConnectUrl.startsWith('http')
+                            ? sheetsConnectUrl
+                            : `${API_BASE_URL}${sheetsConnectUrl}`;
+                          window.location.href = fullUrl;
+                        }}
+                      >
+                        Connect Results Spreadsheet
+                      </button>
+                    </>
+                  )}
+                </>
               )}
             </small>
           </div>

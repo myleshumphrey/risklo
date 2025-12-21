@@ -8,7 +8,6 @@ import CsvUpload from './components/CsvUpload';
 import Footer from './components/Footer';
 import HamburgerMenu from './components/HamburgerMenu';
 import DisclaimerModal from './components/DisclaimerModal';
-import PasswordModal from './components/PasswordModal';
 import GoogleSignIn from './components/GoogleSignIn';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import About from './pages/About';
@@ -19,7 +18,7 @@ import HowToExportCsv from './pages/HowToExportCsv';
 import Account from './pages/Account';
 import TermsAndConditions from './pages/TermsAndConditions';
 import DesktopAppGuide from './pages/DesktopAppGuide';
-import { API_ENDPOINTS } from './config';
+import { API_BASE_URL, API_ENDPOINTS } from './config';
 import { IconChart } from './components/Icons';
 
 function AppContent() {
@@ -45,6 +44,18 @@ function AppContent() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [currentPage]);
+
+  // Allow components like Footer to navigate via a simple global event
+  useEffect(() => {
+    const handler = (e) => {
+      const page = e?.detail;
+      if (typeof page === 'string' && page.length > 0) {
+        setCurrentPage(page);
+      }
+    };
+    window.addEventListener('navigate', handler);
+    return () => window.removeEventListener('navigate', handler);
+  }, []);
 
   // Check disclaimer acceptance on mount and when user changes
   useEffect(() => {
@@ -107,6 +118,23 @@ function AppContent() {
       setLoadingSheets(false);
     }
   }, [user?.email]);
+
+  // Auto-start the Sheets connect flow once per session after sign-in (if needed)
+  useEffect(() => {
+    if (!user?.email) return;
+    if (!sheetsConnectUrl) return;
+
+    const key = `risklo_sheets_autoconnect_${user.email}`;
+    if (sessionStorage.getItem(key) === 'true') return;
+    sessionStorage.setItem(key, 'true');
+
+    const fullUrl = sheetsConnectUrl.startsWith('http')
+      ? sheetsConnectUrl
+      : `${API_BASE_URL}${sheetsConnectUrl}`;
+
+    // Full page redirect is allowed; this is the cleanest “automatic” flow.
+    window.location.href = fullUrl;
+  }, [user?.email, sheetsConnectUrl]);
 
   // Fetch sheet names on mount and when signed-in user changes
   useEffect(() => {
@@ -407,21 +435,6 @@ function AppContent() {
 }
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = React.useState(() => {
-    // Check if user is already authenticated in this session
-    return sessionStorage.getItem('risklo_authenticated') === 'true';
-  });
-
-  // Show password modal if not authenticated
-  if (!isAuthenticated) {
-    return (
-      <PasswordModal
-        isOpen={true}
-        onPasswordCorrect={() => setIsAuthenticated(true)}
-      />
-    );
-  }
-
   return (
     <AuthProvider>
       <AppContent />

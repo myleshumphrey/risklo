@@ -171,6 +171,15 @@ function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro, isDevMode })
             </li>
             <li>
               <button
+                className={`menu-item ${currentPage === 'desktopAppGuide' ? 'active' : ''}`}
+                onClick={() => handleNavigate('desktopAppGuide')}
+              >
+                <span className="menu-icon"><IconUpload size={18} /></span>
+                <span>Desktop App Guide</span>
+              </button>
+            </li>
+            <li>
+              <button
                 className={`menu-item ${currentPage === 'terms-and-conditions' ? 'active' : ''}`}
                 onClick={() => handleNavigate('terms-and-conditions')}
               >
