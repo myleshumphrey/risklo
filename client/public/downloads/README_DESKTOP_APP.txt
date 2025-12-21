@@ -1,20 +1,57 @@
-RiskLo Watcher Desktop App
-===========================
+RiskLo Watcher Desktop App (Windows)
+===================================
 
-IMPORTANT: The actual RiskLoWatcher.exe file needs to be built on a Windows machine.
+What it does
+------------
+RiskLoWatcher.exe runs in your system tray and automatically uploads your NinjaTrader CSV exports to RiskLo for analysis.
 
-To build the app:
-1. On a Windows computer with .NET 6.0 SDK installed
-2. Navigate to the desktop-app folder
-3. Run: build.bat
-   OR
-   Run: dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
-4. Copy the resulting RiskLoWatcher.exe from:
-   desktop-app\bin\Release\net6.0-windows\win-x64\publish\RiskLoWatcher.exe
-5. Place it in this directory (client/public/downloads/RiskLoWatcher.exe)
+One-time setup
+--------------
+1) Download RiskLoWatcher.exe from:
+   https://risklo.io/downloads/RiskLoWatcher.exe
 
-Once built, users can download it from:
-https://risklo.io/downloads/RiskLoWatcher.exe
+2) Run it (double-click).
 
-See desktop-app/BUILD_NOW.md for detailed instructions.
+3) Set your email:
+   Right-click the tray icon -> Set Email Address
+
+Daily use
+---------
+Export BOTH CSVs from NinjaTrader into:
+  C:\RiskLoExports\
+
+- Accounts CSV: filename contains "account"
+- Strategies CSV: filename contains "strat"
+
+RiskLoWatcher will detect the exports, upload automatically, and email your results.
+
+Windows SmartScreen warning (Unrecognized app)
+----------------------------------------------
+You may see a blue dialog:
+  "Windows protected your PC"
+
+This is expected for new/uncommon apps that aren’t yet code-signed.
+
+To run it:
+1) Click "More info"
+2) Click "Run anyway"
+
+Safety notes (to help you feel comfortable)
+-------------------------------------------
+- RiskLoWatcher only monitors ONE folder: C:\RiskLoExports\
+- It only reads CSVs you export and uploads them to RiskLo over HTTPS
+- It does NOT place trades, connect to your broker, or control NinjaTrader
+- It does NOT read other folders or collect passwords/Google credentials
+
+Troubleshooting
+---------------
+- If it won't open, install the .NET 6 Desktop Runtime:
+  https://dotnet.microsoft.com/download
+
+For support, use the Help/FAQ pages inside RiskLo.
+
+----------------------------------------------
+Developer/build note:
+The RiskLoWatcher.exe is built on Windows from the /desktop-app project.
+See desktop-app/BUILD_NOW.md for build details.
 

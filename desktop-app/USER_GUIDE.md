@@ -14,6 +14,16 @@ Download `RiskLoWatcher.exe` from https://risklo.io
 ### Step 2: Run
 Double-click `RiskLoWatcher.exe` to start the app.
 
+#### Windows SmartScreen (Unrecognized app)
+You may see a blue dialog:
+- “Windows protected your PC”
+
+This is common for new/uncommon apps that aren’t yet code-signed.
+
+To run it:
+1. Click **More info**
+2. Click **Run anyway**
+
 ### Step 3: Done!
 The app will appear in your system tray (bottom-right corner of Windows taskbar).
 
@@ -172,4 +182,10 @@ For help or questions:
 - Email sent only to your RiskLo account email
 - The app only reads files from `C:\RiskLoExports\`
 - No other files or folders are accessed
+
+### What RiskLoWatcher does NOT do
+- It does not place trades or connect to your broker
+- It does not control NinjaTrader
+- It does not scan your computer
+- It does not collect passwords or Google credentials
 

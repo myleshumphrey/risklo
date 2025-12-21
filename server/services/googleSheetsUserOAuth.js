@@ -3,8 +3,12 @@ const fs = require('fs');
 const path = require('path');
 const { google } = require('googleapis');
 
-// Minimal persistent store (JSON file). For production, prefer a real DB.
-const DATA_DIR = path.join(__dirname, '..', 'data');
+// Token store (JSON file).
+// Local: defaults to server/data/
+// Production: set RISKLO_DATA_DIR to a persistent volume mount (recommended).
+const DATA_DIR = process.env.RISKLO_DATA_DIR
+  ? path.resolve(process.env.RISKLO_DATA_DIR)
+  : path.join(__dirname, '..', 'data');
 const TOKENS_PATH = path.join(DATA_DIR, 'google_oauth_tokens.json');
 
 function ensureDataDir() {
