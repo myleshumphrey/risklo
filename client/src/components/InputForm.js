@@ -71,6 +71,77 @@ function InputForm({ onSubmit, loading, sheetNames, loadingSheets, error, riskMo
     onSubmit(submitData);
   };
 
+  const handleRunSample = (e) => {
+    e.preventDefault();
+    
+    // Use Sample Strategy (Demo) if available, otherwise use first strategy
+    const sampleStrategy = sheetNames.includes('Sample Strategy (Demo)') 
+      ? 'Sample Strategy (Demo)' 
+      : sheetNames[0];
+    
+    if (!sampleStrategy) {
+      return; // No strategies available
+    }
+    
+    // Generate random sample data based on mode
+    const accountSizes = [25000, 50000, 100000, 150000, 200000];
+    const randomAccountSize = accountSizes[Math.floor(Math.random() * accountSizes.length)];
+    const randomContracts = Math.floor(Math.random() * 5) + 1; // 1-5 contracts
+    
+    let sampleData;
+    if (riskMode === 'risk') {
+      // Risk mode: need maxDrawdown
+      const drawdownPercentages = [0.05, 0.06, 0.07, 0.08, 0.10]; // 5-10%
+      const randomDrawdown = Math.floor(randomAccountSize * drawdownPercentages[Math.floor(Math.random() * drawdownPercentages.length)]);
+      
+      sampleData = {
+        sheetName: sampleStrategy,
+        contractType: Math.random() > 0.5 ? 'MNQ' : 'NQ',
+        accountSize: randomAccountSize,
+        contracts: randomContracts,
+        maxDrawdown: randomDrawdown,
+        currentBalance: '',
+        startOfDayProfit: '',
+        profitSinceLastPayout: '',
+        safetyNet: '',
+      };
+    } else {
+      // Apex MAE mode: need currentBalance (which calculates startOfDayProfit)
+      const profitPercentages = [0.02, 0.03, 0.05, 0.07, 0.10]; // 2-10% profit
+      const randomProfit = Math.floor(randomAccountSize * profitPercentages[Math.floor(Math.random() * profitPercentages.length)]);
+      const currentBalance = randomAccountSize + randomProfit;
+      const threshold = getThresholdForAccountSize(randomAccountSize);
+      
+      sampleData = {
+        sheetName: sampleStrategy,
+        contractType: Math.random() > 0.5 ? 'MNQ' : 'NQ',
+        accountSize: randomAccountSize,
+        contracts: randomContracts,
+        maxDrawdown: '',
+        currentBalance: currentBalance,
+        startOfDayProfit: randomProfit, // Will be recalculated by useEffect
+        profitSinceLastPayout: '',
+        safetyNet: threshold,
+      };
+    }
+    
+    // Update form data
+    setFormData(sampleData);
+    
+    // Auto-submit after a brief delay to let state update
+    setTimeout(() => {
+      const submitData = {
+        ...sampleData,
+        maxDrawdown: riskMode === 'risk' ? sampleData.maxDrawdown : null,
+        startOfDayProfit: riskMode === 'apexMae' ? sampleData.startOfDayProfit : null,
+        safetyNet: riskMode === 'apexMae' ? sampleData.safetyNet : null,
+        profitSinceLastPayout: null,
+        currentBalance: undefined,
+      };
+      onSubmit(submitData);
+    }, 100);
+  };
+
   return (
     <>
       {riskMode === 'apexMae' && (
@@ -338,6 +409,15 @@ function InputForm({ onSubmit, loading, sheetNames, loadingSheets, error, riskMo
           disabled={loading}
         >
           {loading ? 'Analyzing...' : 'Analyze Risk'}
+        </button>
+        
+        <button
+          type="button"
+          className="sample-button"
+          onClick={handleRunSample}
+          disabled={loading || loadingSheets || !sheetNames || sheetNames.length === 0}
+        >
+          🎲 Run Sample Analysis
         </button>
       </form>
       </div>
