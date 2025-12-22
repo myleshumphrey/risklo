@@ -75,21 +75,35 @@ function Footer() {
         <div className="footer-copyright">
           <p>
             &copy; {new Date().getFullYear()} RiskLo. All rights reserved. | {' '}
-            <a 
-              href="#" 
-              onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('navigate', { detail: 'privacy-policy' })); }}
-              style={{ color: 'rgba(255, 255, 255, 0.6)', textDecoration: 'underline' }}
+            <button 
+              onClick={() => { window.dispatchEvent(new CustomEvent('navigate', { detail: 'privacy-policy' })); }}
+              style={{ 
+                background: 'none', 
+                border: 'none', 
+                color: 'rgba(255, 255, 255, 0.6)', 
+                textDecoration: 'underline',
+                cursor: 'pointer',
+                padding: 0,
+                font: 'inherit'
+              }}
             >
               Privacy Policy
-            </a>
+            </button>
             {' '} | {' '}
-            <a 
-              href="#" 
-              onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('navigate', { detail: 'terms-and-conditions' })); }}
-              style={{ color: 'rgba(255, 255, 255, 0.6)', textDecoration: 'underline' }}
+            <button 
+              onClick={() => { window.dispatchEvent(new CustomEvent('navigate', { detail: 'terms-and-conditions' })); }}
+              style={{ 
+                background: 'none', 
+                border: 'none', 
+                color: 'rgba(255, 255, 255, 0.6)', 
+                textDecoration: 'underline',
+                cursor: 'pointer',
+                padding: 0,
+                font: 'inherit'
+              }}
             >
               Terms & Conditions
-            </a>
+            </button>
           </p>
         </div>
       </div>
