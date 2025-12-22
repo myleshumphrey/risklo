@@ -46,6 +46,15 @@ function AppContent() {
     window.scrollTo(0, 0);
   }, [currentPage]);
 
+  // Check URL parameters on mount for direct navigation (for Google verification)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const page = urlParams.get('page');
+    if (page) {
+      setCurrentPage(page);
+    }
+  }, []);
+
   // Allow components like Footer to navigate via a simple global event
   useEffect(() => {
     const handler = (e) => {

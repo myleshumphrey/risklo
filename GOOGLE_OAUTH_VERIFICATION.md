@@ -15,8 +15,8 @@
 
 **Application Name:** RiskLo  
 **Homepage URL:** https://risklo.io  
-**Privacy Policy URL:** https://risklo.io (navigate to Privacy Policy via menu or footer)  
-**Terms of Service URL:** https://risklo.io (navigate to Terms & Conditions via menu or footer)  
+**Privacy Policy URL:** https://risklo.io?page=privacy-policy  
+**Terms of Service URL:** https://risklo.io?page=terms-and-conditions  
 
 ### 2. OAuth Scopes Requested
 
@@ -70,6 +70,38 @@
 
 ## Steps to Submit for Verification
 
+### 0. Verify Domain Ownership (REQUIRED FIRST)
+
+Before submitting for OAuth verification, you **must** verify you own `risklo.io`:
+
+1. Go to [Google Search Console](https://search.google.com/search-console)
+2. Click **"Add Property"**
+3. Enter: `risklo.io`
+4. Choose verification method:
+   
+   **Option A: DNS Verification (Recommended)**
+   - Google will give you a TXT record
+   - Log in to GoDaddy
+   - Go to DNS settings for risklo.io
+   - Add the TXT record Google provides
+   - Wait a few minutes, then click "Verify" in Search Console
+   
+   **Option B: HTML File Upload**
+   - Download the verification file from Google
+   - Upload it to your Netlify site's `public` folder
+   - Deploy to production
+   - Click "Verify" in Search Console
+   
+   **Option C: HTML Meta Tag**
+   - Copy the meta tag Google provides
+   - Add it to `client/public/index.html` in the `<head>` section
+   - Deploy to production
+   - Click "Verify" in Search Console
+
+5. Once verified, proceed to OAuth verification below
+
+---
+
 ### 1. Go to Google Cloud Console
 https://console.cloud.google.com
 
@@ -86,8 +118,8 @@ https://console.cloud.google.com
 
 **App Domain:**
 - Application home page: https://risklo.io
-- Application privacy policy link: https://risklo.io (users can navigate to Privacy Policy)
-- Application terms of service link: https://risklo.io (users can navigate to Terms & Conditions)
+- Application privacy policy link: https://risklo.io?page=privacy-policy
+- Application terms of service link: https://risklo.io?page=terms-and-conditions
 
 **Authorized Domains:**
 - risklo.io
