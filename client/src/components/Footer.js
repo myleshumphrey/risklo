@@ -60,6 +60,27 @@ function Footer() {
               the accuracy of the data or the outcomes of any analysis performed using this tool. Please consult with a 
               professional financial advisor before making any investment decisions.
             </p>
+            <p className="disclaimer-text" style={{ marginTop: '1rem' }}>
+              <strong>Read our full{' '}
+              <a 
+                href="/privacy-policy.html" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{ color: '#667eea', textDecoration: 'underline' }}
+              >
+                Privacy Policy
+              </a>
+              {' '}and{' '}
+              <a 
+                href="/terms-and-conditions.html" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{ color: '#667eea', textDecoration: 'underline' }}
+              >
+                Terms & Conditions
+              </a>
+              .</strong>
+            </p>
           </div>
           
           <div className="disclaimer-section">

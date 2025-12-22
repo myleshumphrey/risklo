@@ -73,8 +73,8 @@ Google needs proof you own `risklo.io`. Choose one method:
 
 **App Domain:**
 - Application home page: `https://risklo.io`
-- Application privacy policy link: `https://risklo.io?page=privacy-policy`
-- Application terms of service link: `https://risklo.io?page=terms-and-conditions`
+- Application privacy policy link: `https://risklo.io/privacy-policy.html`
+- Application terms of service link: `https://risklo.io/terms-and-conditions.html`
 
 **Authorized Domains:**
 - `risklo.io`
@@ -92,16 +92,16 @@ Google needs proof you own `risklo.io`. Choose one method:
 
 Before submitting, test that these URLs work:
 
-1. **Privacy Policy:** https://risklo.io?page=privacy-policy
-   - Should load your site and show the Privacy Policy page
+1. **Privacy Policy:** https://risklo.io/privacy-policy.html
+   - Should load a standalone HTML page with your privacy policy
    
-2. **Terms & Conditions:** https://risklo.io?page=terms-and-conditions
-   - Should load your site and show the Terms & Conditions page
+2. **Terms & Conditions:** https://risklo.io/terms-and-conditions.html
+   - Should load a standalone HTML page with your terms and conditions
 
 If they don't work, make sure you've:
-- Pushed the updated `App.js` to GitHub
+- Pushed the new HTML files to GitHub
 - Netlify has deployed the changes
-- Cleared your browser cache
+- The files are in `client/public/` folder
 
 ---
 
@@ -119,8 +119,8 @@ If they don't work, make sure you've:
 | Field | URL |
 |-------|-----|
 | Homepage | `https://risklo.io` |
-| Privacy Policy | `https://risklo.io?page=privacy-policy` |
-| Terms of Service | `https://risklo.io?page=terms-and-conditions` |
+| Privacy Policy | `https://risklo.io/privacy-policy.html` |
+| Terms of Service | `https://risklo.io/terms-and-conditions.html` |
 
 ---
 
