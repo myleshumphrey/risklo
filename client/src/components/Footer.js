@@ -73,7 +73,24 @@ function Footer() {
         </div>
         
         <div className="footer-copyright">
-          <p>&copy; {new Date().getFullYear()} RiskLo. All rights reserved.</p>
+          <p>
+            &copy; {new Date().getFullYear()} RiskLo. All rights reserved. | {' '}
+            <a 
+              href="#" 
+              onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('navigate', { detail: 'privacy-policy' })); }}
+              style={{ color: 'rgba(255, 255, 255, 0.6)', textDecoration: 'underline' }}
+            >
+              Privacy Policy
+            </a>
+            {' '} | {' '}
+            <a 
+              href="#" 
+              onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('navigate', { detail: 'terms-and-conditions' })); }}
+              style={{ color: 'rgba(255, 255, 255, 0.6)', textDecoration: 'underline' }}
+            >
+              Terms & Conditions
+            </a>
+          </p>
         </div>
       </div>
     </footer>

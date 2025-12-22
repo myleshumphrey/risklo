@@ -129,7 +129,11 @@ function TermsAndConditions({ onNavigate }) {
           <section className="terms-section">
             <h2>13. Contact Information</h2>
             <p>
-              If you have any questions about these Terms and Conditions, please contact us through the appropriate channels provided on the RiskLo website.
+              If you have any questions about these Terms and Conditions, please contact us at:
+            </p>
+            <p>
+              <strong>Email:</strong> myles2595@gmail.com<br />
+              <strong>Website:</strong> <a href="https://risklo.io" target="_blank" rel="noopener noreferrer">https://risklo.io</a>
             </p>
           </section>
 
