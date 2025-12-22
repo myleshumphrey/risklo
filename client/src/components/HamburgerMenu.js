@@ -187,6 +187,15 @@ function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro, isDevMode })
                 <span>Terms & Conditions</span>
               </button>
             </li>
+            <li>
+              <button
+                className={`menu-item ${currentPage === 'privacy-policy' ? 'active' : ''}`}
+                onClick={() => handleNavigate('privacy-policy')}
+              >
+                <span className="menu-icon"><IconFile size={18} /></span>
+                <span>Privacy Policy</span>
+              </button>
+            </li>
             {!user && (
               <li>
                 <div className="menu-sign-in-container">

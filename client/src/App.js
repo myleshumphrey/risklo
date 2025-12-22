@@ -17,6 +17,7 @@ import Apex30PercentRule from './pages/Apex30PercentRule';
 import HowToExportCsv from './pages/HowToExportCsv';
 import Account from './pages/Account';
 import TermsAndConditions from './pages/TermsAndConditions';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 import DesktopAppGuide from './pages/DesktopAppGuide';
 import { API_BASE_URL, API_ENDPOINTS } from './config';
 import { IconChart } from './components/Icons';
@@ -250,6 +251,8 @@ function AppContent() {
         return <Account onNavigate={setCurrentPage} onUpgrade={() => setShowUpgradeModal(true)} />;
       case 'terms-and-conditions':
         return <TermsAndConditions onNavigate={setCurrentPage} />;
+      case 'privacy-policy':
+        return <PrivacyPolicy onNavigate={setCurrentPage} />;
       case 'home':
       default:
         return (
