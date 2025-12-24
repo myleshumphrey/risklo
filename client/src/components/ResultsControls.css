@@ -1,0 +1,35 @@
+.results-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.results-controls input[type="text"] {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem;
+  min-width: 180px;
+}
+
+.results-controls select {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem;
+}
+
+.results-controls .toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.results-controls input[type="checkbox"] {
+  accent-color: #667eea;
+}
+

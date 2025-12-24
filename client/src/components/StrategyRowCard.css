@@ -1,0 +1,151 @@
+.strategy-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.75rem 0.85rem;
+}
+
+.strategy-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.strategy-card .left {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.strategy-name {
+  margin: 0;
+  color: #fff;
+  font-weight: 600;
+}
+
+.badge {
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.badge.win {
+  background: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+}
+
+.badge.loss {
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171;
+}
+
+.badge.flat {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.category-pill {
+  padding: 0.1rem 0.45rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.weekly {
+  font-weight: 700;
+}
+
+.weekly.pos {
+  color: #4ade80;
+}
+
+.weekly.neg {
+  color: #f87171;
+}
+
+.chevron {
+  margin-left: 0.4rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.day-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+}
+
+.day-chip {
+  padding: 0.2rem 0.45rem;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  color: #fff;
+}
+
+.day-chip.pos {
+  background: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+}
+
+.day-chip.neg {
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171;
+}
+
+.day-chip.flat {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.strategy-details {
+  margin-top: 0.7rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.35rem;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.detail-row.total {
+  font-weight: 700;
+}
+
+.detail-row .pos {
+  color: #4ade80;
+}
+
+.detail-row .neg {
+  color: #f87171;
+}
+
+.notes {
+  margin: 0.5rem 0 0;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.interpretation {
+  margin: 0.35rem 0 0;
+  color: rgba(255, 255, 255, 0.8);
+  font-style: italic;
+}
+
+@media (max-width: 600px) {
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

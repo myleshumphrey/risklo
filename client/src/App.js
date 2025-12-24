@@ -19,6 +19,8 @@ import Account from './pages/Account';
 import TermsAndConditions from './pages/TermsAndConditions';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import DesktopAppGuide from './pages/DesktopAppGuide';
+import Results from './pages/Results';
+import ResultsDashboard from './pages/ResultsDashboard';
 import { API_BASE_URL, API_ENDPOINTS } from './config';
 import { IconChart } from './components/Icons';
 
@@ -216,6 +218,7 @@ function AppContent() {
   // Clear metrics when switching modes
   const handleModeChange = (newMode) => {
     setRiskMode(newMode);
+    setCurrentPage('home');
     // Don't clear metrics - let user see they need to analyze for the new mode
   };
 
@@ -262,6 +265,8 @@ function AppContent() {
         return <TermsAndConditions onNavigate={setCurrentPage} />;
       case 'privacy-policy':
         return <PrivacyPolicy onNavigate={setCurrentPage} />;
+      case 'results':
+        return <ResultsDashboard onNavigate={setCurrentPage} user={user} />;
       case 'home':
       default:
         return (
@@ -388,7 +393,7 @@ function AppContent() {
         isDevMode={isDevMode}
       />
       
-      {currentPage === 'home' && (
+      {(currentPage === 'home' || currentPage === 'results') && (
         <header className="app-header">
           <div className="header-content">
             <div className="header-left">
@@ -406,16 +411,28 @@ function AppContent() {
             <div className="header-center">
               <div className="mode-toggle-container">
                 <button
-                  className={`mode-toggle-btn ${riskMode === 'risk' ? 'active' : ''}`}
-                  onClick={() => handleModeChange('risk')}
+                  className={`mode-toggle-btn ${currentPage === 'home' && riskMode === 'risk' ? 'active' : ''}`}
+                  onClick={() => {
+                    setCurrentPage('home');
+                    handleModeChange('risk');
+                  }}
                 >
                   Drawdown Risk
                 </button>
                 <button
-                  className={`mode-toggle-btn ${riskMode === 'apexMae' ? 'active' : ''}`}
-                  onClick={() => handleModeChange('apexMae')}
+                  className={`mode-toggle-btn ${currentPage === 'home' && riskMode === 'apexMae' ? 'active' : ''}`}
+                  onClick={() => {
+                    setCurrentPage('home');
+                    handleModeChange('apexMae');
+                  }}
                 >
                   30% Rule
+                </button>
+                <button
+                  className={`mode-toggle-btn ${currentPage === 'results' ? 'active' : ''}`}
+                  onClick={() => setCurrentPage('results')}
+                >
+                  Results
                 </button>
               </div>
             </div>

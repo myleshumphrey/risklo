@@ -219,6 +219,48 @@ function buildSheetsConnectUrl(req, email) {
   return `/api/google-sheets/oauth/start?email=${encodeURIComponent(email || '')}`;
 }
 
+async function getCurrentResultsSheet(authClient, spreadsheetId) {
+  const sheets = google.sheets({ version: 'v4', auth: authClient });
+
+  // Find the sheet whose title contains "current results"
+  const meta = await sheets.spreadsheets.get({ spreadsheetId });
+  const allSheets = meta.data.sheets || [];
+
+  // Prefer exact match "Current results" (case-insensitive), not hidden
+  let sheet =
+    allSheets.find((s) => {
+      const title = (s.properties?.title || '').trim().toLowerCase();
+      return title === 'current results';
+    }) ||
+    // fallback: contains 'current results' but not '(hidden)'
+    allSheets.find((s) => {
+      const title = (s.properties?.title || '').trim().toLowerCase();
+      return title.includes('current results') && !title.includes('(hidden)');
+    }) ||
+    // last resort: any sheet containing 'current results'
+    allSheets.find((s) => {
+      const title = (s.properties?.title || '').trim().toLowerCase();
+      return title.includes('current results');
+    });
+
+  if (!sheet) {
+    throw new Error('Current Results sheet not found');
+  }
+
+  const sheetName = sheet.properties.title;
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `'${sheetName}'!A:K`,
+  });
+
+  const rows = (response.data.values || []).filter((row) =>
+    row.some((cell) => (cell || '').toString().trim() !== '')
+  );
+
+  return { sheetName, rows };
+}
+
 // --- Per-user Google OAuth endpoints (restricted sheet access) ---
 app.get('/api/google-sheets/oauth/start', (req, res) => {
   try {
@@ -727,6 +769,44 @@ app.get('/api/debug/:sheetName', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// API endpoint to fetch current results sheet (raw rows for display)
+app.get('/api/current-results', async (req, res) => {
+  try {
+    const email = String(req.query.email || '').trim();
+
+    if (USE_USER_SHEETS_OAUTH) {
+      if (!email) {
+        return res.status(401).json({
+          success: false,
+          requiresOAuth: true,
+          error: 'Sign in with Google to view the Current Results sheet.',
+        });
+      }
+      if (!hasToken(email)) {
+        return res.status(401).json({
+          success: false,
+          requiresOAuth: true,
+          authUrl: buildSheetsConnectUrl(req, email),
+          error: 'To view Current Results, connect your Google account that has access to the Vector Results Spreadsheet.',
+        });
+      }
+      const userClient = getAuthorizedClientForEmail(email);
+      const data = await getCurrentResultsSheet(userClient, RESULTS_SPREADSHEET_ID);
+      return res.json({ success: true, ...data });
+    }
+
+    const client = await getServiceAccountClient();
+    const data = await getCurrentResultsSheet(client, SPREADSHEET_ID);
+    res.json({ success: true, ...data });
+  } catch (error) {
+    console.error('Error fetching current results:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to load Current Results sheet',
+    });
   }
 });
 
