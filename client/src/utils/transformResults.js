@@ -17,7 +17,7 @@ export function transformSheetToResultsDashboardModel(rows = []) {
   }
 
   // Attempt to find a week label (first non-empty string that looks like a date or label)
-  const weekLabel =
+  let weekLabel =
     rows.find((r) => r && r[0] && r[0].toString().trim().length > 0)?.[0]?.toString() || '';
 
   const datePattern = /^\d{1,2}\.\d{1,2}\.\d{4}$/; // e.g., 12.22.2025

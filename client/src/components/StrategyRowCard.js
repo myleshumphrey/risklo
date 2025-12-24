@@ -17,7 +17,6 @@ function StrategyRowCard({ strategy, category }) {
 
   const dayValues = dayOrder.map((d) => strategy.dailyPnL?.[d] ?? 0);
   const worstDay = Math.min(...dayValues);
-  const positiveDays = dayValues.filter((v) => v > 0).length;
 
   const interpretation = useMemo(() => {
     if (weeklyTotal < 0 && worstDay <= -500) {

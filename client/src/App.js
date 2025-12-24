@@ -19,7 +19,6 @@ import Account from './pages/Account';
 import TermsAndConditions from './pages/TermsAndConditions';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import DesktopAppGuide from './pages/DesktopAppGuide';
-import Results from './pages/Results';
 import ResultsDashboard from './pages/ResultsDashboard';
 import { API_BASE_URL, API_ENDPOINTS } from './config';
 import { IconChart } from './components/Icons';
