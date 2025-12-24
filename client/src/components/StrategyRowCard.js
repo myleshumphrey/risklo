@@ -1,0 +1,82 @@
+import React, { useState, useMemo } from 'react';
+import './StrategyRowCard.css';
+
+const formatCurrency = (n) => {
+  const num = Number(n) || 0;
+  const sign = num < 0 ? '-' : '';
+  const abs = Math.abs(num);
+  return `${sign}$${abs.toLocaleString()}`;
+};
+
+const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
+function StrategyRowCard({ strategy, category }) {
+  const [open, setOpen] = useState(false);
+  const weeklyTotal = strategy.weeklyTotal || 0;
+  const status = weeklyTotal > 0 ? 'WIN' : weeklyTotal < 0 ? 'LOSS' : 'FLAT';
+
+  const dayValues = dayOrder.map((d) => strategy.dailyPnL?.[d] ?? 0);
+  const worstDay = Math.min(...dayValues);
+
+  const interpretation = useMemo(() => {
+    if (weeklyTotal < 0 && worstDay <= -500) {
+      return 'High volatility week. Consider reducing contracts or avoiding this strategy.';
+    }
+    if (weeklyTotal > 0 && worstDay > -300) {
+      return 'Stable week. Risk appears controlled.';
+    }
+    return 'Mixed performance. Review position sizing and entries.';
+  }, [weeklyTotal, worstDay]);
+
+  return (
+    <div className="strategy-card">
+      <div className="strategy-card-top" onClick={() => setOpen((o) => !o)}>
+        <div className="left">
+          <p className="strategy-name">{strategy.strategyName}</p>
+          {category && <span className="category-pill">{category}</span>}
+          <span className={`badge ${status.toLowerCase()}`}>{status}</span>
+        </div>
+        <div className="right">
+          <span className={`weekly ${weeklyTotal >= 0 ? 'pos' : 'neg'}`}>{formatCurrency(weeklyTotal)}</span>
+          <span className="chevron">{open ? '▴' : '▾'}</span>
+        </div>
+      </div>
+
+      <div className="day-chips">
+        {dayOrder.map((d) => {
+          const val = strategy.dailyPnL?.[d] ?? 0;
+          const tone = val > 0 ? 'pos' : val < 0 ? 'neg' : 'flat';
+          return (
+            <span key={d} className={`day-chip ${tone}`} title={`${d}: ${formatCurrency(val)}`}>
+              {d.slice(0, 3)} {val !== 0 ? formatCurrency(val) : ''}
+            </span>
+          );
+        })}
+      </div>
+
+      {open && (
+        <div className="strategy-details">
+          <div className="details-grid">
+            {dayOrder.map((d) => (
+              <div key={d} className="detail-row">
+                <span>{d}</span>
+                <span className={strategy.dailyPnL?.[d] >= 0 ? 'pos' : 'neg'}>
+                  {formatCurrency(strategy.dailyPnL?.[d] ?? 0)}
+                </span>
+              </div>
+            ))}
+            <div className="detail-row total">
+              <span>Total</span>
+              <span className={weeklyTotal >= 0 ? 'pos' : 'neg'}>{formatCurrency(weeklyTotal)}</span>
+            </div>
+          </div>
+          {strategy.notes && <p className="notes">Notes: {strategy.notes}</p>}
+          <p className="interpretation">{interpretation}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default StrategyRowCard;
+

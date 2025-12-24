@@ -1,0 +1,23 @@
+.insights-panel {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.insights-panel h4 {
+  margin: 0 0 0.35rem;
+  color: #fff;
+}
+
+.insights-panel ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.insights-panel li {
+  margin-bottom: 0.25rem;
+}
+

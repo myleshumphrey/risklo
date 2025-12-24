@@ -1,0 +1,115 @@
+.results-dash-page {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.results-dash-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  align-items: center;
+}
+
+.results-dash-kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+}
+
+.results-dash-title {
+  margin: 0.25rem 0 0;
+  color: #fff;
+}
+
+.results-dash-subtitle {
+  margin-top: 0.35rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.results-dash-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.results-dash-actions .primary,
+.results-dash-actions .secondary {
+  border: none;
+  border-radius: 10px;
+  padding: 0.6rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.results-dash-actions .primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+}
+
+.results-dash-actions .secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.results-dash-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.results-dash-card.error {
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.4);
+  background: rgba(248, 113, 113, 0.08);
+}
+
+.results-group {
+  margin-top: 1.25rem;
+}
+
+.results-group-title {
+  margin: 0 0 0.5rem;
+  color: #fff;
+}
+
+.results-group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.results-raw-wrapper {
+  overflow-x: auto;
+}
+
+.results-raw-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.results-raw-table td {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.35rem 0.5rem;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .results-dash-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .results-dash-actions {
+    width: 100%;
+  }
+  .results-dash-actions button {
+    width: 100%;
+  }
+}
+

@@ -1,0 +1,41 @@
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.summary-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.85rem;
+}
+
+.summary-card-title {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.summary-card-value {
+  margin: 0.3rem 0 0.1rem;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.summary-card-subtitle {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+}
+
+.summary-card.positive .summary-card-value {
+  color: #4ade80;
+}
+
+.summary-card.negative .summary-card-value {
+  color: #f87171;
+}
+
