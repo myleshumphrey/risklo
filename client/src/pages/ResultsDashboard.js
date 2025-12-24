@@ -156,14 +156,25 @@ function ResultsDashboard({ user }) {
           </p>
         </div>
         <div className="results-dash-actions">
-          <button className="secondary" onClick={() => setShowRaw((v) => !v)}>
+          <button className="secondary" type="button" onClick={() => setShowRaw((v) => !v)}>
             {showRaw ? 'Hide raw data' : 'View raw data'}
           </button>
-          {connectUrl && (
-            <button className="primary" onClick={() => (window.location.href = connectUrl)}>
-              Connect Google to View
-            </button>
-          )}
+          <button
+            className="primary"
+            type="button"
+            onClick={() => {
+              if (connectUrl) {
+                window.location.href = connectUrl;
+              } else if (user?.email) {
+                // Fallback: start OAuth with the current user's email
+                window.location.href = `/api/google-sheets/oauth/start?email=${encodeURIComponent(user.email)}`;
+              } else {
+                setError('Sign in with Google first to connect.');
+              }
+            }}
+          >
+            Connect Google to View
+          </button>
         </div>
       </div>
 
