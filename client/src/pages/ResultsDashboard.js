@@ -143,7 +143,7 @@ function ResultsDashboard({ user }) {
     return Array.from(groupsMap.entries())
       .map(([name, strategies]) => ({ name, strategies }))
       .filter((g) => g.strategies.length > 0);
-  }, [allStrategies, model.groups, model.groupByStrategy, search, showLosersOnly, sortBy, category]);
+  }, [allStrategies, model.groupByStrategy, search, showLosersOnly, sortBy, category]);
 
   return (
     <div className="results-dash-page">
