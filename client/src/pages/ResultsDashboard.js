@@ -8,6 +8,44 @@ import ResultsControls from '../components/ResultsControls';
 import StrategyRowCard from '../components/StrategyRowCard';
 import { sortStrategies } from '../utils/strategySort';
 
+function formatWeekLabel(label) {
+  if (!label) return '';
+  // Try to parse known formats like MM.DD.YYYY without using Date (avoid TZ shifts)
+  const dotParts = label.split('.');
+  if (dotParts.length === 3) {
+    const [mm, dd, yyyy] = dotParts;
+    const mIdx = parseInt(mm, 10) - 1;
+    const d = parseInt(dd, 10);
+    const y = parseInt(yyyy, 10);
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    if (
+      !isNaN(mIdx) &&
+      mIdx >= 0 &&
+      mIdx < 12 &&
+      !isNaN(d) &&
+      d >= 1 &&
+      d <= 31 &&
+      !isNaN(y)
+    ) {
+      return `${months[mIdx]} ${d}, ${y}`;
+    }
+  }
+  return label; // fallback
+}
+
 function ResultsDashboard({ user }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -150,6 +188,9 @@ function ResultsDashboard({ user }) {
         <div>
           <p className="results-dash-kicker">Vector Results Spreadsheet</p>
           <h2 className="results-dash-title">Current Results</h2>
+          {model.weekLabel && (
+            <p className="results-dash-week">Week of {formatWeekLabel(model.weekLabel)}</p>
+          )}
           <p className="results-dash-subtitle">
             Current weekly results pulled directly from the Google Sheet for easy, fast viewing.
           </p>
