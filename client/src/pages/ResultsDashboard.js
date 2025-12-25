@@ -41,6 +41,9 @@ function ResultsDashboard({ user }) {
           throw new Error(data.error || 'Failed to load Current Results');
         }
 
+        // Success: ensure any previous auth prompts are cleared
+        setConnectUrl(null);
+        setError(null);
         setRows(Array.isArray(data.rows) ? data.rows : []);
       } catch (err) {
         setError(err.message || 'Failed to load Current Results');
@@ -159,22 +162,23 @@ function ResultsDashboard({ user }) {
           <button className="secondary" type="button" onClick={() => setShowRaw((v) => !v)}>
             {showRaw ? 'Hide raw data' : 'View raw data'}
           </button>
-          <button
-            className="primary"
-            type="button"
-            onClick={() => {
-              if (connectUrl) {
-                window.location.href = connectUrl;
-              } else if (user?.email) {
-                // Fallback: start OAuth with the current user's email
-                window.location.href = `/api/google-sheets/oauth/start?email=${encodeURIComponent(user.email)}`;
-              } else {
-                setError('Sign in with Google first to connect.');
-              }
-            }}
-          >
-            Connect Google to View
-          </button>
+          {connectUrl && (
+            <button
+              className="primary"
+              type="button"
+              onClick={() => {
+                if (connectUrl) {
+                  window.location.href = connectUrl;
+                } else if (user?.email) {
+                  window.location.href = `/api/google-sheets/oauth/start?email=${encodeURIComponent(user.email)}`;
+                } else {
+                  setError('Sign in with Google first to connect.');
+                }
+              }}
+            >
+              Connect Google to View
+            </button>
+          )}
         </div>
       </div>
 
