@@ -7,6 +7,8 @@ import InsightsPanel from '../components/InsightsPanel';
 import ResultsControls from '../components/ResultsControls';
 import StrategyRowCard from '../components/StrategyRowCard';
 import { sortStrategies } from '../utils/strategySort';
+import StrategyDetailsView from '../components/StrategyDetailsView';
+import { computeStrategySheetMetrics } from '../utils/strategySheetMetrics';
 
 function formatWeekLabel(label) {
   if (!label) return '';
@@ -46,8 +48,12 @@ function formatWeekLabel(label) {
   return label; // fallback
 }
 
-function ResultsDashboard({ user }) {
+function ResultsDashboard({ user, sheetNames, loadingSheets, sheetsConnectUrl, error: sheetError }) {
   const [rows, setRows] = useState([]);
+  const [sheetOptions, setSheetOptions] = useState(['Current Results']);
+  const [selectedSheet, setSelectedSheet] = useState('Current Results');
+  const [strategySheetRows, setStrategySheetRows] = useState([]);
+  const [strategyMetrics, setStrategyMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [connectUrl, setConnectUrl] = useState(null);
@@ -58,31 +64,83 @@ function ResultsDashboard({ user }) {
   const [sortBy, setSortBy] = useState('priority');
   const [category, setCategory] = useState(null);
 
+  // Update sheet options when sheetNames changes from App.js
+  useEffect(() => {
+    if (sheetNames && sheetNames.length > 0) {
+      // Filter out "Sample Strategy (Demo)" and "Current Results" from the list, then sort
+      const filteredSheets = sheetNames.filter(
+        name => name !== 'Sample Strategy (Demo)' && name !== 'Current Results'
+      );
+      const sortedSheets = sortStrategies(filteredSheets);
+      setSheetOptions(['Current Results', ...sortedSheets]);
+    }
+  }, [sheetNames]);
+
+  // Pass through connectUrl from App.js
+  useEffect(() => {
+    if (sheetsConnectUrl) {
+      setConnectUrl(sheetsConnectUrl);
+    }
+  }, [sheetsConnectUrl]);
+
+  // Pass through error from App.js
+  useEffect(() => {
+    if (sheetError) {
+      setError(sheetError);
+    }
+  }, [sheetError]);
+
   useEffect(() => {
     const fetchResults = async () => {
       setLoading(true);
       setError(null);
       setConnectUrl(null);
       try {
-        const resp = await fetch(API_ENDPOINTS.currentResults(user?.email || ''));
+        if (selectedSheet === 'Current Results') {
+          const resp = await fetch(API_ENDPOINTS.currentResults(user?.email || ''));
+          const contentType = resp.headers.get('content-type') || '';
+          const isJson = contentType.toLowerCase().includes('application/json');
+          const data = isJson ? await resp.json() : { success: false, error: await resp.text() };
+
+          if (resp.status === 401 && data.requiresOAuth) {
+            setConnectUrl(data.authUrl || null);
+            setError(data.error || 'Connect Google to view the Current Results sheet.');
+            return;
+          }
+
+          if (!data.success) {
+            throw new Error(data.error || 'Failed to load Current Results');
+          }
+
+          setConnectUrl(null);
+          setError(null);
+          setRows(Array.isArray(data.rows) ? data.rows : []);
+          setStrategySheetRows([]);
+          setStrategyMetrics(null);
+          return;
+        }
+
+        // fetch specific sheet
+        const resp = await fetch(API_ENDPOINTS.strategySheet(selectedSheet, user?.email || ''));
         const contentType = resp.headers.get('content-type') || '';
         const isJson = contentType.toLowerCase().includes('application/json');
         const data = isJson ? await resp.json() : { success: false, error: await resp.text() };
 
         if (resp.status === 401 && data.requiresOAuth) {
           setConnectUrl(data.authUrl || null);
-          setError(data.error || 'Connect Google to view the Current Results sheet.');
+          setError(data.error || 'Connect Google to view this sheet.');
           return;
         }
 
         if (!data.success) {
-          throw new Error(data.error || 'Failed to load Current Results');
+          throw new Error(data.error || 'Failed to load sheet');
         }
 
-        // Success: ensure any previous auth prompts are cleared
         setConnectUrl(null);
         setError(null);
-        setRows(Array.isArray(data.rows) ? data.rows : []);
+        setStrategySheetRows(Array.isArray(data.rows) ? data.rows : []);
+        setStrategyMetrics(computeStrategySheetMetrics(data.rows));
+        setRows([]);
       } catch (err) {
         setError(err.message || 'Failed to load Current Results');
       } finally {
@@ -91,7 +149,7 @@ function ResultsDashboard({ user }) {
     };
 
     fetchResults();
-  }, [user]);
+  }, [user, selectedSheet]);
 
   const model = useMemo(() => transformSheetToResultsDashboardModel(rows), [rows]);
 
@@ -182,23 +240,49 @@ function ResultsDashboard({ user }) {
       .filter((g) => g.strategies.length > 0);
   }, [allStrategies, model.groupByStrategy, search, showLosersOnly, sortBy, category]);
 
+  const isCurrent = selectedSheet === 'Current Results';
+
   return (
     <div className="results-dash-page">
       <div className="results-dash-header">
         <div>
           <p className="results-dash-kicker">Vector Results Spreadsheet</p>
-          <h2 className="results-dash-title">Current Results</h2>
-          {model.weekLabel && (
+          <h2 className="results-dash-title">{isCurrent ? 'Current Results' : selectedSheet}</h2>
+          {isCurrent && model.weekLabel && (
             <p className="results-dash-week">Week of {formatWeekLabel(model.weekLabel)}</p>
           )}
+          {!isCurrent && (
+            <p className="results-dash-week">Historical Performance Data</p>
+          )}
           <p className="results-dash-subtitle">
-            Current weekly results pulled directly from the Google Sheet for easy, fast viewing.
+            {isCurrent 
+              ? 'Current weekly results pulled directly from the Google Sheet for easy, fast viewing.'
+              : 'View detailed performance metrics and weekly breakdown for this strategy.'
+            }
           </p>
+          <div className="results-sheet-select">
+            <label>
+              Sheet:
+              <select
+                value={selectedSheet}
+                onChange={(e) => setSelectedSheet(e.target.value)}
+                style={{ marginLeft: '0.5rem' }}
+              >
+                {sheetOptions.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
         </div>
         <div className="results-dash-actions">
-          <button className="secondary" type="button" onClick={() => setShowRaw((v) => !v)}>
-            {showRaw ? 'Hide raw data' : 'View raw data'}
-          </button>
+          {isCurrent && (
+            <button className="secondary" type="button" onClick={() => setShowRaw((v) => !v)}>
+              {showRaw ? 'Hide raw data' : 'View raw data'}
+            </button>
+          )}
           {connectUrl && (
             <button
               className="primary"
@@ -225,7 +309,7 @@ function ResultsDashboard({ user }) {
       {loading && <div className="results-dash-card">Loading current results…</div>}
       {error && !loading && <div className="results-dash-card error">{error}</div>}
 
-      {!loading && !error && !showRaw && (
+      {!loading && !error && isCurrent && !showRaw && (
         <>
           <SummaryCards summary={model.summary} />
           <InsightsPanel insights={insights} />
@@ -254,7 +338,7 @@ function ResultsDashboard({ user }) {
         </>
       )}
 
-      {!loading && !error && showRaw && (
+      {!loading && !error && showRaw && isCurrent && (
         <div className="results-dash-card raw">
           <div className="results-raw-wrapper">
             <table className="results-raw-table">
@@ -270,6 +354,14 @@ function ResultsDashboard({ user }) {
             </table>
           </div>
         </div>
+      )}
+
+      {!loading && !error && !isCurrent && (
+        <StrategyDetailsView 
+          sheetName={selectedSheet}
+          metrics={strategyMetrics}
+          rawRows={strategySheetRows}
+        />
       )}
     </div>
   );

@@ -265,7 +265,16 @@ function AppContent() {
       case 'privacy-policy':
         return <PrivacyPolicy onNavigate={setCurrentPage} />;
       case 'results':
-        return <ResultsDashboard onNavigate={setCurrentPage} user={user} />;
+        return (
+          <ResultsDashboard 
+            onNavigate={setCurrentPage} 
+            user={user}
+            sheetNames={sheetNames}
+            loadingSheets={loadingSheets}
+            sheetsConnectUrl={sheetsConnectUrl}
+            error={error}
+          />
+        );
       case 'home':
       default:
         return (
