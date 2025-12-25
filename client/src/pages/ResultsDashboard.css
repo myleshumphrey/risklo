@@ -25,6 +25,12 @@
   color: #fff;
 }
 
+.results-dash-week {
+  margin: 0.2rem 0 0;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 600;
+}
+
 .results-dash-subtitle {
   margin-top: 0.35rem;
   color: rgba(255, 255, 255, 0.7);
