@@ -41,6 +41,9 @@ function ResultsDashboard({ user }) {
           throw new Error(data.error || 'Failed to load Current Results');
         }
 
+        // Success: ensure any previous auth prompts are cleared
+        setConnectUrl(null);
+        setError(null);
         setRows(Array.isArray(data.rows) ? data.rows : []);
       } catch (err) {
         setError(err.message || 'Failed to load Current Results');
