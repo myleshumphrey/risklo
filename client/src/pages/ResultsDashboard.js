@@ -65,7 +65,6 @@ function ResultsDashboard({ user }) {
 
   const insights = useMemo(() => {
     if (!allStrategies.length) return [];
-    const bigLosers = allStrategies.filter((s) => s.weeklyTotal < -500);
     const worst = [...allStrategies].sort((a, b) => a.weeklyTotal - b.weeklyTotal).slice(0, 3);
     const consistent = allStrategies.filter((s) => {
       const days = Object.values(s.dailyPnL || {});
@@ -73,9 +72,6 @@ function ResultsDashboard({ user }) {
       return s.weeklyTotal > 0 && positives >= 2;
     });
     const out = [];
-    if (bigLosers.length > 0) {
-      out.push(`${bigLosers.length} strategies had losses worse than -$500 this week.`);
-    }
     if (worst.length > 0) {
       out.push(`Top drawdown contributors: ${worst.map((s) => s.strategyName).join(', ')}`);
     }
@@ -168,9 +164,12 @@ function ResultsDashboard({ user }) {
               type="button"
               onClick={() => {
                 if (connectUrl) {
-                  window.location.href = connectUrl;
+                  const target = connectUrl.startsWith('http')
+                    ? connectUrl
+                    : `${API_ENDPOINTS.sheetsOAuthStart(user?.email || '')}`;
+                  window.location.href = target;
                 } else if (user?.email) {
-                  window.location.href = `/api/google-sheets/oauth/start?email=${encodeURIComponent(user.email)}`;
+                  window.location.href = API_ENDPOINTS.sheetsOAuthStart(user.email);
                 } else {
                   setError('Sign in with Google first to connect.');
                 }
