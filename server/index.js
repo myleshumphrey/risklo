@@ -307,8 +307,11 @@ async function getStrategySheet(authClient, spreadsheetId, sheetName) {
 app.get('/api/google-sheets/oauth/start', (req, res) => {
   try {
     const email = String(req.query.email || '').trim();
-    if (!email) return res.status(400).send('Missing email');
-    const url = getAuthUrlForEmail(email);
+    const includeSignIn = req.query.includeSignIn === 'true'; // New param for combined flow
+    if (!email && !includeSignIn) return res.status(400).send('Missing email or includeSignIn flag');
+    
+    // If includeSignIn is true but no email, we'll use a placeholder and get it from ID token
+    const url = getAuthUrlForEmail(email || 'placeholder@example.com', includeSignIn);
     return res.redirect(url);
   } catch (e) {
     console.error('OAuth start error:', e);
@@ -329,6 +332,13 @@ app.get('/api/google-sheets/oauth/callback', async (req, res) => {
     }
 
     const result = await exchangeCodeAndStore(String(code), String(state));
+    
+    // If this was a combined sign-in flow, include user info in redirect
+    if (result.userInfo) {
+      const userInfoStr = encodeURIComponent(JSON.stringify(result.userInfo));
+      return res.redirect(`${appBaseUrl}?signIn=success&sheetsConnect=success&email=${encodeURIComponent(result.email)}&userInfo=${userInfoStr}`);
+    }
+    
     return res.redirect(`${appBaseUrl}?sheetsConnect=success&email=${encodeURIComponent(result.email)}`);
   } catch (e) {
     console.error('OAuth callback error:', e);

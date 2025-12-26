@@ -1,62 +1,19 @@
-import React, { useRef, useEffect } from 'react';
+import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import PageHeader from '../components/PageHeader';
 import './Account.css';
 import { IconPro, IconChart, IconCheck, IconAlert } from '../components/Icons';
 
 function Account({ onNavigate, onUpgrade }) {
-  const { user, isPro, isDevMode, signOut, handleGoogleSignIn } = useAuth();
-  const signInButtonRef = useRef(null);
-  const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
+  const { user, isPro, isDevMode, signOut } = useAuth();
 
-  // Initialize Google Sign-In button if user is not signed in
-  useEffect(() => {
-    if (!user && clientId && signInButtonRef.current) {
-      const initGoogleSignIn = () => {
-        if (!window.google?.accounts) {
-          setTimeout(initGoogleSignIn, 100);
-          return;
-        }
-
-        try {
-          if (signInButtonRef.current) {
-            signInButtonRef.current.innerHTML = '';
-          }
-
-          window.google.accounts.id.initialize({
-            client_id: clientId,
-            callback: (response) => {
-              handleGoogleSignIn(response.credential);
-              // Immediate cleanup to prevent the Google-rendered button from lingering after first sign-in
-              if (signInButtonRef.current) {
-                signInButtonRef.current.innerHTML = '';
-              }
-            },
-          });
-
-          window.google.accounts.id.renderButton(signInButtonRef.current, {
-            theme: 'outline',
-            size: 'large',
-            text: 'signin_with',
-            width: '100%',
-          });
-        } catch (error) {
-          console.error('Error rendering Google Sign-In button:', error);
-        }
-      };
-
-      if (window.google?.accounts) {
-        initGoogleSignIn();
-      } else {
-        initGoogleSignIn();
-      }
-    }
-
-    // Cleanup: once signed in, ensure the old rendered Google button is removed
-    if (user && signInButtonRef.current) {
-      signInButtonRef.current.innerHTML = '';
-    }
-  }, [user, clientId, handleGoogleSignIn]);
+  const handleSignInClick = () => {
+    // Redirect to backend OAuth endpoint with includeSignIn=true
+    // This will request both sign-in scopes AND Sheets scope in one flow
+    const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+    const oauthUrl = `${API_BASE_URL}/api/google-sheets/oauth/start?includeSignIn=true`;
+    window.location.href = oauthUrl;
+  };
 
   if (!user) {
     return (
@@ -67,7 +24,38 @@ function Account({ onNavigate, onUpgrade }) {
             <h2>Please Sign In</h2>
             <p>You need to sign in to view your account details.</p>
             <div className="account-sign-in-container" style={{ marginTop: '2rem' }}>
-              <div ref={signInButtonRef} className="account-google-sign-in-button"></div>
+              <button 
+                className="account-sign-in-button"
+                onClick={handleSignInClick}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.75rem',
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  backgroundColor: '#fff',
+                  color: '#000',
+                  border: '1px solid #dadce0',
+                  borderRadius: '4px',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s',
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f8f9fa'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = '#fff'}
+              >
+                <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                  <g fillRule="evenodd">
+                    <path d="M9 3.48c1.69 0 2.83.73 3.48 1.34l2.54-2.48C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.96l2.91 2.26C4.6 5.05 6.62 3.48 9 3.48z" fill="#EA4335"/>
+                    <path d="M17.64 9.2c0-.74-.06-1.28-.19-1.84H9v3.34h4.96c-.21 1.18-.84 2.18-1.79 2.85l2.75 2.13c1.66-1.52 2.72-3.76 2.72-6.48z" fill="#4285F4"/>
+                    <path d="M3.88 10.78A5.54 5.54 0 0 1 3.58 9c0-.62.11-1.22.29-1.78L.96 4.96A9.008 9.008 0 0 0 0 9c0 1.45.35 2.82.96 4.04l2.92-2.26z" fill="#FBBC05"/>
+                    <path d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.75-2.13c-.76.53-1.78.9-3.21.9-2.38 0-4.4-1.57-5.12-3.74L.96 13.04C2.45 15.98 5.48 18 9 18z" fill="#34A853"/>
+                  </g>
+                </svg>
+                Sign in with Google
+              </button>
             </div>
           </div>
         </div>

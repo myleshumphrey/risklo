@@ -103,18 +103,29 @@ function verifyState(state) {
   }
 }
 
-function getAuthUrlForEmail(email) {
+function getAuthUrlForEmail(email, includeSignIn = false) {
   const oauth2 = getOAuthClient();
   const state = signState({
     email,
     ts: Date.now(),
     nonce: crypto.randomBytes(8).toString('hex'),
+    includeSignIn, // Flag to indicate this is a combined sign-in + Sheets flow
   });
+
+  // Request all scopes at once: sign-in (openid, profile, email) + Sheets
+  const scopes = includeSignIn
+    ? [
+        'openid',
+        'https://www.googleapis.com/auth/userinfo.profile',
+        'https://www.googleapis.com/auth/userinfo.email',
+        'https://www.googleapis.com/auth/spreadsheets.readonly',
+      ]
+    : ['https://www.googleapis.com/auth/spreadsheets.readonly'];
 
   const url = oauth2.generateAuthUrl({
     access_type: 'offline',
     prompt: 'consent',
-    scope: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+    scope: scopes,
     state,
   });
 
@@ -145,13 +156,53 @@ function deleteRefreshToken(email) {
 
 async function exchangeCodeAndStore(code, state) {
   const stateObj = verifyState(state);
-  if (!stateObj || !stateObj.email) {
+  if (!stateObj) {
     throw new Error('Invalid OAuth state');
   }
-  const email = stateObj.email;
+  const includeSignIn = stateObj.includeSignIn || false;
 
   const oauth2 = getOAuthClient();
   const { tokens } = await oauth2.getToken(code);
+
+  // If this was a combined sign-in flow, decode ID token to get user info FIRST
+  // This gives us the actual email, even if state had a placeholder
+  let email = stateObj.email;
+  let userInfo = null;
+  
+  if (includeSignIn && tokens.id_token) {
+    try {
+      // Decode JWT ID token (simple base64 decode, no verification needed for display)
+      const base64Url = tokens.id_token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = Buffer.from(base64, 'base64').toString('utf8');
+      const payload = JSON.parse(jsonPayload);
+      
+      // Use email from ID token (most reliable)
+      email = payload.email || email || 'unknown@example.com';
+      
+      userInfo = {
+        email: email,
+        name: payload.name || payload.email?.split('@')[0] || email.split('@')[0],
+        picture: payload.picture || null,
+      };
+    } catch (err) {
+      console.error('Error decoding ID token:', err);
+      // Fallback to state email or placeholder
+      if (!email || email === 'placeholder@example.com') {
+        throw new Error('Could not determine user email from OAuth response');
+      }
+      userInfo = {
+        email,
+        name: email.split('@')[0],
+        picture: null,
+      };
+    }
+  } else {
+    // Not a combined flow, must have email in state
+    if (!email || email === 'placeholder@example.com') {
+      throw new Error('Missing email in OAuth state');
+    }
+  }
 
   // Google may not return refresh_token on subsequent consents.
   const existing = getRefreshToken(email);
@@ -161,7 +212,12 @@ async function exchangeCodeAndStore(code, state) {
   }
 
   storeRefreshToken(email, refreshToken);
-  return { email, hasRefreshToken: !!tokens.refresh_token };
+
+  return { 
+    email, 
+    hasRefreshToken: !!tokens.refresh_token,
+    userInfo, // Include user info if this was a combined flow
+  };
 }
 
 function getAuthorizedClientForEmail(email) {
