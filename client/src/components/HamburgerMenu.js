@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import './HamburgerMenu.css';
 import { IconStar, IconHome, IconBook, IconCalculator, IconHelp, IconFile, IconUpload, IconUser, IconLogOut } from './Icons';
