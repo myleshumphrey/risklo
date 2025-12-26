@@ -2,12 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import './ResultsDashboard.css';
 import { API_ENDPOINTS } from '../config';
 import { transformSheetToResultsDashboardModel } from '../utils/transformResults';
-import SummaryCards from '../components/SummaryCards';
-import InsightsPanel from '../components/InsightsPanel';
-import ResultsControls from '../components/ResultsControls';
-import StrategyRowCard from '../components/StrategyRowCard';
+import SummaryCards from '../components/SummaryCards.js';
+import InsightsPanel from '../components/InsightsPanel.js';
+import ResultsControls from '../components/ResultsControls.js';
+import StrategyRowCard from '../components/StrategyRowCard.js';
 import { sortStrategies } from '../utils/strategySort';
-import StrategyDetailsView from '../components/StrategyDetailsView';
+import StrategyDetailsView from '../components/StrategyDetailsView.js';
 import { computeStrategySheetMetrics } from '../utils/strategySheetMetrics';
 
 function formatWeekLabel(label) {
