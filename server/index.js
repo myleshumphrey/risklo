@@ -93,6 +93,12 @@ app.use(cors({
     
     // Check if origin is in allowed list, or allow all if FRONTEND_URL not set
     if (process.env.FRONTEND_URL && !allowedOrigins.includes(origin)) {
+      // Always allow localhost/127.0.0.1 on any port (dev convenience)
+      if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+        console.log('CORS: Allowing localhost/127.x dev origin:', origin);
+        return callback(null, true);
+      }
+
       // For local network IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x), allow them
       if (/^http:\/\/(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(origin)) {
         console.log('CORS: Allowing local network IP:', origin);

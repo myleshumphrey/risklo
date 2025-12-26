@@ -65,6 +65,24 @@
   color: rgba(255, 255, 255, 0.5);
 }
 
+.stacked-values {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  line-height: 1.2;
+}
+
+.stacked-line {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.stacked-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
 .strategy-summary-meta {
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.5);

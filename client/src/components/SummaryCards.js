@@ -10,15 +10,9 @@ const formatCurrency = (n) => {
 
 function SummaryCards({ summary }) {
   if (!summary) return null;
-  const { total, winners, losers, largestWin, largestLoss } = summary;
+  const { winners, losers, largestWin, largestLoss } = summary;
 
   const cards = [
-    {
-      title: 'Weekly Total PnL',
-      value: formatCurrency(total),
-      tone: total >= 0 ? 'positive' : 'negative',
-      subtitle: '',
-    },
     {
       title: 'Winning Strategies',
       value: winners,

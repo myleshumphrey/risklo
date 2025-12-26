@@ -51,7 +51,7 @@ function formatWeekLabel(label) {
 function ResultsDashboard({ user, sheetNames, loadingSheets, sheetsConnectUrl, error: sheetError }) {
   const [rows, setRows] = useState([]);
   const [sheetOptions, setSheetOptions] = useState(['Current Results']);
-  const [selectedSheet, setSelectedSheet] = useState('Current Results');
+  const [selectedSheet, setSelectedSheet] = useState(() => localStorage.getItem('results.selectedSheet') || 'Current Results');
   const [strategySheetRows, setStrategySheetRows] = useState([]);
   const [strategyMetrics, setStrategyMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -59,10 +59,34 @@ function ResultsDashboard({ user, sheetNames, loadingSheets, sheetsConnectUrl, e
   const [connectUrl, setConnectUrl] = useState(null);
   const [showRaw, setShowRaw] = useState(false);
 
-  const [search, setSearch] = useState('');
-  const [showLosersOnly, setShowLosersOnly] = useState(false);
-  const [sortBy, setSortBy] = useState('priority');
-  const [category, setCategory] = useState(null);
+  const [search, setSearch] = useState(() => localStorage.getItem('results.search') || '');
+  const [showLosersOnly, setShowLosersOnly] = useState(() => localStorage.getItem('results.showLosersOnly') === 'true');
+  const [sortBy, setSortBy] = useState(() => localStorage.getItem('results.sortBy') || 'priority');
+  const [category, setCategory] = useState(() => {
+    const stored = localStorage.getItem('results.category');
+    return stored && stored !== 'null' ? stored : null;
+  });
+
+  // Persist selections / filters
+  useEffect(() => {
+    localStorage.setItem('results.selectedSheet', selectedSheet);
+  }, [selectedSheet]);
+
+  useEffect(() => {
+    localStorage.setItem('results.search', search);
+  }, [search]);
+
+  useEffect(() => {
+    localStorage.setItem('results.sortBy', sortBy);
+  }, [sortBy]);
+
+  useEffect(() => {
+    localStorage.setItem('results.category', category ?? 'null');
+  }, [category]);
+
+  useEffect(() => {
+    localStorage.setItem('results.showLosersOnly', showLosersOnly);
+  }, [showLosersOnly]);
 
   // Update sheet options when sheetNames changes from App.js
   useEffect(() => {
@@ -247,7 +271,21 @@ function ResultsDashboard({ user, sheetNames, loadingSheets, sheetsConnectUrl, e
       <div className="results-dash-header">
         <div>
           <p className="results-dash-kicker">Vector Results Spreadsheet</p>
-          <h2 className="results-dash-title">{isCurrent ? 'Current Results' : selectedSheet}</h2>
+          <div className="results-title-row">
+            <h2 className="results-dash-title">{isCurrent ? 'Current Results' : selectedSheet}</h2>
+            <select
+              className="results-sheet-select-inline"
+              aria-label="Select sheet"
+              value={selectedSheet}
+              onChange={(e) => setSelectedSheet(e.target.value)}
+            >
+              {sheetOptions.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          </div>
           {isCurrent && model.weekLabel && (
             <p className="results-dash-week">Week of {formatWeekLabel(model.weekLabel)}</p>
           )}
@@ -260,22 +298,6 @@ function ResultsDashboard({ user, sheetNames, loadingSheets, sheetsConnectUrl, e
               : 'View detailed performance metrics and weekly breakdown for this strategy.'
             }
           </p>
-          <div className="results-sheet-select">
-            <label>
-              Sheet:
-              <select
-                value={selectedSheet}
-                onChange={(e) => setSelectedSheet(e.target.value)}
-                style={{ marginLeft: '0.5rem' }}
-              >
-                {sheetOptions.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
         </div>
         <div className="results-dash-actions">
           {isCurrent && (
@@ -324,6 +346,7 @@ function ResultsDashboard({ user, sheetNames, loadingSheets, sheetsConnectUrl, e
             categoryOptions={categoryOptions}
             selectedCategory={category}
             onCategoryChange={setCategory}
+          hideLosersToggle={isCurrent}
           />
 
           {filteredSortedGroups.map((group) => (

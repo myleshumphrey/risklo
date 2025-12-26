@@ -109,22 +109,22 @@ function StrategyDetailsView({ sheetName, metrics, rawRows }) {
       {/* Summary Cards */}
       <div className="strategy-summary-cards">
         <div className="strategy-summary-card">
-          <div className="strategy-summary-label">Best Day</div>
-          <div className={`strategy-summary-value ${metrics?.bestDay?.value >= 0 ? 'positive' : 'negative'}`}>
-            {formatCurrency(metrics?.bestDay?.value || 0)}
+          <div className="strategy-summary-label">Best / Worst Day</div>
+          <div className="strategy-summary-value stacked-values">
+            <div className="stacked-line positive-inline">
+              {formatCurrency(metrics?.bestDay?.value || 0)}
+            </div>
+            <div className="stacked-line negative-inline">
+              {formatCurrency(metrics?.worstDay?.value || 0)}
+            </div>
           </div>
-          <div className="strategy-summary-meta">
-            {metrics?.bestDay?.label} ({metrics?.bestDay?.date})
-          </div>
-        </div>
-
-        <div className="strategy-summary-card">
-          <div className="strategy-summary-label">Worst Day</div>
-          <div className={`strategy-summary-value ${metrics?.worstDay?.value >= 0 ? 'positive' : 'negative'}`}>
-            {formatCurrency(metrics?.worstDay?.value || 0)}
-          </div>
-          <div className="strategy-summary-meta">
-            {metrics?.worstDay?.label} ({metrics?.worstDay?.date})
+          <div className="strategy-summary-meta stacked-meta">
+            <div className="positive-inline">
+              Best: {metrics?.bestDay?.label} ({metrics?.bestDay?.date})
+            </div>
+            <div className="negative-inline">
+              Worst: {metrics?.worstDay?.label} ({metrics?.worstDay?.date})
+            </div>
           </div>
         </div>
 
@@ -161,32 +161,33 @@ function StrategyDetailsView({ sheetName, metrics, rawRows }) {
         </div>
 
         <div className="strategy-summary-card">
-          <div className="strategy-summary-label">Total Wins</div>
-          <div className="strategy-summary-value positive">
-            {formatCurrency(metrics?.totalWinsSum || 0)}
+          <div className="strategy-summary-label">Total Wins / Losses</div>
+          <div className="strategy-summary-value stacked-values">
+            <div className="stacked-line positive-inline">
+              {formatCurrency(metrics?.totalWinsSum || 0)}
+            </div>
+            <div className="stacked-line negative-inline">
+              {formatCurrency(metrics?.totalLossSum || 0)}
+            </div>
           </div>
           <div className="strategy-summary-meta">
-            Sum of all winning days
-          </div>
-        </div>
-
-        <div className="strategy-summary-card">
-          <div className="strategy-summary-label">Total Losses</div>
-          <div className="strategy-summary-value negative">
-            {formatCurrency(metrics?.totalLossSum || 0)}
-          </div>
-          <div className="strategy-summary-meta">
-            Sum of all losing days
+            Sum of all winning / losing days
           </div>
         </div>
       </div>
 
       {/* Weekday Win Rates */}
       <div className="strategy-summary-cards weekday-cards">
-        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((label) => {
-          const pct = metrics?.weekdayWinRates?.[label] ?? 0;
+        {[
+          { key: 'Mon', label: 'Monday' },
+          { key: 'Tue', label: 'Tuesday' },
+          { key: 'Wed', label: 'Wednesday' },
+          { key: 'Thu', label: 'Thursday' },
+          { key: 'Fri', label: 'Friday' },
+        ].map(({ key, label }) => {
+          const pct = metrics?.weekdayWinRates?.[key] ?? 0;
           return (
-            <div key={label} className="strategy-summary-card">
+            <div key={key} className="strategy-summary-card">
               <div className="strategy-summary-label">{label} Win Rate</div>
               <div className={`strategy-summary-value ${pct >= 50 ? 'positive' : 'negative'}`}>
                 {pct.toFixed(1)}%
