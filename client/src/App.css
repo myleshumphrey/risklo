@@ -3,6 +3,121 @@
   background: linear-gradient(180deg, #0a0e27 0%, #1a1f3a 100%);
 }
 
+/* Light mode overrides */
+body.light-mode {
+  background: #f5f7fb;
+  color: #0f172a;
+}
+
+body.light-mode .App {
+  background: #f5f7fb;
+  color: #0f172a;
+}
+
+body.light-mode .app-header {
+  background: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+body.light-mode .hamburger-btn {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+body.light-mode .hamburger-icon span {
+  background: #0f172a;
+}
+
+body.light-mode .hamburger-menu {
+  background: linear-gradient(180deg, #ffffff 0%, #e9ecf6 100%);
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+body.light-mode .menu-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+body.light-mode .menu-title {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+body.light-mode .menu-theme-toggle {
+  color: #0f172a;
+}
+
+body.light-mode .menu-switch-slider {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+body.light-mode .menu-switch input:checked + .menu-switch-slider {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  border-color: rgba(79, 70, 229, 0.35);
+}
+
+body.light-mode .results-dash-card,
+body.light-mode .strategy-summary-card,
+body.light-mode .strategy-week-card,
+body.light-mode .results-raw-table td,
+body.light-mode .results-group-list .results-card {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #0f172a;
+}
+
+body.light-mode .results-dash-subtitle,
+body.light-mode .results-dash-week,
+body.light-mode .strategy-summary-meta,
+body.light-mode .strategy-day-label {
+  color: rgba(15, 23, 42, 0.7);
+}
+
+body.light-mode h1,
+body.light-mode h2,
+body.light-mode h3,
+body.light-mode h4,
+body.light-mode h5,
+body.light-mode h6,
+body.light-mode p,
+body.light-mode span,
+body.light-mode label,
+body.light-mode input,
+body.light-mode select,
+body.light-mode option,
+body.light-mode button {
+  color: #0f172a;
+}
+
+body.light-mode .menu-item,
+body.light-mode .menu-sign-out-btn,
+body.light-mode .menu-upgrade-btn span,
+body.light-mode .menu-icon {
+  color: #0f172a;
+}
+
+body.light-mode ::placeholder {
+  color: rgba(15, 23, 42, 0.45);
+}
+
+body.light-mode .results-dash-kicker {
+  color: rgba(15, 23, 42, 0.6);
+}
+
+body.light-mode .toggle-raw-btn,
+body.light-mode .secondary {
+  background: rgba(79, 70, 229, 0.12);
+  color: #1f2937;
+  border: 1px solid rgba(79, 70, 229, 0.2);
+}
+
+body.light-mode .primary {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: #ffffff;
+}
+
 .app-header {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);

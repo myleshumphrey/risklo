@@ -328,8 +328,32 @@ function ResultsDashboard({ user, sheetNames, loadingSheets, sheetsConnectUrl, e
         </div>
       </div>
 
+      {connectUrl && user && !loading && (
+        <div className="results-dash-card warning">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+            <span>Connect your Google Results Spreadsheet to view data.</span>
+            <button
+              className="primary"
+              type="button"
+              onClick={() => {
+                const target = connectUrl.startsWith('http')
+                  ? connectUrl
+                  : `${API_ENDPOINTS.sheetsOAuthStart(user?.email || '')}`;
+                window.location.href = target;
+              }}
+            >
+              Connect Google
+            </button>
+          </div>
+        </div>
+      )}
+
       {loading && <div className="results-dash-card">Loading current results…</div>}
-      {error && !loading && <div className="results-dash-card error">{error}</div>}
+      {error && !loading && (
+        <div className="results-dash-card error">
+          Vector Algorithmics strategies are available to members only. Sign in with Google to continue.
+        </div>
+      )}
 
       {!loading && !error && isCurrent && !showRaw && (
         <>

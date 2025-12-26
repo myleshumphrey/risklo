@@ -3,11 +3,9 @@ import { useAuth } from '../contexts/AuthContext';
 import './HamburgerMenu.css';
 import { IconStar, IconHome, IconBook, IconCalculator, IconHelp, IconFile, IconUpload, IconUser, IconLogOut } from './Icons';
 
-function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro, isDevMode }) {
-  const { user, signOut, handleGoogleSignIn } = useAuth();
+function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro, isDevMode, theme = 'dark', onToggleTheme }) {
+  const { user, signOut } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const signInButtonRef = useRef(null);
-  const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 
   const handleNavigate = (page) => {
     onNavigate(page);
@@ -26,59 +24,13 @@ function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro, isDevMode })
     setIsOpen(false);
   };
 
-  // Initialize Google Sign-In button in menu if user is not signed in
-  useEffect(() => {
-    if (!user && clientId && isOpen && signInButtonRef.current) {
-      // Wait for Google Identity Services to load
-      const initGoogleSignIn = () => {
-        if (!window.google?.accounts) {
-          setTimeout(initGoogleSignIn, 100);
-          return;
-        }
-
-        try {
-          // Clear any existing button
-          if (signInButtonRef.current) {
-            signInButtonRef.current.innerHTML = '';
-          }
-
-          window.google.accounts.id.initialize({
-            client_id: clientId,
-            callback: (response) => {
-              handleGoogleSignIn(response.credential);
-              // Immediate cleanup to prevent the Google-rendered button from "flashing" after first sign-in
-              if (signInButtonRef.current) {
-                signInButtonRef.current.innerHTML = '';
-              }
-              setIsOpen(false);
-            },
-          });
-
-          window.google.accounts.id.renderButton(signInButtonRef.current, {
-            theme: 'outline',
-            size: 'large',
-            text: 'signin_with',
-            width: '100%',
-          });
-        } catch (error) {
-          console.error('Error rendering Google Sign-In button in menu:', error);
-        }
-      };
-
-      // If Google script is already loaded, initialize immediately
-      if (window.google?.accounts) {
-        initGoogleSignIn();
-      } else {
-        // Otherwise wait for it to load
-        initGoogleSignIn();
-      }
-    }
-
-    // Cleanup: if the menu closes or the user signs in, remove any rendered Google button
-    if ((user || !isOpen) && signInButtonRef.current) {
-      signInButtonRef.current.innerHTML = '';
-    }
-  }, [user, clientId, isOpen, handleGoogleSignIn]);
+  const handleSignInClick = () => {
+    // Redirect to backend OAuth endpoint with includeSignIn=true
+    // This will request both sign-in scopes AND Sheets scope in one flow
+    const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+    const oauthUrl = `${API_BASE_URL}/api/google-sheets/oauth/start?includeSignIn=true`;
+    window.location.href = oauthUrl;
+  };
 
   return (
     <>
@@ -103,6 +55,20 @@ function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro, isDevMode })
                 {isPro ? (isDevMode ? 'Pro (Dev)' : 'Pro') : 'Basic'}
               </span>
             </div>
+            {/* Light mode toggle hidden for now */}
+            {false && (
+              <div className="menu-theme-toggle">
+                <span className="menu-theme-label">Light mode</span>
+                <label className="menu-switch">
+                  <input
+                    type="checkbox"
+                    checked={theme === 'light'}
+                    onChange={onToggleTheme}
+                  />
+                  <span className="menu-switch-slider"></span>
+                </label>
+              </div>
+            )}
           </div>
           
           {!isPro && onUpgrade && (
@@ -207,9 +173,19 @@ function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro, isDevMode })
             </li>
             {!user && (
               <li>
-                <div className="menu-sign-in-container">
-                  <div ref={signInButtonRef} className="menu-google-sign-in-button"></div>
-                </div>
+                <button className="menu-item" onClick={handleSignInClick}>
+                  <span className="menu-icon">
+                    <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                      <g fill="#fff" fillRule="evenodd">
+                        <path d="M9 3.48c1.69 0 2.83.73 3.48 1.34l2.54-2.48C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.96l2.91 2.26C4.6 5.05 6.62 3.48 9 3.48z" fill="#EA4335"/>
+                        <path d="M17.64 9.2c0-.74-.06-1.28-.19-1.84H9v3.34h4.96c-.21 1.18-.84 2.18-1.79 2.85l2.75 2.13c1.66-1.52 2.72-3.76 2.72-6.48z" fill="#4285F4"/>
+                        <path d="M3.88 10.78A5.54 5.54 0 0 1 3.58 9c0-.62.11-1.22.29-1.78L.96 4.96A9.008 9.008 0 0 0 0 9c0 1.45.35 2.82.96 4.04l2.92-2.26z" fill="#FBBC05"/>
+                        <path d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.75-2.13c-.76.53-1.78.9-3.21.9-2.38 0-4.4-1.57-5.12-3.74L.96 13.04C2.45 15.98 5.48 18 9 18z" fill="#34A853"/>
+                      </g>
+                    </svg>
+                  </span>
+                  <span>Sign in with Google</span>
+                </button>
               </li>
             )}
             {user && (

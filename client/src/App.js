@@ -24,7 +24,7 @@ import { API_BASE_URL, API_ENDPOINTS } from './config';
 import { IconChart } from './components/Icons';
 
 function AppContent() {
-  const { user, isPro, isDevMode, refreshProStatus } = useAuth();
+  const { user, isPro, isDevMode, refreshProStatus, handleGoogleSignIn } = useAuth();
   const [currentPage, setCurrentPage] = useState(() => {
     return localStorage.getItem('currentPage') || 'home';
   });
@@ -33,6 +33,7 @@ function AppContent() {
   const [riskMode, setRiskMode] = useState(() => {
     return localStorage.getItem('riskMode') || 'risk'; // 'risk' or 'apexMae'
   });
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const [riskMetrics, setRiskMetrics] = useState(null); // Metrics for Risk mode
   const [apexMaeMetrics, setApexMaeMetrics] = useState(null); // Metrics for 30% Drawdown mode
   const [mobileProTab, setMobileProTab] = useState('bulk'); // 'bulk' or 'csv' - for mobile tabs only
@@ -56,6 +57,14 @@ function AppContent() {
   useEffect(() => {
     localStorage.setItem('riskMode', riskMode);
   }, [riskMode]);
+
+  // Apply theme to body
+  useEffect(() => {
+    const root = document.body;
+    root.classList.remove('light-mode', 'dark-mode');
+    root.classList.add(`${theme}-mode`);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
 
   // Check URL parameters on mount for direct navigation (for Google verification)
   useEffect(() => {
@@ -162,13 +171,34 @@ function AppContent() {
     fetchSheetNames();
   }, [fetchSheetNames]);
 
-  // If user just finished Google Sheets connect flow, refresh strategy list
+  // Handle combined sign-in + Sheets OAuth callback
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const signIn = params.get('signIn');
     const connect = params.get('sheetsConnect');
-    if (!connect) return;
+    const userInfoStr = params.get('userInfo');
 
-    if (connect === 'success') {
+    // If this was a combined sign-in + Sheets flow
+    if (signIn === 'success' && connect === 'success' && userInfoStr) {
+      try {
+        const userInfo = JSON.parse(decodeURIComponent(userInfoStr));
+        // Set user in AuthContext (this will trigger Pro status check)
+        handleGoogleSignIn(userInfo); // Pass as object
+        // Refresh strategies
+        fetchSheetNames();
+        // Clear query params
+        window.history.replaceState({}, '', window.location.pathname);
+      } catch (err) {
+        console.error('Error parsing user info from OAuth callback:', err);
+        // Still refresh strategies if Sheets connected
+        fetchSheetNames();
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+      return;
+    }
+
+    // If user just finished Google Sheets connect flow (separate flow)
+    if (connect === 'success' && !signIn) {
       // Refresh strategies and clear query params
       fetchSheetNames();
       params.delete('sheetsConnect');
@@ -177,7 +207,7 @@ function AppContent() {
       const newUrl = `${window.location.pathname}${newQuery ? `?${newQuery}` : ''}`;
       window.history.replaceState({}, '', newUrl);
     }
-  }, [fetchSheetNames]);
+  }, [fetchSheetNames, handleGoogleSignIn]);
 
   const handleAnalyze = async (formData) => {
     setLoading(true);
@@ -409,6 +439,8 @@ function AppContent() {
         onUpgrade={() => setShowUpgradeModal(true)}
         isPro={isPro}
         isDevMode={isDevMode}
+        theme={theme}
+        onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
       />
       
       {(currentPage === 'home' || currentPage === 'results') && (
