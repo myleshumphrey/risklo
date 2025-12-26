@@ -93,6 +93,12 @@ app.use(cors({
     
     // Check if origin is in allowed list, or allow all if FRONTEND_URL not set
     if (process.env.FRONTEND_URL && !allowedOrigins.includes(origin)) {
+      // Always allow localhost/127.0.0.1 on any port (dev convenience)
+      if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+        console.log('CORS: Allowing localhost/127.x dev origin:', origin);
+        return callback(null, true);
+      }
+
       // For local network IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x), allow them
       if (/^http:\/\/(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(origin)) {
         console.log('CORS: Allowing local network IP:', origin);
@@ -258,6 +264,42 @@ async function getCurrentResultsSheet(authClient, spreadsheetId) {
     row.some((cell) => (cell || '').toString().trim() !== '')
   );
 
+  return { sheetName, rows };
+}
+
+async function getStrategySheet(authClient, spreadsheetId, sheetName) {
+  const sheets = google.sheets({ version: 'v4', auth: authClient });
+  
+  // First, get the sheet metadata to find the actual data range
+  const metaResponse = await sheets.spreadsheets.get({
+    spreadsheetId,
+    ranges: [`'${sheetName}'`],
+    includeGridData: false,
+  });
+  
+  const sheet = metaResponse.data.sheets?.[0];
+  const rowCount = sheet?.properties?.gridProperties?.rowCount || 100;
+  
+  // Request specific columns A-O (15 columns) to ensure proper alignment
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `'${sheetName}'!A1:O${rowCount}`,
+    majorDimension: 'ROWS',
+    valueRenderOption: 'FORMATTED_VALUE',
+  });
+  
+  // Process rows: ensure each row has exactly 15 elements
+  const rows = (response.data.values || [])
+    .map((row) => {
+      // Pad each row to exactly 15 elements (columns A-O)
+      const normalized = Array(15).fill('');
+      for (let i = 0; i < 15; i++) {
+        normalized[i] = (row[i] !== undefined && row[i] !== null) ? row[i].toString() : '';
+      }
+      return normalized;
+    })
+    .filter((row) => row.some((cell) => cell.trim() !== '')); // Remove completely empty rows
+  
   return { sheetName, rows };
 }
 
@@ -806,6 +848,46 @@ app.get('/api/current-results', async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to load Current Results sheet',
+    });
+  }
+});
+
+// API endpoint to fetch an arbitrary strategy sheet (raw rows)
+app.get('/api/strategy-sheet', async (req, res) => {
+  try {
+    const sheetName = String(req.query.name || '').trim();
+    const email = String(req.query.email || '').trim();
+    if (!sheetName) return res.status(400).json({ success: false, error: 'Sheet name is required' });
+
+    if (USE_USER_SHEETS_OAUTH) {
+      if (!email) {
+        return res.status(401).json({
+          success: false,
+          requiresOAuth: true,
+          error: 'Sign in with Google to view this sheet.',
+        });
+      }
+      if (!hasToken(email)) {
+        return res.status(401).json({
+          success: false,
+          requiresOAuth: true,
+          authUrl: buildSheetsConnectUrl(req, email),
+          error: 'Connect your Google account that has access to the Vector Results Spreadsheet.',
+        });
+      }
+      const userClient = getAuthorizedClientForEmail(email);
+      const data = await getStrategySheet(userClient, RESULTS_SPREADSHEET_ID, sheetName);
+      return res.json({ success: true, ...data });
+    }
+
+    const client = await getServiceAccountClient();
+    const data = await getStrategySheet(client, SPREADSHEET_ID, sheetName);
+    res.json({ success: true, ...data });
+  } catch (error) {
+    console.error('Error fetching strategy sheet:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to load sheet',
     });
   }
 });

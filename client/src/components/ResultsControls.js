@@ -11,6 +11,7 @@ function ResultsControls({
   categoryOptions = [],
   selectedCategory,
   onCategoryChange,
+  hideLosersToggle = false,
 }) {
   return (
     <div className="results-controls">
@@ -33,14 +34,16 @@ function ResultsControls({
           ))}
         </select>
       )}
-      <label className="toggle">
-        <input
-          type="checkbox"
-          checked={showLosersOnly}
-          onChange={(e) => onToggleLosers(e.target.checked)}
-        />
-        Show losers only
-      </label>
+      {!hideLosersToggle && (
+        <label className="toggle">
+          <input
+            type="checkbox"
+            checked={showLosersOnly}
+            onChange={(e) => onToggleLosers(e.target.checked)}
+          />
+          Show losers only
+        </label>
+      )}
       <select value={sortBy} onChange={(e) => onSortChange(e.target.value)}>
         <option value="priority">Strategy priority (default)</option>
         <option value="totalDesc">Weekly Total (desc)</option>

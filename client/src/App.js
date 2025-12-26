@@ -25,10 +25,14 @@ import { IconChart } from './components/Icons';
 
 function AppContent() {
   const { user, isPro, isDevMode, refreshProStatus } = useAuth();
-  const [currentPage, setCurrentPage] = useState('home');
+  const [currentPage, setCurrentPage] = useState(() => {
+    return localStorage.getItem('currentPage') || 'home';
+  });
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(true); // Will be updated in useEffect
-  const [riskMode, setRiskMode] = useState('risk'); // 'risk' or 'apexMae'
+  const [riskMode, setRiskMode] = useState(() => {
+    return localStorage.getItem('riskMode') || 'risk'; // 'risk' or 'apexMae'
+  });
   const [riskMetrics, setRiskMetrics] = useState(null); // Metrics for Risk mode
   const [apexMaeMetrics, setApexMaeMetrics] = useState(null); // Metrics for 30% Drawdown mode
   const [mobileProTab, setMobileProTab] = useState('bulk'); // 'bulk' or 'csv' - for mobile tabs only
@@ -42,10 +46,16 @@ function AppContent() {
   // Get current metrics based on mode
   const metrics = riskMode === 'risk' ? riskMetrics : apexMaeMetrics;
 
-  // Scroll to top when page changes
+  // Scroll to top when page changes & persist current page
   useEffect(() => {
     window.scrollTo(0, 0);
+    localStorage.setItem('currentPage', currentPage);
   }, [currentPage]);
+
+  // Persist risk mode
+  useEffect(() => {
+    localStorage.setItem('riskMode', riskMode);
+  }, [riskMode]);
 
   // Check URL parameters on mount for direct navigation (for Google verification)
   useEffect(() => {
@@ -265,7 +275,16 @@ function AppContent() {
       case 'privacy-policy':
         return <PrivacyPolicy onNavigate={setCurrentPage} />;
       case 'results':
-        return <ResultsDashboard onNavigate={setCurrentPage} user={user} />;
+        return (
+          <ResultsDashboard 
+            onNavigate={setCurrentPage} 
+            user={user}
+            sheetNames={sheetNames}
+            loadingSheets={loadingSheets}
+            sheetsConnectUrl={sheetsConnectUrl}
+            error={error}
+          />
+        );
       case 'home':
       default:
         return (
