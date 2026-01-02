@@ -14,7 +14,6 @@ function GooglePicker({ userEmail, spreadsheetId, onFileSelected, onCancel }) {
   const pickerInitializedRef = useRef(false);
   const pickerInstanceRef = useRef(null);
 
-  // Get keys at the top level to ensure they are captured
   const GOOGLE_API_KEY = process.env.REACT_APP_GOOGLE_API_KEY;
   const GOOGLE_PROJECT_NUMBER = process.env.REACT_APP_GOOGLE_PROJECT_NUMBER;
 
@@ -34,6 +33,9 @@ function GooglePicker({ userEmail, spreadsheetId, onFileSelected, onCancel }) {
     const fetchAccessToken = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/api/google-sheets/oauth/access-token?email=${encodeURIComponent(userEmail)}`);
+        if (response.status === 401) {
+          throw new Error('Your session has expired. Please sign out and sign back in.');
+        }
         const data = await response.json();
         if (!isMountedRef.current) return;
         if (data.error) {
@@ -45,7 +47,7 @@ function GooglePicker({ userEmail, spreadsheetId, onFileSelected, onCancel }) {
         setLoading(false);
       } catch (err) {
         if (isMountedRef.current) {
-          setError('Failed to get access token.');
+          setError(err.message || 'Failed to get access token.');
           setLoading(false);
         }
       }
@@ -80,25 +82,27 @@ function GooglePicker({ userEmail, spreadsheetId, onFileSelected, onCancel }) {
       
       setTimeout(() => {
         try {
-          // DEBUG LOGS - Check these in your production console!
           console.log('🛠 Picker Debug:', {
             hasToken: !!accessToken,
             hasKey: !!GOOGLE_API_KEY,
-            keyPrefix: GOOGLE_API_KEY ? GOOGLE_API_KEY.substring(0, 5) : 'MISSING',
-            projectNumber: GOOGLE_PROJECT_NUMBER
+            projectNumber: GOOGLE_PROJECT_NUMBER,
+            origin: window.location.protocol + '//' + window.location.host
           });
 
           if (!GOOGLE_API_KEY) {
-            throw new Error('REACT_APP_GOOGLE_API_KEY is missing in production environment.');
+            throw new Error('REACT_APP_GOOGLE_API_KEY is missing.');
           }
 
           const view = new window.google.picker.DocsView(window.google.picker.ViewId.SPREADSHEETS)
-            .setMimeTypes('application/vnd.google-apps.spreadsheet');
+            .setMimeTypes('application/vnd.google-apps.spreadsheet')
+            .setFileIds(spreadsheetId);
 
           const builder = new window.google.picker.PickerBuilder()
             .setOAuthToken(accessToken)
             .setDeveloperKey(GOOGLE_API_KEY)
             .setAppId(GOOGLE_PROJECT_NUMBER)
+            // CRITICAL for Production: Tell Google exactly which domain is opening the picker
+            .setOrigin(window.location.protocol + '//' + window.location.host)
             .addView(view)
             .setCallback((data) => {
               if (data[window.google.picker.Response.ACTION] === window.google.picker.Action.PICKED) {
