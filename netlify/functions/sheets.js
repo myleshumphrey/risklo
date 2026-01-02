@@ -1,7 +1,7 @@
 const { google } = require('googleapis');
 
-// Hardcoded spreadsheet ID
-const SPREADSHEET_ID = '1PCU-1ZjBEkAF1LE3Z1tbajCg3hOBzpKxx--z9QU8sAE';
+// Spreadsheet ID (fallback). Override via env if needed.
+const SPREADSHEET_ID = process.env.RESULTS_SPREADSHEET_ID || '1rqGGpl5SJ_34L72yCCcSZIoUrD_ggGn5LfJ_BGFjDQY';
 
 // Initialize Google Sheets API
 let auth;
@@ -9,7 +9,10 @@ if (process.env.GOOGLE_CREDENTIALS_JSON) {
   const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
   auth = new google.auth.GoogleAuth({
     credentials: credentials,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+    scopes: [
+      'https://www.googleapis.com/auth/spreadsheets.readonly',
+      'https://www.googleapis.com/auth/drive.readonly',
+    ],
   });
 } else {
   return { statusCode: 500, body: JSON.stringify({ error: 'Google credentials not configured' }) };

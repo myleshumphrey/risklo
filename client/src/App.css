@@ -3,6 +3,8 @@
   background: linear-gradient(180deg, #0a0e27 0%, #1a1f3a 100%);
 }
 
+/* Google Picker is shown in its own modal, no overlay needed */
+
 /* Light mode overrides */
 body.light-mode {
   background: #f5f7fb;

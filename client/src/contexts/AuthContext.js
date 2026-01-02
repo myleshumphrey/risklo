@@ -115,6 +115,10 @@ export function AuthProvider({ children }) {
     setIsPro(false);
     setIsDevMode(false);
     localStorage.removeItem('risklo_user');
+    // Clear auto-connect flag so user can re-authenticate if they sign in again
+    if (user?.email) {
+      sessionStorage.removeItem(`risklo_sheets_autoconnect_${user.email}`);
+    }
   };
 
   // Refresh Pro status (call after successful payment)

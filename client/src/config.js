@@ -43,5 +43,8 @@ export const API_ENDPOINTS = {
     `${API_BASE_URL}/api/strategy-sheet?name=${encodeURIComponent(name)}${
       email ? `&email=${encodeURIComponent(email)}` : ''
     }`,
+  pickerAccessToken: (email) => `${API_BASE_URL}/api/google-sheets/oauth/access-token?email=${encodeURIComponent(email)}`,
+  storeFileId: `${API_BASE_URL}/api/google-sheets/oauth/file-id`,
+  getFileId: (email) => `${API_BASE_URL}/api/google-sheets/oauth/file-id?email=${encodeURIComponent(email)}`,
 };
 

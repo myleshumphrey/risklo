@@ -9,6 +9,9 @@ const {
   getAuthorizedClientForEmail,
   hasToken,
   deleteRefreshToken,
+  storeFileId,
+  getFileId,
+  getAccessTokenForEmail,
 } = require('./services/googleSheetsUserOAuth');
 
 // Railway deployment trigger - 2025-12-13
@@ -29,12 +32,16 @@ const PORT = process.env.PORT || 5001;
 
 // Email service uses SendGrid API (not SMTP) for better reliability in cloud environments
 
-// Hardcoded spreadsheet ID
-const SPREADSHEET_ID = '1PCU-1ZjBEkAF1LE3Z1tbajCg3hOBzpKxx--z9QU8sAE';
-// If you want to read the real (restricted) Vector Results spreadsheet, set RESULTS_SPREADSHEET_ID
-const RESULTS_SPREADSHEET_ID = process.env.RESULTS_SPREADSHEET_ID || SPREADSHEET_ID;
+// Default spreadsheet ID (fallback for unauthenticated/service-account flow)
+// Set RESULTS_SPREADSHEET_ID in env to override with the live Results sheet
+const RESULTS_SPREADSHEET_ID = process.env.RESULTS_SPREADSHEET_ID || '1rqGGpl5SJ_34L72yCCcSZIoUrD_ggGn5LfJ_BGFjDQY';
+// For unauthenticated/service-account access, fall back to the same ID
+const SPREADSHEET_ID = RESULTS_SPREADSHEET_ID;
 // When enabled, strategies + analysis require per-user OAuth (only users with access can load data)
-const USE_USER_SHEETS_OAUTH = process.env.USE_USER_SHEETS_OAUTH === 'true';
+// Default to requiring per-user OAuth (drive.file to a user-selected sheet).
+// Set USE_USER_SHEETS_OAUTH=false only if you intentionally want service-account access
+// to a shared sheet.
+const USE_USER_SHEETS_OAUTH = (process.env.USE_USER_SHEETS_OAUTH || 'true') === 'true';
 
 // Always available demo option (works even without Vector access)
 const SAMPLE_STRATEGY_NAME = 'Sample Strategy (Demo)';
@@ -122,13 +129,19 @@ if (process.env.GOOGLE_CREDENTIALS_JSON) {
   const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
   auth = new google.auth.GoogleAuth({
     credentials: credentials,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+    scopes: [
+      'https://www.googleapis.com/auth/spreadsheets.readonly',
+      'https://www.googleapis.com/auth/drive.readonly',
+    ],
   });
 } else {
   // Fallback to file (local development)
   auth = new google.auth.GoogleAuth({
     keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+    scopes: [
+      'https://www.googleapis.com/auth/spreadsheets.readonly',
+      'https://www.googleapis.com/auth/drive.readonly',
+    ],
   });
 }
 
@@ -334,12 +347,14 @@ app.get('/api/google-sheets/oauth/callback', async (req, res) => {
     const result = await exchangeCodeAndStore(String(code), String(state));
     
     // If this was a combined sign-in flow, include user info in redirect
+    // Also trigger file picker since we're using drive.file scope
     if (result.userInfo) {
       const userInfoStr = encodeURIComponent(JSON.stringify(result.userInfo));
-      return res.redirect(`${appBaseUrl}?signIn=success&sheetsConnect=success&email=${encodeURIComponent(result.email)}&userInfo=${userInfoStr}`);
+      return res.redirect(`${appBaseUrl}?signIn=success&sheetsConnect=success&showPicker=true&email=${encodeURIComponent(result.email)}&userInfo=${userInfoStr}`);
     }
     
-    return res.redirect(`${appBaseUrl}?sheetsConnect=success&email=${encodeURIComponent(result.email)}`);
+    // For drive.file scope, we need to show picker to select the file
+    return res.redirect(`${appBaseUrl}?sheetsConnect=success&showPicker=true&email=${encodeURIComponent(result.email)}`);
   } catch (e) {
     console.error('OAuth callback error:', e);
     const appBaseUrl = process.env.APP_BASE_URL || process.env.FRONTEND_URL || 'https://risklo.io';
@@ -358,6 +373,63 @@ app.post('/api/google-sheets/oauth/disconnect', (req, res) => {
   if (!email) return res.status(400).json({ error: 'Missing email' });
   deleteRefreshToken(email);
   return res.json({ success: true });
+});
+
+// Get access token for Google Picker API
+app.get('/api/google-sheets/oauth/access-token', async (req, res) => {
+  try {
+    const email = String(req.query.email || '').trim();
+    if (!email) return res.status(400).json({ error: 'Missing email' });
+    
+    if (!hasToken(email)) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    
+    const accessToken = await getAccessTokenForEmail(email);
+    if (!accessToken) {
+      return res.status(500).json({ error: 'Failed to get access token' });
+    }
+    
+    return res.json({ accessToken });
+  } catch (error) {
+    console.error('Error getting access token:', error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Store file ID after Google Picker selection
+app.post('/api/google-sheets/oauth/file-id', (req, res) => {
+  try {
+    const email = String(req.body?.email || '').trim();
+    const fileId = String(req.body?.fileId || '').trim();
+    
+    if (!email) return res.status(400).json({ error: 'Missing email' });
+    if (!fileId) return res.status(400).json({ error: 'Missing fileId' });
+    
+    if (!hasToken(email)) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    
+    storeFileId(email, fileId);
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('Error storing file ID:', error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Get file ID status
+app.get('/api/google-sheets/oauth/file-id', (req, res) => {
+  try {
+    const email = String(req.query.email || '').trim();
+    if (!email) return res.status(400).json({ error: 'Missing email' });
+    
+    const fileId = getFileId(email);
+    return res.json({ hasFileId: !!fileId, fileId });
+  } catch (error) {
+    console.error('Error getting file ID:', error);
+    return res.status(500).json({ error: error.message });
+  }
 });
 
 // Helper function to parse numeric values, handling currency formatting
@@ -845,8 +917,16 @@ app.get('/api/current-results', async (req, res) => {
           error: 'To view Current Results, connect your Google account that has access to the Vector Results Spreadsheet.',
         });
       }
+      const fileId = getFileId(email);
+      if (!fileId) {
+        return res.status(401).json({
+          success: false,
+          requiresOAuth: true,
+          error: 'Please select the Vector Results Spreadsheet using the file picker.',
+        });
+      }
       const userClient = getAuthorizedClientForEmail(email);
-      const data = await getCurrentResultsSheet(userClient, RESULTS_SPREADSHEET_ID);
+      const data = await getCurrentResultsSheet(userClient, fileId);
       return res.json({ success: true, ...data });
     }
 
@@ -885,8 +965,16 @@ app.get('/api/strategy-sheet', async (req, res) => {
           error: 'Connect your Google account that has access to the Vector Results Spreadsheet.',
         });
       }
+      const fileId = getFileId(email);
+      if (!fileId) {
+        return res.status(401).json({
+          success: false,
+          requiresOAuth: true,
+          error: 'Please select the Vector Results Spreadsheet using the file picker.',
+        });
+      }
       const userClient = getAuthorizedClientForEmail(email);
-      const data = await getStrategySheet(userClient, RESULTS_SPREADSHEET_ID, sheetName);
+      const data = await getStrategySheet(userClient, fileId, sheetName);
       return res.json({ success: true, ...data });
     }
 
@@ -906,9 +994,12 @@ app.get('/api/strategy-sheet', async (req, res) => {
 app.get('/api/sheets', async (req, res) => {
   try {
     const email = String(req.query.email || '').trim();
+    console.log('🔍 /api/sheets - Email received:', email);
+    console.log('🔍 USE_USER_SHEETS_OAUTH:', USE_USER_SHEETS_OAUTH);
 
     if (USE_USER_SHEETS_OAUTH) {
       if (!email) {
+        console.log('❌ No email provided');
         return res.status(401).json({
           success: false,
           requiresOAuth: true,
@@ -916,7 +1007,10 @@ app.get('/api/sheets', async (req, res) => {
           sampleSheets: [SAMPLE_STRATEGY_NAME],
         });
       }
-      if (!hasToken(email)) {
+      const hasTokenResult = hasToken(email);
+      console.log('🔍 hasToken(' + email + '):', hasTokenResult);
+      if (!hasTokenResult) {
+        console.log('❌ No token found for email');
         return res.status(401).json({
           success: false,
           requiresOAuth: true,
@@ -925,8 +1019,22 @@ app.get('/api/sheets', async (req, res) => {
           sampleSheets: [SAMPLE_STRATEGY_NAME],
         });
       }
+      const fileId = getFileId(email);
+      console.log('🔍 fileId for', email, ':', fileId);
+      if (!fileId) {
+        console.log('❌ No fileId found for email');
+        return res.status(401).json({
+          success: false,
+          requiresOAuth: true,
+          error: 'Please select the Vector Results Spreadsheet using the file picker.',
+          sampleSheets: [SAMPLE_STRATEGY_NAME],
+        });
+      }
+      console.log('✅ Getting authorized client for', email);
       const userClient = getAuthorizedClientForEmail(email);
-      const sheetNames = await getSheetNames(userClient, RESULTS_SPREADSHEET_ID);
+      console.log('✅ Fetching sheet names for fileId:', fileId);
+      const sheetNames = await getSheetNames(userClient, fileId);
+      console.log('✅ Sheet names fetched successfully:', sheetNames.length, 'sheets');
       return res.json({ success: true, sheets: [SAMPLE_STRATEGY_NAME, ...sheetNames] });
     }
 
@@ -1021,8 +1129,15 @@ app.post('/api/analyze', async (req, res) => {
         return res.status(401).json({ error: 'Google Sheets not connected for this user.', requiresOAuth: true });
       }
       const userClient = getAuthorizedClientForEmail(userEmail);
+      const fileId = getFileId(userEmail);
+      if (!fileId) {
+        return res.status(401).json({ 
+          error: 'Please select the Vector Results Spreadsheet using the file picker.', 
+          requiresOAuth: true 
+        });
+      }
       sheetsClient = userClient;
-      spreadsheetId = RESULTS_SPREADSHEET_ID;
+      spreadsheetId = fileId;
     } else {
       sheetsClient = await getServiceAccountClient();
     }
@@ -1062,6 +1177,125 @@ app.post('/api/analyze', async (req, res) => {
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
+});
+
+// TEST ENDPOINT: Check Drive API access with drive.file scope
+app.get('/api/test-drive-access', async (req, res) => {
+  try {
+    const email = String(req.query.email || '').trim();
+    const testFileId = req.query.fileId; // File ID to test
+    
+    if (!email || !testFileId) {
+      return res.status(400).json({ 
+        error: 'Provide email and fileId query params',
+        example: '/api/test-drive-access?email=your@email.com&fileId=SPREADSHEET_ID'
+      });
+    }
+
+    const userClient = getAuthorizedClientForEmail(email);
+    if (!userClient) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    
+    console.log('🧪 TEST DRIVE ACCESS: email:', email, 'fileId:', testFileId);
+
+    try {
+      // Test Drive API access first
+      const drive = google.drive({ version: 'v3', auth: userClient });
+      const driveResponse = await drive.files.get({
+        fileId: testFileId,
+        fields: 'id, name, mimeType, capabilities, owners',
+      });
+      
+      console.log('✅ Drive API SUCCESS:', driveResponse.data.name);
+      
+      return res.json({
+        success: true,
+        driveApiWorks: true,
+        file: {
+          id: driveResponse.data.id,
+          name: driveResponse.data.name,
+          mimeType: driveResponse.data.mimeType,
+          capabilities: driveResponse.data.capabilities,
+        },
+        message: '✅ Drive API can access this file with drive.file scope. Now test if Sheets API works...',
+      });
+    } catch (error) {
+      if (error.code === 404 || error.status === 404) {
+        return res.json({
+          success: false,
+          driveApiWorks: false,
+          error: 'Drive API returned 404 - file not authorized for this app',
+          message: '❌ Per-file authorization is NOT working. Check Picker appId and authorized origins.',
+        });
+      }
+      throw error;
+    }
+  } catch (error) {
+    console.error('Test endpoint error:', error);
+    res.status(500).json({ 
+      error: 'Test failed',
+      message: error.message,
+      code: error.code || error.status
+    });
+  }
+});
+
+// TEST ENDPOINT: Check what spreadsheets we can actually access
+app.get('/api/test-scope-access', async (req, res) => {
+  try {
+    const email = String(req.query.email || '').trim();
+    const testSpreadsheetId = req.query.testId; // A different spreadsheet ID to test
+    
+    if (!email || !testSpreadsheetId) {
+      return res.status(400).json({ 
+        error: 'Provide email and testId query params',
+        example: '/api/test-scope-access?email=your@email.com&testId=SOME_OTHER_SPREADSHEET_ID'
+      });
+    }
+
+    const userClient = getAuthorizedClientForEmail(email);
+    const fileId = getFileId(email);
+    
+    console.log('🧪 TEST: Trying to access testId:', testSpreadsheetId);
+    console.log('🧪 TEST: User selected fileId:', fileId);
+    console.log('🧪 TEST: Are they the same?', testSpreadsheetId === fileId);
+
+    try {
+      const sheets = google.sheets({ version: 'v4', auth: userClient });
+      const response = await sheets.spreadsheets.get({
+        spreadsheetId: testSpreadsheetId,
+      });
+      
+      return res.json({
+        success: true,
+        message: '⚠️ WARNING: App CAN access this spreadsheet (not limited to picker selection)',
+        selectedFileId: fileId,
+        testedFileId: testSpreadsheetId,
+        accessible: true,
+        sheetTitle: response.data.properties?.title || 'Unknown',
+      });
+    } catch (error) {
+      if (error.code === 404 || error.status === 404) {
+        return res.json({
+          success: true,
+          message: '✅ GOOD: App CANNOT access this spreadsheet (limited to picker selection)',
+          selectedFileId: fileId,
+          testedFileId: testSpreadsheetId,
+          accessible: false,
+          error: 'Not found (404)',
+        });
+      }
+      throw error;
+    }
+  } catch (error) {
+    console.error('Test endpoint error:', error);
+    res.status(500).json({ 
+      error: 'Test failed',
+      message: error.message,
+      code: error.code || error.status
+    });
+  }
 });
 
 // ============================================

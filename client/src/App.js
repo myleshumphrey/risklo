@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './App.css';
 import Dashboard from './components/Dashboard';
 import InputForm from './components/InputForm';
@@ -9,6 +9,7 @@ import Footer from './components/Footer';
 import HamburgerMenu from './components/HamburgerMenu';
 import DisclaimerModal from './components/DisclaimerModal';
 import GoogleSignIn from './components/GoogleSignIn';
+import GooglePicker from './components/GooglePicker';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import About from './pages/About';
 import FAQ from './pages/FAQ';
@@ -43,6 +44,12 @@ function AppContent() {
   const [sheetNames, setSheetNames] = useState([]);
   const [loadingSheets, setLoadingSheets] = useState(true);
   const [sheetsConnectUrl, setSheetsConnectUrl] = useState(null);
+  const [showPicker, setShowPicker] = useState(false);
+  const [pickerEmail, setPickerEmail] = useState(null);
+  const pickerShownRef = useRef(false); // prevent duplicate picker shows
+  
+  // Vector Results Spreadsheet ID (should match backend RESULTS_SPREADSHEET_ID)
+  const RESULTS_SPREADSHEET_ID = '1rqGGpl5SJ_34L72yCCcSZIoUrD_ggGn5LfJ_BGFjDQY';
 
   // Get current metrics based on mode
   const metrics = riskMode === 'risk' ? riskMetrics : apexMaeMetrics;
@@ -150,9 +157,12 @@ function AppContent() {
   }, [user?.email]);
 
   // Auto-start the Sheets connect flow once per session after sign-in (if needed)
+  // Skip if user already has strategies loaded (file ID already stored on backend)
   useEffect(() => {
     if (!user?.email) return;
     if (!sheetsConnectUrl) return;
+    // If strategies are already loading or loaded, don't auto-redirect
+    if (sheetNames.length > 1) return; // More than just Sample Strategy means connected
 
     const key = `risklo_sheets_autoconnect_${user.email}`;
     if (sessionStorage.getItem(key) === 'true') return;
@@ -162,9 +172,9 @@ function AppContent() {
       ? sheetsConnectUrl
       : `${API_BASE_URL}${sheetsConnectUrl}`;
 
-    // Full page redirect is allowed; this is the cleanest “automatic” flow.
+    // Full page redirect is allowed; this is the cleanest "automatic" flow.
     window.location.href = fullUrl;
-  }, [user?.email, sheetsConnectUrl]);
+  }, [user?.email, sheetsConnectUrl, sheetNames.length]);
 
   // Fetch sheet names on mount and when signed-in user changes
   useEffect(() => {
@@ -176,10 +186,49 @@ function AppContent() {
     const params = new URLSearchParams(window.location.search);
     const signIn = params.get('signIn');
     const connect = params.get('sheetsConnect');
+    const showPickerParam = params.get('showPicker');
+    const email = params.get('email');
     const userInfoStr = params.get('userInfo');
 
-    // If this was a combined sign-in + Sheets flow
-    if (signIn === 'success' && connect === 'success' && userInfoStr) {
+    // If this was a combined sign-in + Sheets flow with picker (drive.file scope)
+    if (signIn === 'success' && connect === 'success' && showPickerParam === 'true' && userInfoStr && email && !pickerShownRef.current) {
+      console.log('🔐 OAuth callback: Combined sign-in + picker flow detected');
+      pickerShownRef.current = true; // prevent duplicate
+      try {
+        const userInfo = JSON.parse(decodeURIComponent(userInfoStr));
+        // FIRST: sign the user in
+        handleGoogleSignIn(userInfo);
+        // THEN: show picker after a short delay
+        setTimeout(() => {
+          console.log('🎨 Showing picker for email:', email);
+          setPickerEmail(email);
+          setShowPicker(true);
+        }, 100);
+      } catch (err) {
+        console.error('Error parsing user info from OAuth callback:', err);
+        // Still show picker even if parse fails
+        console.log('🎨 Showing picker (fallback) for email:', email);
+        setPickerEmail(email);
+        setShowPicker(true);
+      }
+      // Clear query params
+      window.history.replaceState({}, '', window.location.pathname);
+      return;
+    }
+
+    // If picker should be shown (after OAuth with drive.file scope, no sign-in info)
+    if (showPickerParam === 'true' && email && !pickerShownRef.current) {
+      console.log('🎨 OAuth callback: Picker-only flow detected for email:', email);
+      pickerShownRef.current = true; // prevent duplicate
+      setPickerEmail(email);
+      setShowPicker(true);
+      // Clear query params
+      window.history.replaceState({}, '', window.location.pathname);
+      return;
+    }
+
+    // If this was a combined sign-in + Sheets flow (legacy flow without picker)
+    if (signIn === 'success' && connect === 'success' && userInfoStr && !showPickerParam) {
       try {
         const userInfo = JSON.parse(decodeURIComponent(userInfoStr));
         // Set user in AuthContext (this will trigger Pro status check)
@@ -198,7 +247,7 @@ function AppContent() {
     }
 
     // If user just finished Google Sheets connect flow (separate flow)
-    if (connect === 'success' && !signIn) {
+    if (connect === 'success' && !signIn && !showPickerParam) {
       // Refresh strategies and clear query params
       fetchSheetNames();
       params.delete('sheetsConnect');
@@ -208,6 +257,38 @@ function AppContent() {
       window.history.replaceState({}, '', newUrl);
     }
   }, [fetchSheetNames, handleGoogleSignIn]);
+
+  // Handle file selection from Google Picker
+  const handleFileSelected = useCallback((fileId) => {
+    console.log('🎯 handleFileSelected called with fileId:', fileId);
+    // Reset picker flag
+    pickerShownRef.current = false;
+    console.log('🔒 Reset pickerShownRef to false');
+    
+    // Immediately hide the picker component to unblock UI
+    setShowPicker(false);
+    setPickerEmail(null);
+    console.log('👻 Hidden picker, set showPicker=false, pickerEmail=null');
+    
+    // Small delay to ensure picker is fully closed before refreshing
+    setTimeout(() => {
+      console.log('⏰ Timeout elapsed, calling fetchSheetNames...');
+      fetchSheetNames().catch(err => {
+        console.error('Error refreshing sheet names:', err);
+      });
+    }, 300);
+  }, [fetchSheetNames]);
+
+  const handlePickerCancel = useCallback(() => {
+    console.log('❌ handlePickerCancel called');
+    pickerShownRef.current = false;
+    // Delay hiding to let the picker close gracefully
+    setTimeout(() => {
+      setShowPicker(false);
+      setPickerEmail(null);
+      console.log('👻 Picker cancelled and hidden');
+    }, 500);
+  }, []);
 
   const handleAnalyze = async (formData) => {
     setLoading(true);
@@ -429,6 +510,14 @@ function AppContent() {
 
   return (
     <div className="App">
+      {showPicker && pickerEmail && (
+        <GooglePicker
+          userEmail={pickerEmail}
+          spreadsheetId={RESULTS_SPREADSHEET_ID}
+          onFileSelected={handleFileSelected}
+          onCancel={handlePickerCancel}
+        />
+      )}
       {showDisclaimer && (
         <DisclaimerModal onAccept={handleDisclaimerAccept} />
       )}
