@@ -244,8 +244,6 @@ function GooglePicker({ userEmail, spreadsheetId, onFileSelected, onCancel }) {
                 builder.setAppId(appId);
               }
               
-              const picker = builder.build();
-
           // Try to use setFileIds if available (newer API - introduced Jan 2025)
           if (typeof builder.setFileIds === 'function') {
             console.log('Using setFileIds to pre-select file');
