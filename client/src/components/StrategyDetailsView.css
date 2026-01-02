@@ -262,7 +262,24 @@
 
 @media (max-width: 480px) {
   .strategy-summary-cards {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .strategy-summary-card {
+    padding: 0.85rem;
+  }
+
+  .strategy-summary-value {
+    font-size: 1.25rem;
+  }
+
+  .stacked-line {
+    font-size: 1.15rem;
+  }
+
+  .strategy-summary-meta {
+    font-size: 0.7rem;
   }
 
   .strategy-section-header {
