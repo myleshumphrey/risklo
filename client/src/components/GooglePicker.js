@@ -15,8 +15,6 @@ function GooglePicker({ userEmail, spreadsheetId, onFileSelected, onCancel }) {
   const pickerInitializedRef = useRef(false); // Track if picker is already showing
   const pickerInstanceRef = useRef(null); // Hold picker instance to close programmatically
 
-  // ... (rest of the component)
-
   // Store file ID on backend
   const storeFileId = useCallback(async (fileId) => {
     console.log('📤 storeFileId called with:', fileId, 'for user:', userEmail);
@@ -49,6 +47,8 @@ function GooglePicker({ userEmail, spreadsheetId, onFileSelected, onCancel }) {
         const response = await fetch(`${API_BASE_URL}/api/google-sheets/oauth/access-token?email=${encodeURIComponent(userEmail)}`);
         const data = await response.json();
         
+        if (!isMountedRef.current) return;
+
         if (data.error) {
           setError(data.error);
           setLoading(false);
@@ -58,8 +58,10 @@ function GooglePicker({ userEmail, spreadsheetId, onFileSelected, onCancel }) {
         setAccessToken(data.accessToken);
         setLoading(false);
       } catch (err) {
-        setError('Failed to get access token');
-        setLoading(false);
+        if (isMountedRef.current) {
+          setError('Failed to get access token. Please ensure you are signed in.');
+          setLoading(false);
+        }
       }
     };
 
@@ -70,14 +72,12 @@ function GooglePicker({ userEmail, spreadsheetId, onFileSelected, onCancel }) {
 
   // Load Google Picker API and show picker
   useEffect(() => {
-    if (!accessToken || !spreadsheetId) return;
+    if (!accessToken || !spreadsheetId || !isMountedRef.current) return;
 
     // Prevent a second picker instance (StrictMode double-mount)
-    // We allow initialization if it's been more than 2 seconds since the last one
     const now = Date.now();
     if (globalPickerActive && (now - globalPickerLastShown < 2000)) {
       console.log('🚫 Global picker guard active, skipping initialization.');
-      setLoading(false);
       return;
     }
 
@@ -87,23 +87,18 @@ function GooglePicker({ userEmail, spreadsheetId, onFileSelected, onCancel }) {
     }
     
     console.log('🎬 GooglePicker useEffect: Starting picker initialization');
-    isMountedRef.current = true;
     pickerInitializedRef.current = true; // Mark as initialized
     globalPickerActive = true; // Mark globally to block duplicates
     globalPickerLastShown = now;
 
     // Load Google API script
     const loadGoogleAPI = () => {
-      // Check if script is already loaded
       if (window.gapi && window.gapi.load && window.google && window.google.picker) {
-        // API already loaded, initialize picker
         initializePicker();
         return;
       }
 
-      // Check if script is already being loaded
       if (document.querySelector('script[src="https://apis.google.com/js/api.js"]')) {
-        // Script exists, wait for it to load
         const checkInterval = setInterval(() => {
           if (window.gapi && window.gapi.load) {
             clearInterval(checkInterval);
@@ -113,7 +108,6 @@ function GooglePicker({ userEmail, spreadsheetId, onFileSelected, onCancel }) {
         return;
       }
 
-      // Load the script
       const script = document.createElement('script');
       script.src = 'https://apis.google.com/js/api.js';
       script.async = true;
@@ -130,11 +124,6 @@ function GooglePicker({ userEmail, spreadsheetId, onFileSelected, onCancel }) {
               }
             }
           });
-        } else {
-          if (isMountedRef.current) {
-            setError('Google API failed to initialize');
-            setLoading(false);
-          }
         }
       };
       script.onerror = () => {
@@ -147,152 +136,70 @@ function GooglePicker({ userEmail, spreadsheetId, onFileSelected, onCancel }) {
     };
 
     const initializePicker = () => {
-      if (!isMountedRef.current) {
-        console.log('⚠️ initializePicker: Component unmounted, skipping');
-        return;
-      }
+      if (!isMountedRef.current) return;
       
-      // Wait a bit for the API to be fully ready
       setTimeout(() => {
-        if (!isMountedRef.current) {
-          console.log('⚠️ initializePicker setTimeout: Component unmounted, skipping');
-          return;
-        }
+        if (!isMountedRef.current) return;
         
         try {
-          // Check if picker API is available
-          if (!window.google) {
-            throw new Error('Google API not loaded');
-          }
-          
-          if (!window.google.picker) {
-            throw new Error('Google Picker API not loaded. Make sure the picker library is loaded.');
+          if (!window.google || !window.google.picker) {
+            throw new Error('Google Picker API not loaded.');
           }
 
-          console.log('Initializing Google Picker with file ID:', spreadsheetId);
-          
-          // Get developer key and app ID from environment (critical for drive.file per-file authorization)
           const developerKey = process.env.REACT_APP_GOOGLE_API_KEY;
           const appId = process.env.REACT_APP_GOOGLE_PROJECT_NUMBER;
           
-          if (!developerKey) {
-            console.warn('⚠️ REACT_APP_GOOGLE_API_KEY not set - Picker may work without it, but per-file auth is more reliable with it');
-          }
-          if (!appId) {
-            console.warn('⚠️ REACT_APP_GOOGLE_PROJECT_NUMBER not set - Per-file authorization may not work');
-          }
+          console.log('Initializing Google Picker with Project Number:', appId);
           
-              const builder = new window.google.picker.PickerBuilder()
-                .setOAuthToken(accessToken)
-                .addView(
-                  new window.google.picker.DocsView(window.google.picker.ViewId.SPREADSHEETS)
-                    .setFileIds(spreadsheetId) // Pre-select the file
-                    .setMimeTypes('application/vnd.google-apps.spreadsheet') // Only show spreadsheets
-                )
-                .setCallback((data) => {
-                  if (!isMountedRef.current) {
-                    console.log('⚠️ Picker callback fired but component unmounted');
-                    return;
-                  }
-                  
-                  console.log('📞 Picker callback fired. Action:', data[window.google.picker.Response.ACTION]);
-                  
-                  if (data[window.google.picker.Response.ACTION] === window.google.picker.Action.PICKED) {
-                    const file = data[window.google.picker.Response.DOCUMENTS][0];
-                    console.log('📄 File data:', file);
-                    if (file && file.id) {
-                      console.log('✅ File selected:', file.id, 'Name:', file.name);
-                      // Close the picker immediately
-                      try {
-                        pickerInstanceRef.current?.setVisible(false);
-                      } catch (e) {
-                        console.warn('Unable to close picker programmatically:', e.message);
-                      }
-                      // Store file ID first (async, but don't wait)
-                      storeFileId(file.id).catch(err => {
-                        console.error('Failed to store file ID:', err);
-                      });
-                      // Immediately notify parent to close picker and refresh
-                      // Use setTimeout to ensure picker closes first
-                      setTimeout(() => {
-                        console.log('🔄 Calling onFileSelected with:', file.id);
-                        onFileSelected(file.id);
-                      }, 100);
-                    } else {
-                      console.error('❌ No file ID in picker response:', data);
-                      onCancel();
-                    }
-                  } else if (data[window.google.picker.Response.ACTION] === window.google.picker.Action.CANCEL) {
-                    console.log('🚫 Picker cancelled');
-                    try {
-                      pickerInstanceRef.current?.setVisible(false);
-                    } catch (e) {
-                      console.warn('Unable to close picker programmatically on cancel:', e.message);
-                    }
-                    onCancel();
-                  } else {
-                    console.log('ℹ️ Other picker action:', data[window.google.picker.Response.ACTION]);
-                  }
-                })
-                .setTitle('Select Vector Results Spreadsheet');
+          const view = new window.google.picker.DocsView(window.google.picker.ViewId.SPREADSHEETS)
+            .setMimeTypes('application/vnd.google-apps.spreadsheet');
 
-              // Add Developer Key and App ID if available (CRITICAL for production)
-              if (developerKey) {
-                builder.setDeveloperKey(developerKey);
-              }
-              if (appId) {
-                builder.setAppId(appId);
-              }
+          // Critical: Apply API Key and App ID to the builder BEFORE calling build()
+          const builder = new window.google.picker.PickerBuilder()
+            .setOAuthToken(accessToken)
+            .addView(view)
+            .setCallback((data) => {
+              if (!isMountedRef.current) return;
               
-          // Try to use setFileIds if available (newer API - introduced Jan 2025)
-          if (typeof builder.setFileIds === 'function') {
-            console.log('Using setFileIds to pre-select file');
-            builder.setFileIds([spreadsheetId]);
-          } else {
-            console.warn('setFileIds not available, picker will show all files');
-          }
+              if (data[window.google.picker.Response.ACTION] === window.google.picker.Action.PICKED) {
+                const file = data[window.google.picker.Response.DOCUMENTS][0];
+                if (file && file.id) {
+                  console.log('✅ File selected:', file.id);
+                  try { pickerInstanceRef.current?.setVisible(false); } catch (e) {}
+                  storeFileId(file.id).catch(err => console.error(err));
+                  setTimeout(() => { onFileSelected(file.id); }, 100);
+                }
+              } else if (data[window.google.picker.Response.ACTION] === window.google.picker.Action.CANCEL) {
+                try { pickerInstanceRef.current?.setVisible(false); } catch (e) {}
+                onCancel();
+              }
+            })
+            .setTitle('Select Vector Results Spreadsheet');
+
+          if (developerKey) builder.setDeveloperKey(developerKey);
+          if (appId) builder.setAppId(appId);
           
           const picker = builder.build();
           pickerInstanceRef.current = picker;
           picker.setVisible(true);
-          console.log('Picker shown successfully');
-          // Hide our loading overlay once picker is visible
           setLoading(false);
         } catch (err) {
           console.error('Error initializing Google Picker:', err);
-          console.error('Window.google:', window.google);
-          console.error('Window.google.picker:', window.google?.picker);
-          
-          // Fallback: If picker fails but we have the spreadsheet ID, just use it directly
-          if (isMountedRef.current && spreadsheetId) {
-            console.log('Using fallback: storing spreadsheet ID directly');
-            storeFileId(spreadsheetId);
-            onFileSelected(spreadsheetId);
-            return;
-          }
-          
           if (isMountedRef.current) {
-            setError(`Failed to initialize file picker: ${err.message}. Please check the browser console for more details.`);
+            setError(`Failed to initialize file picker: ${err.message}`);
             setLoading(false);
           }
         }
-      }, 500); // Small delay to ensure API is ready
+      }, 500);
     };
 
     loadGoogleAPI();
 
     return () => {
-      console.log('🧹 GooglePicker cleanup: Setting isMountedRef to false');
-      try {
-        pickerInstanceRef.current?.setVisible(false);
-      } catch (e) {
-        // ignore
-      }
-      pickerInstanceRef.current = null;
       isMountedRef.current = false;
-      pickerInitializedRef.current = false; // Reset on unmount
-      // We DON'T reset globalPickerActive here because we want it to persist 
-      // through double-mounts. It will be allowed again after the timeout.
+      pickerInitializedRef.current = false;
+      globalPickerActive = false;
+      try { pickerInstanceRef.current?.setVisible(false); } catch (e) {}
     };
   }, [accessToken, spreadsheetId, onFileSelected, onCancel, storeFileId]);
 
@@ -318,10 +225,7 @@ function GooglePicker({ userEmail, spreadsheetId, onFileSelected, onCancel }) {
     );
   }
 
-  // Picker is shown via Google's UI, so we don't need to show anything
-  // The picker dialog itself is the UI
   return null;
 }
 
 export default GooglePicker;
-
