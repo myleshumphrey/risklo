@@ -182,75 +182,68 @@ function GooglePicker({ userEmail, spreadsheetId, onFileSelected, onCancel }) {
             console.warn('⚠️ REACT_APP_GOOGLE_PROJECT_NUMBER not set - Per-file authorization may not work');
           }
           
-          const builder = new window.google.picker.PickerBuilder()
-            .setOAuthToken(accessToken);
-          
-          // Set developer key (recommended but optional for testing)
-          if (developerKey) {
-            try {
-              builder.setDeveloperKey(developerKey);
-              console.log('✅ Developer key set');
-            } catch (err) {
-              console.warn('⚠️ Failed to set developer key (will try without it):', err.message);
-            }
-          }
-          
-          // Set app ID (CRITICAL for drive.file per-file authorization)
-          // This must be your Google Cloud Project Number (numeric)
-          if (appId) {
-            builder.setAppId(appId);
-            console.log('✅ App ID set:', appId);
-          }
-          
-          // Add spreadsheets view
-          builder.addView(window.google.picker.ViewId.SPREADSHEETS)
-            .setCallback((data) => {
-              if (!isMountedRef.current) {
-                console.log('⚠️ Picker callback fired but component unmounted');
-                return;
-              }
-              
-              console.log('📞 Picker callback fired. Action:', data[window.google.picker.Response.ACTION]);
-              
-              if (data[window.google.picker.Response.ACTION] === window.google.picker.Action.PICKED) {
-                const file = data[window.google.picker.Response.DOCUMENTS][0];
-                console.log('📄 File data:', file);
-                if (file && file.id) {
-                  console.log('✅ File selected:', file.id, 'Name:', file.name);
-                  // Close the picker immediately
-                  try {
-                    pickerInstanceRef.current?.setVisible(false);
-                  } catch (e) {
-                    console.warn('Unable to close picker programmatically:', e.message);
+              const builder = new window.google.picker.PickerBuilder()
+                .setOAuthToken(accessToken)
+                .addView(
+                  new window.google.picker.DocsView(window.google.picker.ViewId.SPREADSHEETS)
+                    .setFileIds(spreadsheetId) // Pre-select the file
+                    .setMimeTypes('application/vnd.google-apps.spreadsheet') // Only show spreadsheets
+                )
+                .setCallback((data) => {
+                  if (!isMountedRef.current) {
+                    console.log('⚠️ Picker callback fired but component unmounted');
+                    return;
                   }
-                  // Store file ID first (async, but don't wait)
-                  storeFileId(file.id).catch(err => {
-                    console.error('Failed to store file ID:', err);
-                  });
-                  // Immediately notify parent to close picker and refresh
-                  // Use setTimeout to ensure picker closes first
-                  setTimeout(() => {
-                    console.log('🔄 Calling onFileSelected with:', file.id);
-                    onFileSelected(file.id);
-                  }, 100);
-                } else {
-                  console.error('❌ No file ID in picker response:', data);
-                  onCancel();
-                }
-              } else if (data[window.google.picker.Response.ACTION] === window.google.picker.Action.CANCEL) {
-                console.log('🚫 Picker cancelled');
-                try {
-                  pickerInstanceRef.current?.setVisible(false);
-                } catch (e) {
-                  console.warn('Unable to close picker programmatically on cancel:', e.message);
-                }
-                onCancel();
-              } else {
-                console.log('ℹ️ Other picker action:', data[window.google.picker.Response.ACTION]);
-              }
-            })
-            .setTitle('Select Vector Results Spreadsheet');
+                  
+                  console.log('📞 Picker callback fired. Action:', data[window.google.picker.Response.ACTION]);
+                  
+                  if (data[window.google.picker.Response.ACTION] === window.google.picker.Action.PICKED) {
+                    const file = data[window.google.picker.Response.DOCUMENTS][0];
+                    console.log('📄 File data:', file);
+                    if (file && file.id) {
+                      console.log('✅ File selected:', file.id, 'Name:', file.name);
+                      // Close the picker immediately
+                      try {
+                        pickerInstanceRef.current?.setVisible(false);
+                      } catch (e) {
+                        console.warn('Unable to close picker programmatically:', e.message);
+                      }
+                      // Store file ID first (async, but don't wait)
+                      storeFileId(file.id).catch(err => {
+                        console.error('Failed to store file ID:', err);
+                      });
+                      // Immediately notify parent to close picker and refresh
+                      // Use setTimeout to ensure picker closes first
+                      setTimeout(() => {
+                        console.log('🔄 Calling onFileSelected with:', file.id);
+                        onFileSelected(file.id);
+                      }, 100);
+                    } else {
+                      console.error('❌ No file ID in picker response:', data);
+                      onCancel();
+                    }
+                  } else if (data[window.google.picker.Response.ACTION] === window.google.picker.Action.CANCEL) {
+                    console.log('🚫 Picker cancelled');
+                    try {
+                      pickerInstanceRef.current?.setVisible(false);
+                    } catch (e) {
+                      console.warn('Unable to close picker programmatically on cancel:', e.message);
+                    }
+                    onCancel();
+                  } else {
+                    console.log('ℹ️ Other picker action:', data[window.google.picker.Response.ACTION]);
+                  }
+                })
+                .setTitle('Select Vector Results Spreadsheet');
 
+              // Add Developer Key and App ID if available (CRITICAL for production)
+              if (developerKey) {
+                builder.setDeveloperKey(developerKey);
+              }
+              if (appId) {
+                builder.setAppId(appId);
+              }
+              
           // Try to use setFileIds if available (newer API - introduced Jan 2025)
           if (typeof builder.setFileIds === 'function') {
             console.log('Using setFileIds to pre-select file');
@@ -263,6 +256,8 @@ function GooglePicker({ userEmail, spreadsheetId, onFileSelected, onCancel }) {
           pickerInstanceRef.current = picker;
           picker.setVisible(true);
           console.log('Picker shown successfully');
+          // Hide our loading overlay once picker is visible
+          setLoading(false);
         } catch (err) {
           console.error('Error initializing Google Picker:', err);
           console.error('Window.google:', window.google);
