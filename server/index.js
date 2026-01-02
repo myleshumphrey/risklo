@@ -1023,9 +1023,36 @@ app.get('/api/sheets', async (req, res) => {
       console.log('🔍 fileId for', email, ':', fileId);
       if (!fileId) {
         console.log('❌ No fileId found for email');
+        // If they have a token but no fileId, we can try to find it automatically first
+        try {
+          const userClient = getAuthorizedClientForEmail(email);
+          const drive = google.drive({ version: 'v3', auth: userClient });
+          
+          console.log('🔍 Searching for "Results Spreadsheet" in user\'s Drive...');
+          const searchResponse = await drive.files.list({
+            q: "name = 'Results Spreadsheet' and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false",
+            fields: 'files(id, name)',
+            pageSize: 1
+          });
+
+          const foundFiles = searchResponse.data.files;
+          if (foundFiles && foundFiles.length > 0) {
+            const autoFileId = foundFiles[0].id;
+            console.log(`✅ AUTO-FOUND Results Spreadsheet! ID: ${autoFileId}. Storing for user ${email}.`);
+            storeFileId(email, autoFileId);
+            // Now we have a fileId, proceed to fetch sheet names
+            const sheetNames = await getSheetNames(userClient, autoFileId);
+            return res.json({ success: true, sheets: [SAMPLE_STRATEGY_NAME, ...sheetNames] });
+          }
+        } catch (searchError) {
+          console.error('Error during auto-find:', searchError.message);
+          // If auto-find fails, we fall through to showing the picker
+        }
+
         return res.status(401).json({
           success: false,
           requiresOAuth: true,
+          authUrl: buildSheetsConnectUrl(req, email), // Triggers OAuth with showPicker=true
           error: 'Please select the Vector Results Spreadsheet using the file picker.',
           sampleSheets: [SAMPLE_STRATEGY_NAME],
         });
