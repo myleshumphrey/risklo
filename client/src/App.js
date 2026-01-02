@@ -161,14 +161,8 @@ function AppContent() {
   useEffect(() => {
     if (!user?.email) return;
     if (!sheetsConnectUrl) return;
-    
-    // CRITICAL: If we already have more than just the "Sample Strategy", 
-    // it means we are already successfully connected to a real sheet.
-    // DO NOT show the picker or redirect in this case.
-    if (sheetNames.length > 1) {
-      console.log('✅ Strategies already loaded, skipping auto-connect/picker');
-      return;
-    }
+    // If strategies are already loading or loaded, don't auto-redirect
+    if (sheetNames.length > 1) return; // More than just Sample Strategy means connected
 
     const key = `risklo_sheets_autoconnect_${user.email}`;
     if (sessionStorage.getItem(key) === 'true') return;
