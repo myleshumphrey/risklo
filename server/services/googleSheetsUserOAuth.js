@@ -112,19 +112,23 @@ function getAuthUrlForEmail(email, includeSignIn = false) {
     includeSignIn, // Flag to indicate this is a combined sign-in + Sheets flow
   });
 
-  // Request all scopes at once: sign-in (openid, profile, email) + Sheets
+  // Use drive.file only (no spreadsheets.readonly as requested)
+  // drive.file + Picker grants per-file access after user selection.
   const scopes = includeSignIn
     ? [
         'openid',
         'https://www.googleapis.com/auth/userinfo.profile',
         'https://www.googleapis.com/auth/userinfo.email',
-        'https://www.googleapis.com/auth/spreadsheets.readonly',
+        'https://www.googleapis.com/auth/drive.file',
       ]
-    : ['https://www.googleapis.com/auth/spreadsheets.readonly'];
+    : [
+        'https://www.googleapis.com/auth/drive.file',
+      ];
 
   const url = oauth2.generateAuthUrl({
     access_type: 'offline',
-    prompt: 'consent',
+    // Removed prompt: 'consent' so you only have to check the box once.
+    // Subsequent logins will skip the consent screen automatically.
     scope: scopes,
     state,
   });
@@ -132,13 +136,30 @@ function getAuthUrlForEmail(email, includeSignIn = false) {
   return url;
 }
 
-function storeRefreshToken(email, refreshToken) {
+function storeRefreshToken(email, refreshToken, fileId = null) {
   const store = readStore();
   store[email] = {
     refreshToken: encryptString(refreshToken),
+    fileId: fileId || store[email]?.fileId || null, // Preserve existing fileId if not provided
     updatedAt: new Date().toISOString(),
   };
   writeStore(store);
+}
+
+function storeFileId(email, fileId) {
+  const store = readStore();
+  if (!store[email]) {
+    throw new Error('No token found for email. Complete OAuth flow first.');
+  }
+  store[email].fileId = fileId;
+  store[email].updatedAt = new Date().toISOString();
+  writeStore(store);
+}
+
+function getFileId(email) {
+  const store = readStore();
+  const entry = store[email];
+  return entry?.fileId || null;
 }
 
 function getRefreshToken(email) {
@@ -228,6 +249,19 @@ function getAuthorizedClientForEmail(email) {
   return oauth2;
 }
 
+// Get access token for Google Picker API (frontend use)
+async function getAccessTokenForEmail(email) {
+  const oauth2 = getAuthorizedClientForEmail(email);
+  if (!oauth2) return null;
+  try {
+    const { credentials } = await oauth2.refreshAccessToken();
+    return credentials.access_token;
+  } catch (error) {
+    console.error('Error refreshing access token:', error);
+    return null;
+  }
+}
+
 function hasToken(email) {
   return !!getRefreshToken(email);
 }
@@ -239,6 +273,9 @@ module.exports = {
   hasToken,
   deleteRefreshToken,
   verifyState,
+  storeFileId,
+  getFileId,
+  getAccessTokenForEmail,
 };
 
 

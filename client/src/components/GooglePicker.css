@@ -1,0 +1,61 @@
+.google-picker-container {
+  display: none; /* Hide our container - Google Picker shows its own dialog */
+}
+
+.google-picker-loading {
+  text-align: center;
+}
+
+.google-picker-loading .spinner {
+  border: 3px solid rgba(139, 92, 246, 0.3);
+  border-top: 3px solid #8b5cf6;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.google-picker-loading p {
+  color: #e5e7eb;
+  margin: 0;
+}
+
+.google-picker-error {
+  text-align: center;
+  color: #ef4444;
+}
+
+.google-picker-error button {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background: #8b5cf6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.google-picker-error button:hover {
+  background: #7c3aed;
+}
+
+.google-picker-message {
+  text-align: center;
+  color: #e5e7eb;
+}
+
+.google-picker-message p {
+  margin: 0.5rem 0;
+}
+
+.google-picker-hint {
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
+
