@@ -91,7 +91,7 @@ function Account({ onNavigate, onUpgrade }) {
             <h3>Current Plan</h3>
             <div className={`plan-badge-large ${isPro ? 'pro-plan' : 'basic-plan'} ${isDevMode ? 'dev-plan' : ''}`}>
               <span className="plan-icon">{isPro ? <IconPro size={20} /> : <IconChart size={20} />}</span>
-              <span className="plan-name">{isPro ? (isDevMode ? 'RiskLo Pro (Dev Mode)' : 'RiskLo Pro') : 'RiskLo Basic'}</span>
+              <span className="plan-name">{isPro ? 'RiskLo Pro' : 'RiskLo Basic'}</span>
             </div>
 
             {/* Terms Acceptance Status */}
@@ -150,20 +150,6 @@ function Account({ onNavigate, onUpgrade }) {
               }
               return null;
             })()}
-            
-            {isDevMode && (
-              <div className="dev-mode-notice" style={{
-                background: 'rgba(255, 193, 7, 0.1)',
-                border: '1px solid rgba(255, 193, 7, 0.3)',
-                borderRadius: '8px',
-                padding: '1rem',
-                marginTop: '1rem',
-                color: 'rgba(255, 255, 255, 0.9)',
-                fontSize: '0.9rem'
-              }}>
-                <IconAlert size={16} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} /> <strong>Dev Mode Active:</strong> You have Pro access for testing purposes. This is not a paid subscription.
-              </div>
-            )}
             
             {!isPro && (
               <div className="upgrade-section">
