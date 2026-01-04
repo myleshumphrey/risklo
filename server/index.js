@@ -385,12 +385,24 @@ app.get('/api/google-sheets/oauth/access-token', async (req, res) => {
       return res.status(401).json({ error: 'Not authenticated' });
     }
     
-    const accessToken = await getAccessTokenForEmail(email);
-    if (!accessToken) {
-      return res.status(500).json({ error: 'Failed to get access token' });
+    try {
+      const accessToken = await getAccessTokenForEmail(email);
+      if (!accessToken) {
+        return res.status(500).json({ error: 'Failed to get access token' });
+      }
+      return res.json({ accessToken });
+    } catch (tokenError) {
+      // Check if it's an invalid_grant error (token revoked/expired)
+      if (tokenError.message && tokenError.message.includes('invalid_grant')) {
+        console.log(`🔄 Detected invalid_grant for ${email}, clearing stored token`);
+        deleteRefreshToken(email);
+        return res.status(401).json({ 
+          error: 'Your Google authentication has expired. Please reconnect your account.',
+          requiresReauth: true,
+        });
+      }
+      throw tokenError; // Re-throw other errors
     }
-    
-    return res.json({ accessToken });
   } catch (error) {
     console.error('Error getting access token:', error);
     return res.status(500).json({ error: error.message });
@@ -926,8 +938,23 @@ app.get('/api/current-results', async (req, res) => {
         });
       }
       const userClient = getAuthorizedClientForEmail(email);
-      const data = await getCurrentResultsSheet(userClient, fileId);
-      return res.json({ success: true, ...data });
+      try {
+        const data = await getCurrentResultsSheet(userClient, fileId);
+        return res.json({ success: true, ...data });
+      } catch (sheetError) {
+        // Check if it's an invalid_grant error (token revoked/expired)
+        if (sheetError.message && sheetError.message.includes('invalid_grant')) {
+          console.log(`🔄 Detected invalid_grant for ${email}, clearing stored token`);
+          deleteRefreshToken(email);
+          return res.status(401).json({
+            success: false,
+            requiresOAuth: true,
+            authUrl: buildSheetsConnectUrl(req, email),
+            error: 'Your Google authentication has expired. Please reconnect your account.',
+          });
+        }
+        throw sheetError; // Re-throw other errors
+      }
     }
 
     const client = await getServiceAccountClient();
@@ -974,8 +1001,23 @@ app.get('/api/strategy-sheet', async (req, res) => {
         });
       }
       const userClient = getAuthorizedClientForEmail(email);
-      const data = await getStrategySheet(userClient, fileId, sheetName);
-      return res.json({ success: true, ...data });
+      try {
+        const data = await getStrategySheet(userClient, fileId, sheetName);
+        return res.json({ success: true, ...data });
+      } catch (sheetError) {
+        // Check if it's an invalid_grant error (token revoked/expired)
+        if (sheetError.message && sheetError.message.includes('invalid_grant')) {
+          console.log(`🔄 Detected invalid_grant for ${email}, clearing stored token`);
+          deleteRefreshToken(email);
+          return res.status(401).json({
+            success: false,
+            requiresOAuth: true,
+            authUrl: buildSheetsConnectUrl(req, email),
+            error: 'Your Google authentication has expired. Please reconnect your account.',
+          });
+        }
+        throw sheetError; // Re-throw other errors
+      }
     }
 
     const client = await getServiceAccountClient();
@@ -1033,9 +1075,25 @@ app.get('/api/sheets', async (req, res) => {
       console.log('✅ Getting authorized client for', email);
       const userClient = getAuthorizedClientForEmail(email);
       console.log('✅ Fetching sheet names for fileId:', fileId);
-      const sheetNames = await getSheetNames(userClient, fileId);
-      console.log('✅ Sheet names fetched successfully:', sheetNames.length, 'sheets');
-      return res.json({ success: true, sheets: [SAMPLE_STRATEGY_NAME, ...sheetNames] });
+      try {
+        const sheetNames = await getSheetNames(userClient, fileId);
+        console.log('✅ Sheet names fetched successfully:', sheetNames.length, 'sheets');
+        return res.json({ success: true, sheets: [SAMPLE_STRATEGY_NAME, ...sheetNames] });
+      } catch (sheetError) {
+        // Check if it's an invalid_grant error (token revoked/expired)
+        if (sheetError.message && sheetError.message.includes('invalid_grant')) {
+          console.log(`🔄 Detected invalid_grant for ${email}, clearing stored token`);
+          deleteRefreshToken(email);
+          return res.status(401).json({
+            success: false,
+            requiresOAuth: true,
+            authUrl: buildSheetsConnectUrl(req, email),
+            error: 'Your Google authentication has expired. Please reconnect your account.',
+            sampleSheets: [SAMPLE_STRATEGY_NAME],
+          });
+        }
+        throw sheetError; // Re-throw other errors
+      }
     }
 
     const client = await getServiceAccountClient();
