@@ -52,7 +52,7 @@ function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro, isDevMode, t
             <div className="menu-title-with-badge">
               <h2 className="menu-title">RiskLo</h2>
               <span className={`menu-header-badge ${isPro ? 'menu-pro-badge' : 'menu-basic-badge'} ${isDevMode ? 'menu-dev-badge' : ''}`}>
-                {isPro ? (isDevMode ? 'Pro (Dev)' : 'Pro') : 'Basic'}
+                {isPro ? (isDevMode ? 'Pro' : 'Pro') : 'Basic'}
               </span>
             </div>
             {/* Light mode toggle hidden for now */}

@@ -27,7 +27,7 @@ function GoogleSignIn({ onNavigate }) {
         <div className="user-details">
           <div className="user-name">{user.name}</div>
           <div className={`user-badge ${isPro ? 'pro-badge' : 'basic-badge'} ${isDevMode ? 'dev-badge' : ''}`}>
-            {isPro ? (isDevMode ? 'Pro (Dev)' : 'Pro') : 'Basic'}
+            {isPro ? (isDevMode ? 'Pro' : 'Pro') : 'Basic'}
           </div>
         </div>
       </div>
