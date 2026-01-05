@@ -10,25 +10,6 @@ function UpgradeModal({ isOpen, onClose, user, isPro }) {
 
   if (!isOpen) return null;
 
-  const pricingPlans = {
-    monthly: {
-      price: 10,
-      displayPrice: '$10',
-      period: 'month',
-      total: null,
-      savings: null
-    },
-    annual: {
-      price: 7,
-      displayPrice: '$7',
-      period: 'month',
-      total: '$84',
-      billedAs: 'Billed annually at $84',
-      savings: '30% off',
-      originalPrice: '$10'
-    }
-  };
-
   const handleUpgrade = async () => {
     if (!user) {
       setError('Please sign in with Google to upgrade to RiskLo Pro');
