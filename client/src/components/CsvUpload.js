@@ -50,28 +50,69 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
   };
 
   const handleAutoDetectFile = (e) => {
-    const selectedFile = e.target.files[0];
-    if (selectedFile) {
-      if (selectedFile.type === 'text/csv' || selectedFile.name.endsWith('.csv')) {
-        // Read file to detect type
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const csvText = event.target.result;
-          const fileType = detectCsvType(csvText);
-          
-          if (fileType === 'accounts') {
-            setAccountsFile(selectedFile);
-          } else if (fileType === 'strategies') {
-            setStrategiesFile(selectedFile);
-          } else {
-            alert('Could not detect file type. Please use the specific upload buttons for Accounts or Strategies files.');
-          }
-        };
-        reader.readAsText(selectedFile);
-      } else {
-        alert('Please select a CSV file');
-      }
+    const selectedFiles = Array.from(e.target.files || []);
+    if (selectedFiles.length === 0) return;
+
+    // Filter to only CSV files
+    const csvFiles = selectedFiles.filter(file => 
+      file.type === 'text/csv' || file.name.endsWith('.csv')
+    );
+
+    if (csvFiles.length === 0) {
+      alert('Please select CSV files');
+      return;
     }
+
+    // Process each file
+    let processedCount = 0;
+    let accountsFound = false;
+    let strategiesFound = false;
+
+    csvFiles.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const csvText = event.target.result;
+        const fileType = detectCsvType(csvText);
+        
+        if (fileType === 'accounts') {
+          if (!accountsFound) {
+            setAccountsFile(file);
+            accountsFound = true;
+          } else {
+            console.warn(`Multiple accounts files detected. Using first one: ${file.name}`);
+          }
+        } else if (fileType === 'strategies') {
+          if (!strategiesFound) {
+            setStrategiesFile(file);
+            strategiesFound = true;
+          } else {
+            console.warn(`Multiple strategies files detected. Using first one: ${file.name}`);
+          }
+        } else {
+          console.warn(`Could not detect file type for: ${file.name}`);
+        }
+
+        processedCount++;
+        // If we've processed all files and found both types, show success message
+        if (processedCount === csvFiles.length) {
+          if (accountsFound && strategiesFound) {
+            setParseSuccess(`Successfully detected and loaded both Accounts and Strategies files!`);
+          } else if (accountsFound || strategiesFound) {
+            const foundTypes = [];
+            if (accountsFound) foundTypes.push('Accounts');
+            if (strategiesFound) foundTypes.push('Strategies');
+            setParseSuccess(`Successfully detected and loaded ${foundTypes.join(' and ')} file(s)!`);
+          } else {
+            setParseError('Could not detect file types. Please use the specific upload buttons for Accounts or Strategies files.');
+          }
+        }
+      };
+      reader.onerror = () => {
+        console.error(`Error reading file: ${file.name}`);
+        processedCount++;
+      };
+      reader.readAsText(file);
+    });
   };
 
   const handleUpload = async () => {
@@ -369,7 +410,7 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
           </div>
         )}
         <div className="csv-instructions">
-          <p>Upload your NinjaTrader CSV exports. You can drag and drop files here, upload both files at once, or use auto-detect.</p>
+          <p>Upload your NinjaTrader CSV exports. You can drag and drop files here, upload both files at once, or use auto-detect to select multiple files at once.</p>
         </div>
 
         <div className="csv-upload-grid">
@@ -415,7 +456,7 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
             <div className="upload-icon">🔍</div>
             <p className="upload-label">Auto-Detect</p>
             <p className="upload-text">
-              Let us detect the file type
+              Select multiple files to auto-detect
             </p>
             <input
               type="file"
@@ -423,6 +464,7 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
               onChange={handleAutoDetectFile}
               className="file-input"
               id="auto-file-input"
+              multiple
               disabled={!isPro}
             />
             <label htmlFor="auto-file-input" className={`browse-button ${!isPro ? 'disabled' : ''}`}>
