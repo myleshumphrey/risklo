@@ -152,7 +152,6 @@ export function matchAccountsToStrategies(accounts, strategies, availableSheetNa
     let bestBaseScore = 0;
     
     const stratLower = strat.strategy.toLowerCase();
-    const stratLength = strat.strategy.length;
     
     // Extract version number from CSV strategy (e.g., "2.0", "2.1", "3.0")
     const versionMatch = strat.strategy.match(/(\d+\.\d+)$/);
