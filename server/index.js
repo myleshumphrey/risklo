@@ -1107,7 +1107,7 @@ app.get('/api/sheets', async (req, res) => {
     if (error.message.includes('ENOENT') || error.message.includes('credentials')) {
       errorMessage = 'Credentials file not found. Please set up credentials.json (see GOOGLE_SETUP.md)';
     } else if (error.message.includes('permission') || error.message.includes('403')) {
-      errorMessage = 'Permission denied. Make sure you shared the Google Sheet with the service account email.';
+      errorMessage = 'Permission denied. Make sure you sign in with a google account that has access to the Vector Algorithmics Results Spreadsheet.';
     } else if (error.message.includes('404') || error.message.includes('not found')) {
       errorMessage = 'Spreadsheet not found. Check that the spreadsheet ID is correct and the sheet is shared.';
     } else if (
@@ -1426,7 +1426,7 @@ app.get('/api/stripe/test', (req, res) => {
 /**
  * Create Stripe Checkout Session for RiskLo Pro subscription
  * POST /api/stripe/create-checkout-session
- * Body: { email: string }
+ * Body: { email: string, billingPeriod: 'monthly' | 'annual' }
  */
 app.post('/api/stripe/create-checkout-session', async (req, res) => {
   try {
@@ -1434,15 +1434,25 @@ app.post('/api/stripe/create-checkout-session', async (req, res) => {
       return res.status(500).json({ error: 'Stripe is not configured. Please set STRIPE_SECRET_KEY environment variable.' });
     }
 
-    const { email } = req.body;
+    const { email, billingPeriod = 'monthly' } = req.body;
 
     if (!email) {
       return res.status(400).json({ error: 'Email is required' });
     }
 
-    const priceId = process.env.STRIPE_PRICE_RISKLO_PRO;
+    // Select price ID based on billing period
+    let priceId;
+    if (billingPeriod === 'annual') {
+      priceId = process.env.STRIPE_PRICE_RISKLO_PRO_ANNUAL || process.env.STRIPE_PRICE_RISKLO_PRO;
+      if (!process.env.STRIPE_PRICE_RISKLO_PRO_ANNUAL) {
+        console.warn('STRIPE_PRICE_RISKLO_PRO_ANNUAL not set, falling back to monthly price');
+      }
+    } else {
+      priceId = process.env.STRIPE_PRICE_RISKLO_PRO;
+    }
+
     if (!priceId) {
-      return res.status(500).json({ error: 'Stripe price ID not configured. Please set STRIPE_PRICE_RISKLO_PRO environment variable.' });
+      return res.status(500).json({ error: 'Stripe price ID not configured. Please set STRIPE_PRICE_RISKLO_PRO (and STRIPE_PRICE_RISKLO_PRO_ANNUAL for annual) environment variables.' });
     }
 
     const baseUrl = process.env.APP_BASE_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
