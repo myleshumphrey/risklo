@@ -29,8 +29,6 @@ function UpgradeModal({ isOpen, onClose, user, isPro }) {
     }
   };
 
-  const selectedPlan = pricingPlans[billingPeriod];
-
   const handleUpgrade = async () => {
     if (!user) {
       setError('Please sign in with Google to upgrade to RiskLo Pro');
