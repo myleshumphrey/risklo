@@ -1812,8 +1812,15 @@ app.post('/api/upload-csv-auto', express.json({ limit: '10mb' }), async (req, re
           accountNumber: row.accountNumber,
           accountName: row.accountName,
           strategy: 'No strategy assigned',
+          contracts: row.numContracts,
+          contractType: row.contractType,
+          accountSize: row.accountSize,
+          cashValue: row.cashValue,
+          maxDrawdown: row.maxDrawdown,
+          safetyNet: row.safetyNet,
+          startOfDayProfit: row.startOfDayProfit,
           error: 'No strategy data available',
-          ...row
+          metrics: {} // Empty metrics to prevent "UNKNOWN" in email
         });
         continue;
       }
@@ -1833,8 +1840,15 @@ app.post('/api/upload-csv-auto', express.json({ limit: '10mb' }), async (req, re
             accountNumber: row.accountNumber,
             accountName: row.accountName,
             strategy: row.strategy,
+            contracts: row.numContracts,
+            contractType: row.contractType,
+            accountSize: row.accountSize,
+            cashValue: row.cashValue,
+            maxDrawdown: row.maxDrawdown,
+            safetyNet: row.safetyNet,
+            startOfDayProfit: row.startOfDayProfit,
             error: 'Insufficient data in strategy sheet',
-            ...row
+            metrics: {} // Empty metrics to prevent "UNKNOWN" in email
           });
           continue;
         }
@@ -1856,8 +1870,15 @@ app.post('/api/upload-csv-auto', express.json({ limit: '10mb' }), async (req, re
             accountNumber: row.accountNumber,
             accountName: row.accountName,
             strategy: row.strategy,
+            contracts: row.numContracts,
+            contractType: row.contractType,
+            accountSize: row.accountSize,
+            cashValue: row.cashValue,
+            maxDrawdown: row.maxDrawdown,
+            safetyNet: row.safetyNet,
+            startOfDayProfit: row.startOfDayProfit,
             error: metrics.error,
-            ...row
+            metrics: metrics // Include metrics even if there's an error
           });
           continue;
         }
@@ -1885,8 +1906,15 @@ app.post('/api/upload-csv-auto', express.json({ limit: '10mb' }), async (req, re
           accountNumber: row.accountNumber,
           accountName: row.accountName,
           strategy: row.strategy,
+          contracts: row.numContracts,
+          contractType: row.contractType,
+          accountSize: row.accountSize,
+          cashValue: row.cashValue,
+          maxDrawdown: row.maxDrawdown,
+          safetyNet: row.safetyNet,
+          startOfDayProfit: row.startOfDayProfit,
           error: `Failed to fetch strategy data: ${fetchError.message}`,
-          ...row
+          metrics: {} // Empty metrics to prevent "UNKNOWN" in email
         });
       }
     }
