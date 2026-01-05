@@ -144,55 +144,97 @@ export function matchAccountsToStrategies(accounts, strategies, availableSheetNa
     if (!account) return; // No matching account found
 
     // Try to match strategy name to available sheet names
-    // Prioritize exact matches, then longer matches
+    // Prioritize: 1) Exact match, 2) Version-aware match, 3) Base name match
     let matchedSheetName = null;
-    let bestMatch = null;
-    let bestMatchScore = 0;
+    let bestVersionMatch = null;
+    let bestBaseMatch = null;
+    let bestVersionScore = 0;
+    let bestBaseScore = 0;
     
     const stratLower = strat.strategy.toLowerCase();
     
+    // Extract version number from CSV strategy (e.g., "2.0", "2.1", "3.0")
+    const versionMatch = strat.strategy.match(/(\d+\.\d+)$/);
+    const csvVersion = versionMatch ? versionMatch[1] : null;
+    const baseName = csvVersion ? strat.strategy.substring(0, strat.strategy.length - csvVersion.length - 1).trim() : strat.strategy;
+    // Normalize base name: remove spaces and convert to lowercase for comparison
+    // This allows "Grassfed Primebeef" to match "Grass Fed Prime Beef"
+    const baseNameNormalized = baseName.toLowerCase().replace(/\s+/g, '');
+    
     for (const sheetName of availableSheetNames) {
       const sheetLower = sheetName.toLowerCase();
+      const sheetLength = sheetName.length;
       
-      // Exact match - highest priority
+      // 1. Exact match - highest priority
       if (sheetLower === stratLower) {
         matchedSheetName = sheetName;
         break;
       }
       
-      // Calculate match score (prefer longer, more specific matches)
-      let score = 0;
-      if (sheetLower.includes(stratLower)) {
-        // Sheet name contains strategy name (e.g., "Grass Fed Prime Beef 2.0" contains "Grass Fed Prime Beef")
-        score = stratLower.length; // Prefer longer strategy names
-      } else if (stratLower.includes(sheetLower)) {
-        // Strategy name contains sheet name (e.g., "Grass Fed Prime Beef" contains "Grass Fed Prime Beef 2.0")
-        score = sheetLower.length; // Prefer longer sheet names
-      }
+      // 2. Extract version from sheet name
+      const sheetVersionMatch = sheetName.match(/(\d+\.\d+)$/);
+      const sheetVersion = sheetVersionMatch ? sheetVersionMatch[1] : null;
+      const sheetBaseName = sheetVersion ? sheetName.substring(0, sheetName.length - sheetVersion.length - 1).trim() : sheetName;
+      // Normalize sheet base name: remove spaces and convert to lowercase for comparison
+      const sheetBaseNameNormalized = sheetBaseName.toLowerCase().replace(/\s+/g, '');
       
-      // Prefer matches where both contain each other (more specific)
-      if (sheetLower.includes(stratLower) && stratLower.includes(sheetLower)) {
-        score += 1000; // Boost for mutual inclusion
-      }
+      // 3. Check if normalized base names match (handles spacing and case differences)
+      const baseNamesMatch = baseNameNormalized === sheetBaseNameNormalized;
       
-      if (score > bestMatchScore) {
-        bestMatchScore = score;
-        bestMatch = sheetName;
+      if (baseNamesMatch) {
+        // Base names match - check version compatibility
+        if (csvVersion && sheetVersion) {
+          // Both have versions - only match if versions are the same
+          if (csvVersion === sheetVersion) {
+            // Exact version match - highest priority for versioned strategies
+            if (!bestVersionMatch || sheetLength > bestVersionMatch.length) {
+              bestVersionMatch = sheetName;
+              bestVersionScore = 1000 + sheetLength; // High score for exact version match
+            }
+          }
+          // Different versions (e.g., 2.0 vs 2.1) - don't match
+        } else if (!csvVersion && !sheetVersion) {
+          // Both are base names (no versions) - exact base match
+          bestBaseMatch = sheetName;
+          bestBaseScore = 500 + sheetLength;
+        } else if (csvVersion && !sheetVersion) {
+          // CSV has version but sheet doesn't - match to base sheet (version might be deprecated)
+          if (sheetLength > (bestBaseMatch ? bestBaseMatch.length : 0)) {
+            bestBaseMatch = sheetName;
+            bestBaseScore = 300 + sheetLength;
+          }
+        } else if (!csvVersion && sheetVersion) {
+          // Sheet has version but CSV doesn't - prefer versioned sheet if it's the only match
+          if (sheetLength > (bestBaseMatch ? bestBaseMatch.length : 0)) {
+            bestBaseMatch = sheetName;
+            bestBaseScore = 200 + sheetLength;
+          }
+        }
       }
     }
     
-    // Use best match if no exact match found
-    if (!matchedSheetName && bestMatch) {
-      matchedSheetName = bestMatch;
+    // Use best match: version match > base match
+    if (!matchedSheetName) {
+      if (bestVersionMatch && bestVersionScore > 0) {
+        matchedSheetName = bestVersionMatch;
+        console.info(`Matched CSV strategy "${strat.strategy}" to versioned Google Sheet "${bestVersionMatch}"`);
+      } else if (bestBaseMatch && bestBaseScore > 0) {
+        matchedSheetName = bestBaseMatch;
+        if (csvVersion) {
+          console.info(`Matched CSV strategy "${strat.strategy}" (version ${csvVersion}) to base Google Sheet "${bestBaseMatch}" (version may be deprecated or using base sheet)`);
+        } else {
+          console.info(`Matched CSV strategy "${strat.strategy}" to Google Sheet "${bestBaseMatch}"`);
+        }
+      }
     }
 
     // If no match found, use the strategy name from CSV directly
     // This allows users to analyze strategies even if they're not in Google Sheets
     if (!matchedSheetName) {
-      if (availableSheetNames.length > 0) {
-        console.warn(`No matching sheet found for strategy: ${strat.strategy}. Using CSV strategy name.`);
-      }
       matchedSheetName = strat.strategy; // Use CSV strategy name directly
+      if (availableSheetNames.length > 0) {
+        console.warn(`No matching sheet found for strategy: ${strat.strategy}. Using CSV strategy name (may fail if sheet doesn't exist).`);
+      }
     }
 
     matchedAccounts.add(account.displayName);
