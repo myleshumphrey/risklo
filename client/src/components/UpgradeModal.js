@@ -110,7 +110,7 @@ function UpgradeModal({ isOpen, onClose, user, isPro }) {
             className={`pricing-option ${billingPeriod === 'annual' ? 'active' : ''}`}
             onClick={() => setBillingPeriod('annual')}
           >
-            <div className="pricing-badge">30% OFF</div>
+            <div className="pricing-badge">Save 30%</div>
             <div className="pricing-option-content">
               <div className="pricing-option-header">
                 <span className="pricing-label">Annual</span>
