@@ -127,8 +127,7 @@ function getAuthUrlForEmail(email, includeSignIn = false) {
 
   const url = oauth2.generateAuthUrl({
     access_type: 'offline',
-    // Removed prompt: 'consent' so you only have to check the box once.
-    // Subsequent logins will skip the consent screen automatically.
+    prompt: 'consent', // Force consent screen to always get refresh token
     scope: scopes,
     state,
   });
