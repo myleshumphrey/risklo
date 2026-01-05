@@ -37,7 +37,7 @@ function AppContent() {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const [riskMetrics, setRiskMetrics] = useState(null); // Metrics for Risk mode
   const [apexMaeMetrics, setApexMaeMetrics] = useState(null); // Metrics for 30% Drawdown mode
-  const [mobileProTab, setMobileProTab] = useState('bulk'); // 'bulk' or 'csv' - for mobile tabs only
+  const [activeTab, setActiveTab] = useState('single'); // 'single', 'bulk', or 'csv'
   const [lastFormData, setLastFormData] = useState(null); // Store last form data for calculations
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -406,88 +406,117 @@ function AppContent() {
               </div>
             )}
 
-            <InputForm 
-              onSubmit={handleAnalyze} 
-              loading={loading}
-              sheetNames={sheetNames}
-              loadingSheets={loadingSheets}
-              error={error && sheetNames.length === 0 ? error : null}
-              riskMode={riskMode}
-              onNavigate={setCurrentPage}
-              sheetsConnectUrl={sheetsConnectUrl}
-              userEmail={user?.email || null}
-            />
-            
-            {metrics ? (
-              <Dashboard metrics={metrics} riskMode={riskMode} onNavigate={setCurrentPage} formData={lastFormData} />
-            ) : (
-              <div className="no-results-message">
-                <div className="no-results-content">
-                  <div className="no-results-icon"><IconChart size={64} /></div>
-                  <h3 className="no-results-title">
-                    {riskMode === 'risk' ? 'Risk Results' : '30% Drawdown Results'}
-                  </h3>
-                  <p className="no-results-text">
-                    {riskMode === 'risk' 
-                      ? 'Analyze your strategy to see risk assessment results.'
-                      : 'Analyze your strategy to see 30% Drawdown rule results.'}
-                  </p>
-                </div>
+            {/* Unified Tabs - All three options visible */}
+            <div className="risk-assessment-tabs">
+              <button 
+                className={`risk-tab ${activeTab === 'single' ? 'active' : ''}`}
+                onClick={() => setActiveTab('single')}
+              >
+                Drawdown Risk
+              </button>
+              <button 
+                className={`risk-tab ${activeTab === 'bulk' ? 'active' : ''} ${!isPro ? 'pro-locked' : ''}`}
+                onClick={() => {
+                  if (!isPro) {
+                    setShowUpgradeModal(true);
+                  } else {
+                    setActiveTab('bulk');
+                  }
+                }}
+              >
+                Bulk Risk
+                {!isPro && <span className="pro-badge-inline">PRO</span>}
+              </button>
+              <button 
+                className={`risk-tab ${activeTab === 'csv' ? 'active' : ''} ${!isPro ? 'pro-locked' : ''}`}
+                onClick={() => {
+                  if (!isPro) {
+                    setShowUpgradeModal(true);
+                  } else {
+                    setActiveTab('csv');
+                  }
+                }}
+              >
+                CSV Upload
+                {!isPro && <span className="pro-badge-inline">PRO</span>}
+              </button>
+            </div>
+
+            {/* Single Strategy Tab */}
+            {activeTab === 'single' && (
+              <>
+                <InputForm 
+                  onSubmit={handleAnalyze} 
+                  loading={loading}
+                  sheetNames={sheetNames}
+                  loadingSheets={loadingSheets}
+                  error={error && sheetNames.length === 0 ? error : null}
+                  riskMode={riskMode}
+                  onNavigate={setCurrentPage}
+                  sheetsConnectUrl={sheetsConnectUrl}
+                  userEmail={user?.email || null}
+                />
+                
+                {metrics ? (
+                  <Dashboard metrics={metrics} riskMode={riskMode} onNavigate={setCurrentPage} formData={lastFormData} />
+                ) : (
+                  <div className="no-results-message">
+                    <div className="no-results-content">
+                      <div className="no-results-icon"><IconChart size={64} /></div>
+                      <h3 className="no-results-title">
+                        {riskMode === 'risk' ? 'Risk Results' : '30% Drawdown Results'}
+                      </h3>
+                      <p className="no-results-text">
+                        {riskMode === 'risk' 
+                          ? 'Analyze your strategy to see risk assessment results.'
+                          : 'Analyze your strategy to see 30% Drawdown rule results.'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Bulk Risk Tab */}
+            {activeTab === 'bulk' && (
+              <div className="tab-content">
+                <BulkRiskCalculator 
+                  isPro={isPro}
+                  sheetNames={sheetNames}
+                  riskMode={riskMode}
+                  onUpgrade={() => setShowUpgradeModal(true)}
+                  sheetsConnectUrl={sheetsConnectUrl}
+                  onPopulateRows={(setRowsFn) => {
+                    // Store the setRows function so CsvUpload can use it
+                    // The function accepts (rows, csvFileNames) parameters
+                    window.bulkCalculatorSetRows = setRowsFn;
+                  }}
+                />
               </div>
             )}
 
-            {/* Mobile Tabs - Only visible on mobile */}
-            <div className="pro-features-tabs-mobile">
-              <button 
-                className={`pro-tab ${mobileProTab === 'bulk' ? 'active' : ''}`}
-                onClick={() => setMobileProTab('bulk')}
-              >
-                Bulk Risk
-              </button>
-              <button 
-                className={`pro-tab ${mobileProTab === 'csv' ? 'active' : ''}`}
-                onClick={() => setMobileProTab('csv')}
-              >
-                CSV Upload
-              </button>
-            </div>
-
-            {/* Bulk Risk Calculator - Hidden on mobile when CSV tab is active */}
-            <div className={`pro-feature-section ${mobileProTab === 'bulk' ? 'mobile-active' : ''}`}>
-              <BulkRiskCalculator 
-                isPro={isPro}
-                sheetNames={sheetNames}
-                riskMode={riskMode}
-                onUpgrade={() => setShowUpgradeModal(true)}
-                sheetsConnectUrl={sheetsConnectUrl}
-                onPopulateRows={(setRowsFn) => {
-                  // Store the setRows function so CsvUpload can use it
-                  // The function accepts (rows, csvFileNames) parameters
-                  window.bulkCalculatorSetRows = setRowsFn;
-                }}
-              />
-            </div>
-
-            {/* CSV Upload - Hidden on mobile when Bulk tab is active */}
-            <div className={`pro-feature-section ${mobileProTab === 'csv' ? 'mobile-active' : ''}`}>
-              <CsvUpload 
-                isPro={isPro}
-                sheetNames={sheetNames}
-                riskMode={riskMode}
-                onNavigate={setCurrentPage}
-                onUpgrade={() => setShowUpgradeModal(true)}
-                onPopulateBulkRows={(rows, csvFileNames) => {
-                  // Populate bulk calculator rows with CSV file names
-                  if (window.bulkCalculatorSetRows) {
-                    window.bulkCalculatorSetRows(rows, csvFileNames);
-                  }
-                }}
-                onSwitchToBulkTab={() => {
-                  // Switch to bulk tab on mobile after successful parse
-                  setMobileProTab('bulk');
-                }}
-              />
-            </div>
+            {/* CSV Upload Tab */}
+            {activeTab === 'csv' && (
+              <div className="tab-content">
+                <CsvUpload 
+                  isPro={isPro}
+                  sheetNames={sheetNames}
+                  riskMode={riskMode}
+                  onNavigate={setCurrentPage}
+                  onUpgrade={() => setShowUpgradeModal(true)}
+                  onPopulateBulkRows={(rows, csvFileNames) => {
+                    // Populate bulk calculator rows with CSV file names
+                    if (window.bulkCalculatorSetRows) {
+                      window.bulkCalculatorSetRows(rows, csvFileNames);
+                    }
+                  }}
+                  onSwitchToBulkTab={() => {
+                    // Switch to bulk tab after successful parse
+                    setActiveTab('bulk');
+                  }}
+                />
+              </div>
+            )}
           </>
         );
     }
