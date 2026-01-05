@@ -600,3 +600,257 @@
   }
 }
 
+/* Locked/Greyed out state with translucent overlay */
+.csv-upload-locked {
+  position: relative;
+  pointer-events: none;
+}
+
+/* CSV Sample Preview for non-Pro users */
+.csv-sample-preview {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.csv-sample-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.csv-sample-header h3 {
+  color: #ffffff;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.csv-sample-header p {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+}
+
+.csv-sample-table-container {
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+.csv-sample-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.csv-sample-table thead {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.csv-sample-table th {
+  padding: 0.75rem;
+  text-align: left;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 600;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.csv-sample-table td {
+  padding: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.csv-sample-table tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+.csv-sample-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.csv-sample-footer {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 1rem;
+}
+
+.csv-sample-footer p {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* Light mode for CSV sample */
+body.light-mode .csv-sample-preview {
+  background: rgba(15, 23, 42, 0.03);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+}
+
+body.light-mode .csv-sample-header h3 {
+  color: #0f172a;
+}
+
+body.light-mode .csv-sample-header p {
+  color: rgba(15, 23, 42, 0.6);
+}
+
+body.light-mode .csv-sample-table thead {
+  background: rgba(15, 23, 42, 0.05);
+}
+
+body.light-mode .csv-sample-table th {
+  color: rgba(15, 23, 42, 0.8);
+  border-bottom: 2px solid rgba(15, 23, 42, 0.1);
+}
+
+body.light-mode .csv-sample-table td {
+  color: rgba(15, 23, 42, 0.7);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+}
+
+body.light-mode .csv-sample-table tbody tr:hover {
+  background: rgba(15, 23, 42, 0.03);
+}
+
+body.light-mode .csv-sample-footer p {
+  color: rgba(15, 23, 42, 0.6);
+}
+
+@media (max-width: 768px) {
+  .csv-sample-footer {
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+  }
+  
+  .csv-sample-table {
+    font-size: 0.8rem;
+  }
+  
+  .csv-sample-table th,
+  .csv-sample-table td {
+    padding: 0.5rem 0.25rem;
+  }
+}
+
+.csv-upload .pro-lock-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  pointer-events: all;
+}
+
+.csv-upload .pro-lock-content {
+  text-align: center;
+  padding: 2rem;
+  max-width: 500px;
+  background: rgba(15, 23, 42, 0.9);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.csv-upload .pro-lock-icon {
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 1.5rem;
+}
+
+.csv-upload .pro-lock-title {
+  color: #ffffff;
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.csv-upload .pro-lock-subtitle {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.csv-upload .pro-lock-description {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.95rem;
+  margin-bottom: 2rem;
+  line-height: 1.5;
+}
+
+.csv-upload .pro-lock-upgrade-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.csv-upload .pro-lock-upgrade-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+}
+
+/* Light mode styles */
+body.light-mode .csv-upload .pro-lock-overlay {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+body.light-mode .csv-upload .pro-lock-content {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+}
+
+body.light-mode .csv-upload .pro-lock-title {
+  color: #0f172a;
+}
+
+body.light-mode .csv-upload .pro-lock-subtitle {
+  color: rgba(15, 23, 42, 0.8);
+}
+
+body.light-mode .csv-upload .pro-lock-description {
+  color: rgba(15, 23, 42, 0.6);
+}
+
+body.light-mode .csv-upload .pro-lock-icon {
+  color: rgba(15, 23, 42, 0.8);
+}
+
+@media (max-width: 768px) {
+  .csv-upload .pro-lock-content {
+    padding: 1.5rem;
+  }
+  
+  .csv-upload .pro-lock-title {
+    font-size: 1.5rem;
+  }
+  
+  .csv-upload .pro-lock-subtitle {
+    font-size: 1rem;
+  }
+  
+  .csv-upload .pro-lock-description {
+    font-size: 0.9rem;
+  }
+  
+  .csv-upload .pro-lock-upgrade-button {
+    width: 100%;
+    padding: 0.875rem 1.5rem;
+    font-size: 1rem;
+  }
+}
+

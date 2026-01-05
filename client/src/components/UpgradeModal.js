@@ -6,8 +6,30 @@ import { IconChart } from './Icons';
 function UpgradeModal({ isOpen, onClose, user, isPro }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [billingPeriod, setBillingPeriod] = useState('annual'); // 'monthly' or 'annual'
 
   if (!isOpen) return null;
+
+  const pricingPlans = {
+    monthly: {
+      price: 10,
+      displayPrice: '$10',
+      period: 'month',
+      total: null,
+      savings: null
+    },
+    annual: {
+      price: 7,
+      displayPrice: '$7',
+      period: 'month',
+      total: '$84',
+      billedAs: 'Billed annually at $84',
+      savings: '30% off',
+      originalPrice: '$10'
+    }
+  };
+
+  const selectedPlan = pricingPlans[billingPeriod];
 
   const handleUpgrade = async () => {
     if (!user) {
@@ -26,6 +48,7 @@ function UpgradeModal({ isOpen, onClose, user, isPro }) {
     try {
       console.log('Creating checkout session for:', user.email);
       console.log('API URL:', API_ENDPOINTS.createCheckoutSession);
+      console.log('Billing period:', billingPeriod);
       
       // First, test if backend is reachable
       try {
@@ -45,6 +68,7 @@ function UpgradeModal({ isOpen, onClose, user, isPro }) {
         },
         body: JSON.stringify({
           email: user.email,
+          billingPeriod: billingPeriod, // Send selected billing period
         }),
       });
 
@@ -83,6 +107,42 @@ function UpgradeModal({ isOpen, onClose, user, isPro }) {
         <div className="modal-header">
           <h2 className="modal-title">Upgrade to RiskLo Pro</h2>
           <p className="modal-subtitle">Unlock powerful bulk analysis features</p>
+        </div>
+
+        {/* Pricing Toggle */}
+        <div className="pricing-toggle-container">
+          <button
+            className={`pricing-option ${billingPeriod === 'monthly' ? 'active' : ''}`}
+            onClick={() => setBillingPeriod('monthly')}
+          >
+            <div className="pricing-option-content">
+              <div className="pricing-option-header">
+                <span className="pricing-label">Monthly</span>
+              </div>
+              <div className="pricing-amount">
+                <span className="price-value">$10</span>
+                <span className="price-period">/month</span>
+              </div>
+              <div className="pricing-billing">Billed monthly</div>
+            </div>
+          </button>
+
+          <button
+            className={`pricing-option ${billingPeriod === 'annual' ? 'active' : ''}`}
+            onClick={() => setBillingPeriod('annual')}
+          >
+            <div className="pricing-badge">30% OFF</div>
+            <div className="pricing-option-content">
+              <div className="pricing-option-header">
+                <span className="pricing-label">Annual</span>
+              </div>
+              <div className="pricing-amount">
+                <span className="price-value">$7</span>
+                <span className="price-period">/month</span>
+              </div>
+              <div className="pricing-billing">Billed annually at $84</div>
+            </div>
+          </button>
         </div>
 
         <div className="modal-features">

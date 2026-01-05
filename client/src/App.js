@@ -48,6 +48,10 @@ function AppContent() {
   const [pickerEmail, setPickerEmail] = useState(null);
   const pickerShownRef = useRef(false); // prevent duplicate picker shows
   
+  // State to store CSV-generated rows for bulk calculator
+  const [csvBulkRows, setCsvBulkRows] = useState(null);
+  const [csvFileNames, setCsvFileNames] = useState(null);
+  
   // Vector Results Spreadsheet ID (should match backend RESULTS_SPREADSHEET_ID)
   const RESULTS_SPREADSHEET_ID = '1rqGGpl5SJ_34L72yCCcSZIoUrD_ggGn5LfJ_BGFjDQY';
 
@@ -412,30 +416,18 @@ function AppContent() {
                 className={`risk-tab ${activeTab === 'single' ? 'active' : ''}`}
                 onClick={() => setActiveTab('single')}
               >
-                Drawdown Risk
+                {riskMode === 'apexMae' ? '30% Rule Risk' : 'Account Blowout Risk'}
               </button>
               <button 
                 className={`risk-tab ${activeTab === 'bulk' ? 'active' : ''} ${!isPro ? 'pro-locked' : ''}`}
-                onClick={() => {
-                  if (!isPro) {
-                    setShowUpgradeModal(true);
-                  } else {
-                    setActiveTab('bulk');
-                  }
-                }}
+                onClick={() => setActiveTab('bulk')}
               >
                 Bulk Risk
                 {!isPro && <span className="pro-badge-inline">PRO</span>}
               </button>
               <button 
                 className={`risk-tab ${activeTab === 'csv' ? 'active' : ''} ${!isPro ? 'pro-locked' : ''}`}
-                onClick={() => {
-                  if (!isPro) {
-                    setShowUpgradeModal(true);
-                  } else {
-                    setActiveTab('csv');
-                  }
-                }}
+                onClick={() => setActiveTab('csv')}
               >
                 CSV Upload
                 {!isPro && <span className="pro-badge-inline">PRO</span>}
@@ -486,10 +478,11 @@ function AppContent() {
                   riskMode={riskMode}
                   onUpgrade={() => setShowUpgradeModal(true)}
                   sheetsConnectUrl={sheetsConnectUrl}
-                  onPopulateRows={(setRowsFn) => {
-                    // Store the setRows function so CsvUpload can use it
-                    // The function accepts (rows, csvFileNames) parameters
-                    window.bulkCalculatorSetRows = setRowsFn;
+                  csvBulkRows={csvBulkRows}
+                  csvFileNames={csvFileNames}
+                  onClearCsvData={() => {
+                    setCsvBulkRows(null);
+                    setCsvFileNames(null);
                   }}
                 />
               </div>
@@ -505,10 +498,11 @@ function AppContent() {
                   onNavigate={setCurrentPage}
                   onUpgrade={() => setShowUpgradeModal(true)}
                   onPopulateBulkRows={(rows, csvFileNames) => {
-                    // Populate bulk calculator rows with CSV file names
-                    if (window.bulkCalculatorSetRows) {
-                      window.bulkCalculatorSetRows(rows, csvFileNames);
-                    }
+                    console.log('App.js: Storing CSV data in state', { rowCount: rows.length, csvFileNames });
+                    setCsvBulkRows(rows);
+                    setCsvFileNames(csvFileNames);
+                    // Switch to bulk tab after storing data
+                    setActiveTab('bulk');
                   }}
                   onSwitchToBulkTab={() => {
                     // Switch to bulk tab after successful parse
@@ -585,7 +579,7 @@ function AppContent() {
                     handleModeChange('risk');
                   }}
                 >
-                  Drawdown Risk
+                  Blowout Risk
                 </button>
                 <button
                   className={`mode-toggle-btn ${currentPage === 'home' && riskMode === 'apexMae' ? 'active' : ''}`}
