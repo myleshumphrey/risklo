@@ -7,7 +7,18 @@ import { sortStrategies } from '../utils/strategySort';
 import { IconLock } from './Icons';
 import { useAuth } from '../contexts/AuthContext';
 
-function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopulateRows, onUpgrade, autoAnalyzeAfterPopulate, sheetsConnectUrl }) {
+function BulkRiskCalculator({ 
+  isPro, 
+  sheetNames, 
+  onAnalyzeBulk, 
+  riskMode, 
+  onUpgrade, 
+  autoAnalyzeAfterPopulate, 
+  sheetsConnectUrl,
+  csvBulkRows,
+  csvFileNames: propCsvFileNames,
+  onClearCsvData
+}) {
   const { user } = useAuth();
   const [results, setResults] = useState(null);
   const [selectedResult, setSelectedResult] = useState(null);
@@ -39,18 +50,94 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
     }
   ]);
 
-  // Expose setRows to parent component via callback
+  // Populate with sample data if not Pro (for preview/teaser)
   useEffect(() => {
-    if (onPopulateRows) {
-      // Expose a function that accepts rows and optional CSV file names
-      onPopulateRows((newRows, fileNames) => {
-        setRows(newRows);
-        if (fileNames) {
-          setCsvFileNames(fileNames);
+    if (!isPro) {
+      const sampleData = [
+        {
+          id: 1,
+          accountName: 'PAAPEX3982600000001',
+          strategy: 'Grass Fed Prime Beef',
+          contractType: 'MNQ',
+          accountSize: riskMode === 'apexMae' ? 50000 : 50000,
+          contracts: 3,
+          maxDrawdown: riskMode === 'apexMae' ? '' : 2500,
+          currentBalance: riskMode === 'apexMae' ? 52500 : '',
+          startOfDayProfit: riskMode === 'apexMae' ? 0 : '',
+          safetyNet: riskMode === 'apexMae' ? 2500 : '',
+          profitSinceLastPayout: ''
+        },
+        {
+          id: 2,
+          accountName: 'PAAPEX3982600000002',
+          strategy: 'ES Momentum Scalper',
+          contractType: 'MNQ',
+          accountSize: riskMode === 'apexMae' ? 50000 : 50000,
+          contracts: 5,
+          maxDrawdown: riskMode === 'apexMae' ? '' : 2500,
+          currentBalance: riskMode === 'apexMae' ? 51200 : '',
+          startOfDayProfit: riskMode === 'apexMae' ? 0 : '',
+          safetyNet: riskMode === 'apexMae' ? 2500 : '',
+          profitSinceLastPayout: ''
+        },
+        {
+          id: 3,
+          accountName: 'PAAPEX3982600000003',
+          strategy: 'RTY Breakout Strategy',
+          contractType: 'MNQ',
+          accountSize: riskMode === 'apexMae' ? 100000 : 100000,
+          contracts: 10,
+          maxDrawdown: riskMode === 'apexMae' ? '' : 5000,
+          currentBalance: riskMode === 'apexMae' ? 105500 : '',
+          startOfDayProfit: riskMode === 'apexMae' ? 0 : '',
+          safetyNet: riskMode === 'apexMae' ? 5000 : '',
+          profitSinceLastPayout: ''
+        },
+        {
+          id: 4,
+          accountName: 'PAAPEX3982600000004',
+          strategy: 'NQ Range Trader',
+          contractType: 'MNQ',
+          accountSize: riskMode === 'apexMae' ? 50000 : 50000,
+          contracts: 4,
+          maxDrawdown: riskMode === 'apexMae' ? '' : 2500,
+          currentBalance: riskMode === 'apexMae' ? 48900 : '',
+          startOfDayProfit: riskMode === 'apexMae' ? 0 : '',
+          safetyNet: riskMode === 'apexMae' ? 2500 : '',
+          profitSinceLastPayout: ''
+        },
+        {
+          id: 5,
+          accountName: 'PAAPEX3982600000005',
+          strategy: 'Volatility Expansion',
+          contractType: 'NQ',
+          accountSize: riskMode === 'apexMae' ? 150000 : 150000,
+          contracts: 2,
+          maxDrawdown: riskMode === 'apexMae' ? '' : 7500,
+          currentBalance: riskMode === 'apexMae' ? 158200 : '',
+          startOfDayProfit: riskMode === 'apexMae' ? 0 : '',
+          safetyNet: riskMode === 'apexMae' ? 7500 : '',
+          profitSinceLastPayout: ''
         }
-      });
+      ];
+      setRows(sampleData);
     }
-  }, [onPopulateRows]);
+  }, [isPro, riskMode]);
+
+  // Populate rows from CSV data when provided
+  useEffect(() => {
+    if (csvBulkRows && csvBulkRows.length > 0) {
+      console.log('BulkRiskCalculator: Populating rows from CSV data', { rowCount: csvBulkRows.length });
+      setRows(csvBulkRows);
+      if (propCsvFileNames) {
+        setCsvFileNames(propCsvFileNames);
+      }
+      // Clear the CSV data after populating
+      if (onClearCsvData) {
+        onClearCsvData();
+      }
+    }
+  }, [csvBulkRows, propCsvFileNames, onClearCsvData]);
 
   const [loading, setLoading] = useState(false);
 
@@ -266,28 +353,23 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
     };
   }, [rows, riskMode, handleSubmit]); // Include handleSubmit in dependencies
 
-  if (!isPro) {
-    return (
-      <div className="bulk-calculator-gated">
-        <div className="gate-overlay">
-          <div className="gate-content">
-            <div className="lock-icon"><IconLock size={24} /></div>
-            <h3>Bulk Risk Assessment</h3>
-            <p>This feature is available in RiskLo Pro</p>
-            <p className="gate-subtext">Upgrade to analyze up to 20 account + strategy combinations at once</p>
-            {onUpgrade && (
-              <button className="gate-upgrade-btn" onClick={onUpgrade}>
-                Upgrade to RiskLo Pro
-              </button>
-            )}
+  return (
+    <div className={`bulk-calculator ${!isPro ? 'bulk-calculator-locked' : ''}`}>
+      {!isPro && (
+        <div className="pro-lock-overlay">
+          <div className="pro-lock-content">
+            <div className="pro-lock-icon">
+              <IconLock size={48} />
+            </div>
+            <h3 className="pro-lock-title">Bulk Risk Assessment</h3>
+            <p className="pro-lock-subtitle">This feature is available in RiskLo Pro</p>
+            <p className="pro-lock-description">Upgrade to analyze up to 20 account + strategy combinations at once</p>
+            <button className="pro-lock-upgrade-button" onClick={onUpgrade}>
+              Upgrade to RiskLo Pro
+            </button>
           </div>
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="bulk-calculator">
+      )}
       <div className="bulk-header">
         <h2 className="bulk-title">Bulk Risk Assessment (RiskLo Pro)</h2>
         <p className="bulk-subtitle">Analyze multiple account configurations at once</p>
@@ -356,6 +438,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
                       onChange={(e) => updateRow(row.id, 'accountName', e.target.value)}
                       className="bulk-input"
                       placeholder="e.g., PAAPEX3982600000002"
+                      disabled={!isPro}
                       style={{ 
                         fontFamily: 'monospace',
                         fontSize: '0.85rem'
@@ -368,6 +451,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
                       onChange={(e) => updateRow(row.id, 'strategy', e.target.value)}
                       className="bulk-input"
                       required={index === 0}
+                      disabled={!isPro}
                     >
                       <option value="">Select...</option>
                       {sortStrategies(sheetNames).map(name => (
@@ -380,6 +464,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
                       value={row.contractType}
                       onChange={(e) => updateRow(row.id, 'contractType', e.target.value)}
                       className="bulk-input"
+                      disabled={!isPro}
                     >
                       <option value="NQ">NQ</option>
                       <option value="MNQ">MNQ</option>
@@ -392,6 +477,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
                         onChange={(e) => updateRow(row.id, 'accountSize', e.target.value)}
                         className="bulk-input"
                         required={index === 0}
+                        disabled={!isPro}
                       >
                         {ACCOUNT_SIZE_PRESETS.map((preset) => (
                           <option key={preset.value} value={preset.value}>
@@ -408,6 +494,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
                         placeholder="50000"
                         step="0.01"
                         required={index === 0}
+                        disabled={!isPro}
                       />
                     )}
                   </td>
@@ -421,6 +508,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
                       min="1"
                       step="1"
                       required={index === 0}
+                      disabled={!isPro}
                     />
                   </td>
                   {riskMode === 'risk' ? (
@@ -433,6 +521,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
                         placeholder="2500"
                         step="0.01"
                         required={index === 0}
+                        disabled={!isPro}
                       />
                     </td>
                   ) : (
@@ -447,6 +536,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
                           step="0.01"
                           min="0"
                           required={index === 0}
+                          disabled={!isPro}
                         />
                       </td>
                       <td>
@@ -456,6 +546,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
                           readOnly
                           className="bulk-input"
                           style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', cursor: 'not-allowed' }}
+                          disabled={!isPro}
                         />
                       </td>
                     </>
@@ -466,6 +557,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
                         type="button"
                         onClick={() => removeRow(row.id)}
                         className="remove-row-btn"
+                        disabled={!isPro}
                       >
                         ×
                       </button>
@@ -483,6 +575,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
               type="button"
               onClick={addRow}
               className="add-row-btn"
+              disabled={!isPro}
             >
               + Add Row
             </button>
@@ -490,7 +583,7 @@ function BulkRiskCalculator({ isPro, sheetNames, onAnalyzeBulk, riskMode, onPopu
           <button
             type="submit"
             className="analyze-bulk-btn"
-            disabled={loading}
+            disabled={loading || !isPro}
           >
             {loading ? 'Analyzing...' : `Analyze ${rows.filter(r => {
               if (riskMode === 'risk') {

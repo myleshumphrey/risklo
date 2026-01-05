@@ -186,11 +186,13 @@ export function matchAccountsToStrategies(accounts, strategies, availableSheetNa
       matchedSheetName = bestMatch;
     }
 
-    // If no match found, try to use the strategy name as-is
-    if (!matchedSheetName && availableSheetNames.length > 0) {
-      // Could prompt user or use first available, but for now skip
-      console.warn(`No matching sheet found for strategy: ${strat.strategy}`);
-      return;
+    // If no match found, use the strategy name from CSV directly
+    // This allows users to analyze strategies even if they're not in Google Sheets
+    if (!matchedSheetName) {
+      if (availableSheetNames.length > 0) {
+        console.warn(`No matching sheet found for strategy: ${strat.strategy}. Using CSV strategy name.`);
+      }
+      matchedSheetName = strat.strategy; // Use CSV strategy name directly
     }
 
     matchedAccounts.add(account.displayName);
@@ -210,11 +212,23 @@ export function matchAccountsToStrategies(accounts, strategies, availableSheetNa
     });
   });
 
-  // Add accounts that don't have strategies (with default values)
+  // Add accounts that don't have strategies (with empty strategy to be selected by user)
   accounts.forEach(account => {
     if (!matchedAccounts.has(account.displayName)) {
-      // Could add a row with empty strategy, but for now skip
-      console.warn(`Account ${account.displayName} has no matching strategy`);
+      console.info(`Account ${account.displayName} has no matching strategy, adding with blank strategy`);
+      rows.push({
+        id: Date.now() + rows.length, // Unique ID
+        accountName: account.displayName,
+        strategy: '', // Empty - user can select from dropdown
+        contractType: 'MNQ', // Default to MNQ
+        accountSize: account.accountSize,
+        contracts: 1, // Default
+        maxDrawdown: Math.floor((account.trailingDrawdown || 0) * 100) / 100,
+        currentBalance: Math.floor(account.netLiquidation * 100) / 100,
+        startOfDayProfit: Math.floor(account.startOfDayProfit * 100) / 100,
+        safetyNet: Math.floor(account.safetyNet * 100) / 100,
+        profitSinceLastPayout: ''
+      });
     }
   });
 

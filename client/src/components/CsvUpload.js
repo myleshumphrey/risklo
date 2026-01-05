@@ -109,10 +109,13 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
 
       if (accounts.length > 0 && strategies.length > 0) {
         // Match accounts to strategies
+        console.log('📊 Matching', accounts.length, 'accounts to', strategies.length, 'strategies');
+        console.log('📋 Available sheet names:', sheetNames);
         const rows = matchAccountsToStrategies(accounts, strategies, sheetNames);
+        console.log('✅ Generated', rows.length, 'rows from CSV matching');
         
         if (rows.length === 0) {
-          throw new Error('No matching accounts and strategies found. Make sure strategy names match your Google Sheet names.');
+          throw new Error('No matching accounts and strategies found. Make sure your CSV files contain valid data.');
         }
 
         // Populate bulk calculator with rows and CSV file names
@@ -250,28 +253,23 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
     }
   };
 
-  if (!isPro) {
-    return (
-      <div className="csv-upload-gated">
-        <div className="gate-overlay">
-          <div className="gate-content">
-            <div className="lock-icon"><IconLock size={24} /></div>
-            <h3>NinjaTrader CSV Upload</h3>
-            <p>This feature is available in RiskLo Pro</p>
-            <p className="gate-subtext">Upload NinjaTrader exports for instant multi-account risk checks</p>
-            {onUpgrade && (
-              <button className="gate-upgrade-btn" onClick={onUpgrade}>
-                Upgrade to RiskLo Pro
-              </button>
-            )}
+  return (
+    <div className={`csv-upload ${!isPro ? 'csv-upload-locked' : ''}`}>
+      {!isPro && (
+        <div className="pro-lock-overlay">
+          <div className="pro-lock-content">
+            <div className="pro-lock-icon">
+              <IconLock size={48} />
+            </div>
+            <h3 className="pro-lock-title">NinjaTrader CSV Upload</h3>
+            <p className="pro-lock-subtitle">This feature is available in RiskLo Pro</p>
+            <p className="pro-lock-description">Upload NinjaTrader exports (CSV) for instant multi-account risk checks</p>
+            <button className="pro-lock-upgrade-button" onClick={onUpgrade}>
+              Upgrade to RiskLo Pro
+            </button>
           </div>
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="csv-upload">
+      )}
       <div className="csv-header">
         <div className="csv-header-top">
           <div>
@@ -281,6 +279,7 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
           <button
             className="how-to-button"
             onClick={() => onNavigate && onNavigate('how-to-export-csv')}
+            disabled={!isPro}
           >
             📖 How to Export CSV
           </button>
@@ -288,11 +287,79 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
       </div>
 
       <div 
-        className={`csv-upload-area ${isDragging ? 'dragging' : ''}`}
+        className={`csv-upload-area ${isDragging ? 'dragging' : ''} ${!isPro ? 'csv-preview-mode' : ''}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
+        {!isPro && (
+          <div className="csv-sample-preview">
+            <div className="csv-sample-header">
+              <h3>Sample CSV Import Result</h3>
+              <p>Here's what your NinjaTrader exports would look like after upload</p>
+            </div>
+            <div className="csv-sample-table-container">
+              <table className="csv-sample-table">
+                <thead>
+                  <tr>
+                    <th>Account</th>
+                    <th>Strategy</th>
+                    <th>Contract</th>
+                    <th>Size</th>
+                    <th>Contracts</th>
+                    <th>Balance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>PAAPEX...0001</td>
+                    <td>Grass Fed Prime Beef</td>
+                    <td>MNQ</td>
+                    <td>$50,000</td>
+                    <td>3</td>
+                    <td>$52,500</td>
+                  </tr>
+                  <tr>
+                    <td>PAAPEX...0002</td>
+                    <td>ES Momentum Scalper</td>
+                    <td>MNQ</td>
+                    <td>$50,000</td>
+                    <td>5</td>
+                    <td>$51,200</td>
+                  </tr>
+                  <tr>
+                    <td>PAAPEX...0003</td>
+                    <td>RTY Breakout Strategy</td>
+                    <td>MNQ</td>
+                    <td>$100,000</td>
+                    <td>10</td>
+                    <td>$105,500</td>
+                  </tr>
+                  <tr>
+                    <td>PAAPEX...0004</td>
+                    <td>NQ Range Trader</td>
+                    <td>MNQ</td>
+                    <td>$50,000</td>
+                    <td>4</td>
+                    <td>$48,900</td>
+                  </tr>
+                  <tr>
+                    <td>PAAPEX...0005</td>
+                    <td>Volatility Expansion</td>
+                    <td>NQ</td>
+                    <td>$150,000</td>
+                    <td>2</td>
+                    <td>$158,200</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="csv-sample-footer">
+              <p>✓ Automatically matches accounts to strategies</p>
+              <p>✓ Ready for instant bulk analysis</p>
+            </div>
+          </div>
+        )}
         {isDragging && (
           <div className="drag-overlay">
             <div className="drag-overlay-content">
@@ -318,8 +385,9 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
               onChange={handleAccountsFileChange}
               className="file-input"
               id="accounts-file-input"
+              disabled={!isPro}
             />
-            <label htmlFor="accounts-file-input" className="browse-button">
+            <label htmlFor="accounts-file-input" className={`browse-button ${!isPro ? 'disabled' : ''}`}>
               Browse Accounts
             </label>
           </div>
@@ -336,8 +404,9 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
               onChange={handleStrategiesFileChange}
               className="file-input"
               id="strategies-file-input"
+              disabled={!isPro}
             />
-            <label htmlFor="strategies-file-input" className="browse-button">
+            <label htmlFor="strategies-file-input" className={`browse-button ${!isPro ? 'disabled' : ''}`}>
               Browse Strategies
             </label>
           </div>
@@ -354,8 +423,9 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
               onChange={handleAutoDetectFile}
               className="file-input"
               id="auto-file-input"
+              disabled={!isPro}
             />
-            <label htmlFor="auto-file-input" className="browse-button">
+            <label htmlFor="auto-file-input" className={`browse-button ${!isPro ? 'disabled' : ''}`}>
               Auto-Detect
             </label>
           </div>
@@ -373,6 +443,7 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
                     onClick={handleRemoveAccountsFile}
                     title="Remove file"
                     aria-label="Remove accounts file"
+                    disabled={!isPro}
                   >
                     ×
                   </button>
@@ -389,6 +460,7 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
                     onClick={handleRemoveStrategiesFile}
                     title="Remove file"
                     aria-label="Remove strategies file"
+                    disabled={!isPro}
                   >
                     ×
                   </button>
@@ -418,7 +490,7 @@ function CsvUpload({ isPro, sheetNames, onPopulateBulkRows, riskMode, onNavigate
 
         <button
           onClick={handleUpload}
-          disabled={(!accountsFile && !strategiesFile) || uploading}
+          disabled={(!accountsFile && !strategiesFile) || uploading || !isPro}
           className={`upload-button ${accountsFile && strategiesFile && !uploading ? 'pulse-ready' : ''}`}
         >
           {uploading ? 'Processing...' : 'Parse & Load into Bulk Calculator'}

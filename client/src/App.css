@@ -100,6 +100,28 @@ body.light-mode .menu-icon {
   color: #0f172a;
 }
 
+/* Light mode for unified tabs */
+body.light-mode .risk-assessment-tabs {
+  border-bottom-color: rgba(0, 0, 0, 0.1);
+}
+
+body.light-mode .risk-tab {
+  color: rgba(15, 23, 42, 0.6);
+}
+
+body.light-mode .risk-tab.active {
+  color: #0f172a;
+  border-bottom-color: #4f46e5;
+}
+
+body.light-mode .risk-tab:hover:not(.active) {
+  color: rgba(15, 23, 42, 0.8);
+}
+
+body.light-mode .risk-tab.pro-locked:not(.active) {
+  color: rgba(15, 23, 42, 0.4);
+}
+
 body.light-mode ::placeholder {
   color: rgba(15, 23, 42, 0.45);
 }
@@ -528,8 +550,100 @@ body.light-mode .primary {
   .app-main {
     padding: 1.5rem 0;
   }
+}
 
-  /* Mobile-only tabs for Pro features */
+/* Unified Risk Assessment Tabs (Single/Bulk/CSV) */
+.risk-assessment-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1.5rem 0 1rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.risk-assessment-tabs::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.risk-tab {
+  position: relative;
+  flex-shrink: 0;
+  padding: 0.75rem 1.25rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.risk-tab.active {
+  color: #ffffff;
+  border-bottom-color: #667eea;
+}
+
+.risk-tab:hover:not(.active) {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.risk-tab:active {
+  opacity: 0.8;
+}
+
+.risk-tab.pro-locked {
+  cursor: pointer;
+}
+
+.risk-tab.pro-locked:not(.active) {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.pro-badge-inline {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.15rem 0.4rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 600;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  vertical-align: middle;
+}
+
+.tab-content {
+  margin-top: 0;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .risk-assessment-tabs {
+    margin: 1rem 0 1rem 0;
+    gap: 0.25rem;
+    padding-bottom: 0;
+  }
+
+  .risk-tab {
+    padding: 0.7rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .pro-badge-inline {
+    font-size: 0.6rem;
+    padding: 0.12rem 0.35rem;
+    margin-left: 0.3rem;
+  }
+}
+
+/* Old mobile-only tabs - DEPRECATED, keeping for compatibility */
+@media (max-width: 768px) {
   .pro-features-tabs-mobile {
     display: flex;
     gap: 0.5rem;

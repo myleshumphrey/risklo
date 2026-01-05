@@ -544,3 +544,128 @@
   }
 }
 
+/* Locked/Greyed out state with translucent overlay */
+.bulk-calculator-locked {
+  position: relative;
+  pointer-events: none;
+}
+
+.pro-lock-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  pointer-events: all;
+}
+
+.pro-lock-content {
+  text-align: center;
+  padding: 2rem;
+  max-width: 500px;
+  background: rgba(15, 23, 42, 0.9);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.pro-lock-icon {
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 1.5rem;
+}
+
+.pro-lock-title {
+  color: #ffffff;
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.pro-lock-subtitle {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.pro-lock-description {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.95rem;
+  margin-bottom: 2rem;
+  line-height: 1.5;
+}
+
+.pro-lock-upgrade-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.pro-lock-upgrade-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+}
+
+/* Light mode styles */
+body.light-mode .pro-lock-overlay {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+body.light-mode .pro-lock-content {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+}
+
+body.light-mode .pro-lock-title {
+  color: #0f172a;
+}
+
+body.light-mode .pro-lock-subtitle {
+  color: rgba(15, 23, 42, 0.8);
+}
+
+body.light-mode .pro-lock-description {
+  color: rgba(15, 23, 42, 0.6);
+}
+
+body.light-mode .pro-lock-icon {
+  color: rgba(15, 23, 42, 0.8);
+}
+
+@media (max-width: 768px) {
+  .pro-lock-content {
+    padding: 1.5rem;
+  }
+  
+  .pro-lock-title {
+    font-size: 1.5rem;
+  }
+  
+  .pro-lock-subtitle {
+    font-size: 1rem;
+  }
+  
+  .pro-lock-description {
+    font-size: 0.9rem;
+  }
+  
+  .pro-lock-upgrade-button {
+    width: 100%;
+    padding: 0.875rem 1.5rem;
+    font-size: 1rem;
+  }
+}
+
