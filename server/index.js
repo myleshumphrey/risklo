@@ -1527,6 +1527,142 @@ app.get('/api/stripe/verify-session', async (req, res) => {
   }
 });
 
+/**
+ * Cancel a user's RiskLo Pro subscription
+ * POST /api/stripe/cancel-subscription
+ * Body: { email: string }
+ */
+app.post('/api/stripe/cancel-subscription', async (req, res) => {
+  try {
+    if (!stripe) {
+      return res.status(500).json({ error: 'Stripe is not configured. Please set STRIPE_SECRET_KEY environment variable.' });
+    }
+
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Find customer by email
+    const customers = await stripe.customers.list({
+      email: email,
+      limit: 1,
+    });
+
+    if (customers.data.length === 0) {
+      return res.status(404).json({ error: 'No customer found with this email address' });
+    }
+
+    const customer = customers.data[0];
+
+    // Find active subscriptions for this customer
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customer.id,
+      status: 'active',
+      limit: 10,
+    });
+
+    // Find RiskLo Pro subscription
+    const priceId = process.env.STRIPE_PRICE_RISKLO_PRO;
+    const proSubscription = subscriptions.data.find(sub => {
+      return sub.items.data.some(item => item.price.id === priceId);
+    });
+
+    if (!proSubscription) {
+      return res.status(404).json({ error: 'No active RiskLo Pro subscription found' });
+    }
+
+    // Cancel the subscription immediately (or at period end - you can change this)
+    const canceledSubscription = await stripe.subscriptions.update(proSubscription.id, {
+      cancel_at_period_end: true, // Cancel at end of billing period (user keeps access until then)
+    });
+
+    res.json({
+      success: true,
+      message: 'Subscription will be canceled at the end of the current billing period. You will retain access until then.',
+      subscriptionId: canceledSubscription.id,
+      cancelAt: canceledSubscription.cancel_at,
+      cancelAtPeriodEnd: canceledSubscription.cancel_at_period_end,
+      currentPeriodEnd: canceledSubscription.current_period_end,
+    });
+  } catch (error) {
+    console.error('Error canceling subscription:', error);
+    res.status(500).json({ error: 'Failed to cancel subscription', message: error.message });
+  }
+});
+
+/**
+ * Get payment history for a user
+ * GET /api/stripe/payment-history?email=user@example.com
+ */
+app.get('/api/stripe/payment-history', async (req, res) => {
+  try {
+    if (!stripe) {
+      return res.status(500).json({ error: 'Stripe is not configured. Please set STRIPE_SECRET_KEY environment variable.' });
+    }
+
+    const { email } = req.query;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email parameter is required' });
+    }
+
+    // Find customer by email
+    const customers = await stripe.customers.list({
+      email: email,
+      limit: 1,
+    });
+
+    if (customers.data.length === 0) {
+      return res.json({ payments: [] }); // No customer = no payments
+    }
+
+    const customer = customers.data[0];
+
+    // Get invoices (payment history) for this customer
+    const invoices = await stripe.invoices.list({
+      customer: customer.id,
+      limit: 50, // Get last 50 invoices
+      status: 'paid', // Only show successful payments
+    });
+
+    // Format payment history
+    const payments = invoices.data.map(invoice => {
+      // Find RiskLo Pro line item
+      const proLineItem = invoice.lines.data.find(item => {
+        const priceId = process.env.STRIPE_PRICE_RISKLO_PRO;
+        return item.price && item.price.id === priceId;
+      });
+
+      // Only include if it's a RiskLo Pro payment
+      if (!proLineItem) {
+        return null;
+      }
+
+      return {
+        id: invoice.id,
+        amount: invoice.amount_paid / 100, // Convert from cents to dollars
+        currency: invoice.currency.toUpperCase(),
+        date: new Date(invoice.created * 1000).toISOString(),
+        periodStart: invoice.period_start ? new Date(invoice.period_start * 1000).toISOString() : null,
+        periodEnd: invoice.period_end ? new Date(invoice.period_end * 1000).toISOString() : null,
+        invoiceUrl: invoice.hosted_invoice_url,
+        invoicePdf: invoice.invoice_pdf,
+        description: proLineItem.description || 'RiskLo Pro Subscription',
+      };
+    }).filter(payment => payment !== null); // Remove null entries
+
+    // Sort by date (newest first)
+    payments.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    res.json({ payments });
+  } catch (error) {
+    console.error('Error fetching payment history:', error);
+    res.status(500).json({ error: 'Failed to fetch payment history', message: error.message });
+  }
+});
+
 // ============================================
 // EMAIL SERVICE ENDPOINTS
 // ============================================

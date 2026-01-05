@@ -138,7 +138,7 @@ function About({ onNavigate }) {
                 <div className="solution-icon">📈</div>
                 <h3>Bulk Analysis</h3>
                 <p>
-                  Analyze up to 20 account configurations at once. Quickly compare different strategies, contract 
+                  Analyze up to 40 account configurations at once. Quickly compare different strategies, contract 
                   sizes, and account setups.
                 </p>
               </div>
