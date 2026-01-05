@@ -41,11 +41,28 @@
   font-size: 1rem;
   min-width: 220px;
   cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
 }
 
 .results-sheet-select-inline:focus {
   outline: 2px solid rgba(102, 126, 234, 0.8);
   outline-offset: 2px;
+}
+
+/* Fix for Windows - ensure dropdown options have dark background */
+.results-sheet-select-inline option {
+  background: #1a1f3a !important;
+  color: #ffffff !important;
+  padding: 0.5rem;
+}
+
+.results-sheet-select-inline option:checked,
+.results-sheet-select-inline option:hover,
+.results-sheet-select-inline option:focus {
+  background: #667eea !important;
+  color: #ffffff !important;
 }
 
 .results-dash-week {

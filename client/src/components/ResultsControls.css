@@ -20,6 +20,23 @@
   color: #fff;
   border-radius: 10px;
   padding: 0.55rem 0.7rem;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+/* Fix for Windows - ensure dropdown options have dark background */
+.results-controls select option {
+  background: #1a1f3a !important;
+  color: #ffffff !important;
+  padding: 0.5rem;
+}
+
+.results-controls select option:checked,
+.results-controls select option:hover,
+.results-controls select option:focus {
+  background: #667eea !important;
+  color: #ffffff !important;
 }
 
 .results-controls .toggle {
