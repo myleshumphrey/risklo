@@ -1,11 +1,19 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import PageHeader from '../components/PageHeader';
 import './Account.css';
 import { IconPro, IconChart, IconCheck, IconAlert } from '../components/Icons';
+import { API_ENDPOINTS } from '../config';
 
 function Account({ onNavigate, onUpgrade }) {
-  const { user, isPro, isDevMode, signOut } = useAuth();
+  const { user, isPro, isDevMode, signOut, refreshProStatus } = useAuth();
+  const [canceling, setCanceling] = useState(false);
+  const [cancelError, setCancelError] = useState(null);
+  const [cancelSuccess, setCancelSuccess] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [paymentHistory, setPaymentHistory] = useState([]);
+  const [loadingPayments, setLoadingPayments] = useState(false);
+  const [paymentError, setPaymentError] = useState(null);
 
   const handleSignInClick = () => {
     // Redirect to backend OAuth endpoint with includeSignIn=true
@@ -13,6 +21,105 @@ function Account({ onNavigate, onUpgrade }) {
     const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
     const oauthUrl = `${API_BASE_URL}/api/google-sheets/oauth/start?includeSignIn=true`;
     window.location.href = oauthUrl;
+  };
+
+  // Fetch payment history when user is Pro
+  useEffect(() => {
+    const fetchPaymentHistory = async () => {
+      if (!user || !user.email || !isPro || isDevMode) {
+        return;
+      }
+
+      setLoadingPayments(true);
+      setPaymentError(null);
+
+      try {
+        const response = await fetch(API_ENDPOINTS.paymentHistory(user.email));
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await response.text();
+          console.error('Non-JSON response from payment history:', text.substring(0, 200));
+          if (response.status === 404) {
+            throw new Error('Payment history endpoint not found. Server may need to be restarted.');
+          }
+          throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to fetch payment history');
+        }
+
+        setPaymentHistory(data.payments || []);
+      } catch (error) {
+        console.error('Error fetching payment history:', error);
+        setPaymentError(error.message || 'Failed to load payment history');
+      } finally {
+        setLoadingPayments(false);
+      }
+    };
+
+    fetchPaymentHistory();
+  }, [user, isPro, isDevMode]);
+
+  const handleCancelSubscription = async () => {
+    if (!user || !user.email) {
+      setCancelError('You must be signed in to cancel your subscription');
+      return;
+    }
+
+    if (isDevMode) {
+      setCancelError('Dev mode subscriptions cannot be canceled. This is a test account.');
+      return;
+    }
+
+    setCanceling(true);
+    setCancelError(null);
+    setCancelSuccess(false);
+
+    try {
+      const response = await fetch(API_ENDPOINTS.cancelSubscription, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: user.email,
+        }),
+      });
+
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Non-JSON response from cancel subscription:', text.substring(0, 200));
+        throw new Error(`Server error: Received ${response.status} ${response.statusText}. The endpoint may not exist or the server may need to be restarted.`);
+      }
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to cancel subscription');
+      }
+
+      setCancelSuccess(true);
+      setShowCancelConfirm(false);
+      
+      // Refresh Pro status after a delay to allow Stripe webhook to process
+      setTimeout(() => {
+        if (refreshProStatus) {
+          refreshProStatus();
+        }
+      }, 2000);
+    } catch (error) {
+      console.error('Error canceling subscription:', error);
+      setCancelError(error.message || 'Failed to cancel subscription. Please try again.');
+    } finally {
+      setCanceling(false);
+    }
   };
 
   if (!user) {
@@ -177,14 +284,260 @@ function Account({ onNavigate, onUpgrade }) {
             )}
 
             {isPro && (
-              <div className="pro-features">
-                <h4>Pro Features Active:</h4>
-                <ul>
-                  <li><IconCheck size={14} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} /> Bulk Risk Calculator (up to 20 accounts)</li>
-                  <li><IconCheck size={14} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} /> NinjaTrader CSV Upload</li>
-                  <li><IconCheck size={14} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} /> Advanced risk analysis</li>
-                </ul>
-              </div>
+              <>
+                <div className="pro-features">
+                  <h4>Pro Features Active:</h4>
+                  <ul>
+                    <li><IconCheck size={14} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} /> Bulk Risk Calculator (up to 40 accounts)</li>
+                    <li><IconCheck size={14} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} /> NinjaTrader CSV Upload</li>
+                    <li><IconCheck size={14} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} /> Advanced risk analysis</li>
+                  </ul>
+                </div>
+
+                {!isDevMode && (
+                  <div className="cancel-subscription-section" style={{
+                    marginTop: '2rem',
+                    padding: '1.5rem',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '8px'
+                  }}>
+                    <h4 style={{ marginTop: 0, marginBottom: '0.75rem' }}>Subscription Management</h4>
+                    <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                      Cancel your RiskLo Pro subscription at any time. You'll retain access until the end of your current billing period.
+                    </p>
+                    
+                    {cancelSuccess && (
+                      <div style={{
+                        padding: '0.75rem',
+                        background: 'rgba(76, 175, 80, 0.1)',
+                        border: '1px solid rgba(76, 175, 80, 0.3)',
+                        borderRadius: '6px',
+                        color: 'rgba(255, 255, 255, 0.9)',
+                        marginBottom: '1rem',
+                        fontSize: '0.9rem'
+                      }}>
+                        <IconCheck size={16} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                        Your subscription has been canceled. You'll retain access until the end of your current billing period.
+                      </div>
+                    )}
+
+                    {cancelError && (
+                      <div style={{
+                        padding: '0.75rem',
+                        background: 'rgba(244, 67, 54, 0.1)',
+                        border: '1px solid rgba(244, 67, 54, 0.3)',
+                        borderRadius: '6px',
+                        color: 'rgba(255, 255, 255, 0.9)',
+                        marginBottom: '1rem',
+                        fontSize: '0.9rem'
+                      }}>
+                        <IconAlert size={16} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                        {cancelError}
+                      </div>
+                    )}
+
+                    {!showCancelConfirm && !cancelSuccess && (
+                      <button
+                        className="cancel-subscription-button"
+                        onClick={() => setShowCancelConfirm(true)}
+                        disabled={canceling}
+                        style={{
+                          background: 'transparent',
+                          border: '1px solid rgba(244, 67, 54, 0.5)',
+                          color: '#f44336',
+                          padding: '0.75rem 1.5rem',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontSize: '0.9rem',
+                          fontWeight: 500,
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = 'rgba(244, 67, 54, 0.1)';
+                          e.target.style.borderColor = 'rgba(244, 67, 54, 0.7)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = 'transparent';
+                          e.target.style.borderColor = 'rgba(244, 67, 54, 0.5)';
+                        }}
+                      >
+                        Cancel Subscription
+                      </button>
+                    )}
+
+                    {showCancelConfirm && !cancelSuccess && (
+                      <div style={{
+                        padding: '1rem',
+                        background: 'rgba(244, 67, 54, 0.05)',
+                        border: '1px solid rgba(244, 67, 54, 0.2)',
+                        borderRadius: '6px'
+                      }}>
+                        <p style={{ color: 'rgba(255, 255, 255, 0.9)', marginBottom: '1rem', fontSize: '0.9rem' }}>
+                          Are you sure you want to cancel your subscription? You'll retain access until the end of your current billing period.
+                        </p>
+                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                          <button
+                            onClick={handleCancelSubscription}
+                            disabled={canceling}
+                            style={{
+                              background: '#f44336',
+                              border: 'none',
+                              color: '#ffffff',
+                              padding: '0.75rem 1.5rem',
+                              borderRadius: '6px',
+                              cursor: canceling ? 'not-allowed' : 'pointer',
+                              fontSize: '0.9rem',
+                              fontWeight: 500,
+                              opacity: canceling ? 0.6 : 1,
+                              transition: 'opacity 0.2s ease'
+                            }}
+                          >
+                            {canceling ? 'Canceling...' : 'Yes, Cancel Subscription'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowCancelConfirm(false);
+                              setCancelError(null);
+                            }}
+                            disabled={canceling}
+                            style={{
+                              background: 'transparent',
+                              border: '1px solid rgba(255, 255, 255, 0.3)',
+                              color: 'rgba(255, 255, 255, 0.9)',
+                              padding: '0.75rem 1.5rem',
+                              borderRadius: '6px',
+                              cursor: canceling ? 'not-allowed' : 'pointer',
+                              fontSize: '0.9rem',
+                              fontWeight: 500
+                            }}
+                          >
+                            Keep Subscription
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Payment History Section */}
+                {!isDevMode && (
+                  <div className="payment-history-section" style={{
+                    marginTop: '2rem',
+                    padding: '1.5rem',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '8px'
+                  }}>
+                    <h4 style={{ marginTop: 0, marginBottom: '1rem' }}>Payment History</h4>
+                    
+                    {loadingPayments && (
+                      <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '0.9rem' }}>Loading payment history...</p>
+                    )}
+
+                    {paymentError && (
+                      <div style={{
+                        padding: '0.75rem',
+                        background: 'rgba(244, 67, 54, 0.1)',
+                        border: '1px solid rgba(244, 67, 54, 0.3)',
+                        borderRadius: '6px',
+                        color: 'rgba(255, 255, 255, 0.9)',
+                        fontSize: '0.9rem',
+                        marginBottom: '1rem'
+                      }}>
+                        <IconAlert size={16} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                        {paymentError}
+                      </div>
+                    )}
+
+                    {!loadingPayments && !paymentError && paymentHistory.length === 0 && (
+                      <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '0.9rem' }}>No payment history found.</p>
+                    )}
+
+                    {!loadingPayments && !paymentError && paymentHistory.length > 0 && (
+                      <div className="payment-history-list" style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.75rem'
+                      }}>
+                        {paymentHistory.map((payment) => (
+                          <div key={payment.id} style={{
+                            padding: '1rem',
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '6px',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: '0.5rem'
+                          }}>
+                            <div style={{ flex: 1, minWidth: '200px' }}>
+                              <div style={{ 
+                                color: '#ffffff', 
+                                fontWeight: 600, 
+                                marginBottom: '0.25rem',
+                                fontSize: '0.95rem'
+                              }}>
+                                {payment.description}
+                              </div>
+                              <div style={{ 
+                                color: 'rgba(255, 255, 255, 0.6)', 
+                                fontSize: '0.85rem' 
+                              }}>
+                                {new Date(payment.date).toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                })}
+                              </div>
+                              {payment.periodStart && payment.periodEnd && (
+                                <div style={{ 
+                                  color: 'rgba(255, 255, 255, 0.5)', 
+                                  fontSize: '0.75rem',
+                                  marginTop: '0.25rem'
+                                }}>
+                                  {new Date(payment.periodStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(payment.periodEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </div>
+                              )}
+                            </div>
+                            <div style={{ 
+                              textAlign: 'right',
+                              minWidth: '100px'
+                            }}>
+                              <div style={{ 
+                                color: '#10b981', 
+                                fontWeight: 600, 
+                                fontSize: '1.1rem',
+                                marginBottom: '0.25rem'
+                              }}>
+                                ${payment.amount.toFixed(2)} {payment.currency}
+                              </div>
+                              {payment.invoiceUrl && (
+                                <a
+                                  href={payment.invoiceUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    color: 'rgba(102, 126, 234, 0.9)',
+                                    fontSize: '0.85rem',
+                                    textDecoration: 'none',
+                                    transition: 'opacity 0.2s'
+                                  }}
+                                  onMouseEnter={(e) => e.target.style.opacity = '0.8'}
+                                  onMouseLeave={(e) => e.target.style.opacity = '1'}
+                                >
+                                  View Invoice →
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
             )}
           </div>
 

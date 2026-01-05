@@ -35,6 +35,8 @@ export const API_ENDPOINTS = {
   proStatus: (email) => `${API_BASE_URL}/api/auth/pro-status?email=${encodeURIComponent(email)}`,
   createCheckoutSession: `${API_BASE_URL}/api/stripe/create-checkout-session`,
   verifySession: (sessionId) => `${API_BASE_URL}/api/stripe/verify-session?session_id=${encodeURIComponent(sessionId)}`,
+  cancelSubscription: `${API_BASE_URL}/api/stripe/cancel-subscription`,
+  paymentHistory: (email) => `${API_BASE_URL}/api/stripe/payment-history?email=${encodeURIComponent(email)}`,
   sendRiskSummary: `${API_BASE_URL}/api/send-risk-summary`,
   currentResults: (email) => `${API_BASE_URL}/api/current-results${email ? `?email=${encodeURIComponent(email)}` : ''}`,
   sheetsOAuthStatus: (email) => `${API_BASE_URL}/api/google-sheets/oauth/status?email=${encodeURIComponent(email)}`,

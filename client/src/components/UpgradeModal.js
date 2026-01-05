@@ -129,7 +129,7 @@ function UpgradeModal({ isOpen, onClose, user, isPro }) {
             <span className="feature-icon"><IconChart size={20} /></span>
             <div>
               <h3>Bulk Risk Calculator</h3>
-              <p>Analyze up to 20 account + strategy combinations at once</p>
+              <p>Analyze up to 40 account + strategy combinations at once</p>
             </div>
           </div>
           

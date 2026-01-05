@@ -142,7 +142,7 @@ function BulkRiskCalculator({
   const [loading, setLoading] = useState(false);
 
   const addRow = () => {
-    if (rows.length >= 20) return;
+    if (rows.length >= 40) return;
     setRows([...rows, {
       id: Date.now(),
       accountName: '', // Optional account name
@@ -363,7 +363,7 @@ function BulkRiskCalculator({
             </div>
             <h3 className="pro-lock-title">Bulk Risk Assessment</h3>
             <p className="pro-lock-subtitle">This feature is available in RiskLo Pro</p>
-            <p className="pro-lock-description">Upgrade to analyze up to 20 account + strategy combinations at once</p>
+            <p className="pro-lock-description">Upgrade to analyze up to 40 account + strategy combinations at once</p>
             <button className="pro-lock-upgrade-button" onClick={onUpgrade}>
               Upgrade to RiskLo Pro
             </button>
@@ -570,7 +570,7 @@ function BulkRiskCalculator({
         </div>
 
         <div className="bulk-actions">
-          {rows.length < 20 && (
+          {rows.length < 40 && (
             <button
               type="button"
               onClick={addRow}

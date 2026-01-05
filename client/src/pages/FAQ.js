@@ -40,7 +40,7 @@ function FAQ({ onNavigate }) {
     },
     {
       question: "Can I analyze multiple accounts at once?",
-      answer: "Yes! RiskLo Pro includes a Bulk Risk Calculator that lets you analyze up to 20 different account configurations simultaneously. You can compare different strategies, contract sizes, account sizes, and drawdown limits all at once. This is perfect for managing multiple prop firm accounts or testing different position sizes."
+      answer: "Yes! RiskLo Pro includes a Bulk Risk Calculator that lets you analyze up to 40 different account configurations simultaneously. You can compare different strategies, contract sizes, account sizes, and drawdown limits all at once. This is perfect for managing multiple prop firm accounts or testing different position sizes."
     },
     {
       question: "Is my data secure?",
