@@ -353,7 +353,7 @@ async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk', csvFile
           background: #f9f9f9;
         }
         .risk-high, .status-no-go {
-          color: #ffffff;
+          color: #ef4444;
           font-weight: 600;
         }
         .risk-medium {
