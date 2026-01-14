@@ -66,6 +66,7 @@ function ResultsDashboard({ user, sheetNames, loadingSheets, sheetsConnectUrl, e
     const stored = localStorage.getItem('results.category');
     return stored && stored !== 'null' ? stored : null;
   });
+  const [contractType, setContractType] = useState(() => localStorage.getItem('results.contractType') || 'NQ');
 
   // Persist selections / filters
   useEffect(() => {
@@ -87,6 +88,10 @@ function ResultsDashboard({ user, sheetNames, loadingSheets, sheetsConnectUrl, e
   useEffect(() => {
     localStorage.setItem('results.showLosersOnly', showLosersOnly);
   }, [showLosersOnly]);
+
+  useEffect(() => {
+    localStorage.setItem('results.contractType', contractType);
+  }, [contractType]);
 
   // Update sheet options when sheetNames changes from App.js
   useEffect(() => {
@@ -365,7 +370,7 @@ function ResultsDashboard({ user, sheetNames, loadingSheets, sheetsConnectUrl, e
 
       {!loading && !error && isCurrent && !showRaw && (
         <>
-          <SummaryCards summary={model.summary} />
+          <SummaryCards summary={model.summary} contractType={contractType} />
           <InsightsPanel insights={insights} />
 
           <ResultsControls
@@ -378,14 +383,16 @@ function ResultsDashboard({ user, sheetNames, loadingSheets, sheetsConnectUrl, e
             categoryOptions={categoryOptions}
             selectedCategory={category}
             onCategoryChange={setCategory}
-          hideLosersToggle={isCurrent}
+            contractType={contractType}
+            onContractTypeChange={setContractType}
+            hideLosersToggle={isCurrent}
           />
 
           {filteredSortedGroups.map((group) => (
             <div key={group.name} className="results-group">
               <div className="results-group-list">
                 {group.strategies.map((s) => (
-                  <StrategyRowCard key={s.strategyName} strategy={s} category={group.name} />
+                  <StrategyRowCard key={s.strategyName} strategy={s} category={group.name} contractType={contractType} />
                 ))}
               </div>
             </div>

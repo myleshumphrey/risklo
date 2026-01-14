@@ -11,6 +11,8 @@ function ResultsControls({
   categoryOptions = [],
   selectedCategory,
   onCategoryChange,
+  contractType,
+  onContractTypeChange,
   hideLosersToggle = false,
 }) {
   return (
@@ -50,6 +52,10 @@ function ResultsControls({
         <option value="totalAsc">Weekly Total (asc)</option>
         <option value="worstDayDesc">Largest single-day loss</option>
         <option value="consistencyDesc">Most consistent</option>
+      </select>
+      <select value={contractType} onChange={(e) => onContractTypeChange(e.target.value)}>
+        <option value="NQ">NQ</option>
+        <option value="MNQ">MNQ</option>
       </select>
     </div>
   );

@@ -15,7 +15,7 @@
 
 .strategy-card .left {
   display: flex;
-  align-items: center;
+  align-items: center; /* Keep center alignment for badges */
   gap: 0.4rem;
   flex: 1;
   min-width: 0; /* Allow flex items to shrink below their content size */
@@ -33,10 +33,13 @@
   color: #fff;
   font-weight: 600;
   font-size: 0.9rem; /* Slightly smaller font */
-  white-space: nowrap; /* Prevent wrapping */
-  overflow: hidden; /* Hide overflow */
-  text-overflow: ellipsis; /* Show ellipsis for truncated text */
-  max-width: 100%; /* Ensure it respects parent width */
+  /* Allow wrapping to 2 lines to show full strategy name */
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* Limit to 2 lines */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.3; /* Tighter line height for better wrapping */
+  word-break: break-word; /* Break long words if needed */
 }
 
 .badge {
@@ -72,6 +75,7 @@
 
 .weekly {
   font-weight: 700;
+  white-space: nowrap; /* Prevent WIN/LOSS amount from wrapping - keep on one line */
 }
 
 .weekly.pos {
