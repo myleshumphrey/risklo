@@ -130,7 +130,7 @@ function HamburgerMenu({ currentPage, onNavigate, onUpgrade, onShowTutorial, isP
                     setIsOpen(false);
                   }}
                 >
-                  <span className="menu-icon">📚</span>
+                  <span className="menu-icon"><IconBook size={18} /></span>
                   <span>Show Tutorial</span>
                 </button>
               </li>

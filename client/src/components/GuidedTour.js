@@ -356,41 +356,15 @@ function GuidedTour({ isOpen, onClose, user }) {
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          {isWelcomeStep && !showVideo ? (
-            <>
-              <div className="tour-tooltip-header">
-                <div className="tour-welcome-icon">👋</div>
-                <h3 className="tour-tooltip-title tour-welcome-title">{step.title}</h3>
-                <button className="tour-tooltip-close" onClick={handleClose}>×</button>
-              </div>
-              <div className="tour-tooltip-content tour-welcome-content">
-                <p>{step.content}</p>
-                <div className="tour-welcome-options">
-                  <button 
-                    className="tour-btn tour-btn-video" 
-                    onClick={() => setShowVideo(true)}
-                  >
-                    📹 Watch Video Tutorial
-                  </button>
-                  <button 
-                    className="tour-btn tour-btn-primary tour-btn-tour" 
-                    onClick={handleNext}
-                  >
-                    🚀 Take Interactive Tour
-                  </button>
-                </div>
-              </div>
-              <div className="tour-tooltip-footer">
-                <button className="tour-btn tour-btn-skip" onClick={handleSkip}>
-                  Skip for now
-                </button>
-              </div>
-            </>
-          ) : isWelcomeStep && showVideo ? (
+          {isWelcomeStep ? (
             <>
               <div className="tour-tooltip-header tour-tooltip-header-centered">
-                <h3 className="tour-tooltip-title tour-tooltip-title-centered">Watch the Video Tutorial!</h3>
-                <button className="tour-tooltip-close" onClick={() => setShowVideo(false)}>×</button>
+                <div style={{ textAlign: 'center', width: '100%' }}>
+                  <h3 className="tour-tooltip-title tour-tooltip-title-centered" style={{ marginBottom: '0.5rem' }}>Welcome to RiskLo! 👋</h3>
+                  <p style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.95rem', margin: '0.5rem 0', lineHeight: '1.5' }}>RiskLo helps you analyze trading risk before risking your account. Let's take a quick tour!</p>
+                  <p style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.95rem', margin: '0.5rem 0 0 0', lineHeight: '1.5', fontWeight: '600' }}>Watch the Video Tutorial</p>
+                </div>
+                <button className="tour-tooltip-close" onClick={handleClose}>×</button>
               </div>
               <div className="tour-tooltip-content tour-video-content">
                 <div className="tour-video-wrapper">
@@ -407,12 +381,14 @@ function GuidedTour({ isOpen, onClose, user }) {
                 <div className="tour-welcome-options" style={{ marginTop: '1rem' }}>
                   <button 
                     className="tour-btn tour-btn-primary tour-btn-tour" 
-                    onClick={() => {
-                      setShowVideo(false);
-                      handleNext();
-                    }}
+                    onClick={handleNext}
                   >
-                    🚀 Take Interactive Tour Instead
+                    🚀 Take Interactive Tour
+                  </button>
+                </div>
+                <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+                  <button className="tour-btn tour-btn-skip" onClick={handleSkip}>
+                    Skip for now
                   </button>
                 </div>
               </div>
