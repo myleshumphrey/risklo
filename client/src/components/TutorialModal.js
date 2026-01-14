@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import './TutorialModal.css';
-import { IconChart } from './Icons';
 
 function TutorialModal({ isOpen, onClose }) {
   const [currentStep, setCurrentStep] = useState(0);

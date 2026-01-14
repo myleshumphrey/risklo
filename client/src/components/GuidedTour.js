@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './GuidedTour.css';
 
 function GuidedTour({ isOpen, onClose, user }) {
@@ -40,7 +40,7 @@ function GuidedTour({ isOpen, onClose, user }) {
       findElement: () => {
         // Make sure we're on the single strategy tab
         const singleTab = document.querySelector('.risk-tab.active');
-        if (singleTab && singleTab.textContent.includes('Account Blowout') || singleTab.textContent.includes('30% Rule')) {
+        if (singleTab && (singleTab.textContent.includes('Account Blowout') || singleTab.textContent.includes('30% Rule'))) {
           return document.querySelector('.form-select');
         }
         return null;
@@ -103,113 +103,21 @@ function GuidedTour({ isOpen, onClose, user }) {
     }
   ];
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    // Start the tour
-    setCurrentStep(0);
-    setShowVideo(true); // Show video on welcome step
-    highlightStep(0);
-
-    // Handle escape key
-    const handleEscape = (e) => {
-      if (e.key === 'Escape') {
-        handleClose();
-      }
-    };
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
-  }, [isOpen]);
-
-  // Reset showVideo when step changes
-  useEffect(() => {
-    if (currentStep === 0) {
-      setShowVideo(true);
+  const handleClose = useCallback(() => {
+    // Save progress for signed-in users
+    if (user?.email) {
+      localStorage.setItem(`tour_progress_${user.email}`, currentStep.toString());
+      localStorage.setItem(`tour_completed_${user.email}`, 'true');
     } else {
-      setShowVideo(false);
+      localStorage.setItem('tour_completed', 'true');
     }
-  }, [currentStep]);
-
-  useEffect(() => {
-    if (isOpen && currentStep < steps.length) {
-      highlightStep(currentStep);
-    }
-  }, [currentStep, isOpen]);
-
-  // Handle window resize and scroll
-  useEffect(() => {
-    if (!isOpen || !highlightedElement) return;
-
-    const handleResize = () => {
-      updateTooltipPosition(highlightedElement, steps[currentStep]?.placement || 'bottom');
-    };
-
-    const handleScroll = () => {
-      if (highlightedElement) {
-        updateTooltipPosition(highlightedElement, steps[currentStep]?.placement || 'bottom');
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('scroll', handleScroll, true);
     
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('scroll', handleScroll, true);
-    };
-  }, [isOpen, highlightedElement, currentStep]);
+    setHighlightedElement(null);
+    setCurrentStep(0);
+    onClose();
+  }, [user, currentStep, onClose]);
 
-  const highlightStep = (stepIndex) => {
-    const step = steps[stepIndex];
-    if (!step) return;
-
-    // Wait for element to be available
-    setTimeout(() => {
-      // Special handling for centered steps (no target element)
-      if (!step.target && step.placement === 'center') {
-        setHighlightedElement(null);
-        // Position will be handled by CSS transform
-        setTooltipPosition({
-          top: window.innerHeight / 2,
-          left: window.innerWidth / 2
-        });
-        return;
-      }
-
-      let element = null;
-      
-      // Use custom findElement function if provided
-      if (step.findElement) {
-        element = step.findElement();
-      } else if (step.target) {
-        element = document.querySelector(step.target);
-      }
-
-      if (element) {
-        // Scroll element into view
-        element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-        
-        // Wait for scroll to complete
-        setTimeout(() => {
-          setHighlightedElement(element);
-          updateTooltipPosition(element, step.placement);
-        }, 300);
-      } else {
-        // Element not found - skip this step
-        console.log(`Tour step ${stepIndex} element not found, skipping...`);
-        if (stepIndex < steps.length - 1) {
-          // Try next step after a short delay
-          setTimeout(() => {
-            setCurrentStep(stepIndex + 1);
-          }, 200);
-        } else {
-          handleClose();
-        }
-      }
-    }, 100);
-  };
-
-  const updateTooltipPosition = (element, placement) => {
+  const updateTooltipPosition = useCallback((element, placement) => {
     if (placement === 'center') {
       // Already handled in highlightStep
       return;
@@ -259,6 +167,126 @@ function GuidedTour({ isOpen, onClose, user }) {
     }
 
     setTooltipPosition({ top, left });
+  }, []);
+
+  const highlightStep = useCallback((stepIndex) => {
+    const step = steps[stepIndex];
+    if (!step) return;
+
+    // Wait for element to be available
+    setTimeout(() => {
+      // Special handling for centered steps (no target element)
+      if (!step.target && step.placement === 'center') {
+        setHighlightedElement(null);
+        // Position will be handled by CSS transform
+        setTooltipPosition({
+          top: window.innerHeight / 2,
+          left: window.innerWidth / 2
+        });
+        return;
+      }
+
+      let element = null;
+      
+      // Use custom findElement function if provided
+      if (step.findElement) {
+        element = step.findElement();
+      } else if (step.target) {
+        element = document.querySelector(step.target);
+      }
+
+      if (element) {
+        // Scroll element into view
+        element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+        
+        // Wait for scroll to complete
+        setTimeout(() => {
+          setHighlightedElement(element);
+          updateTooltipPosition(element, step.placement);
+        }, 300);
+      } else {
+        // Element not found - skip this step
+        console.log(`Tour step ${stepIndex} element not found, skipping...`);
+        if (stepIndex < steps.length - 1) {
+          // Try next step after a short delay
+          setTimeout(() => {
+            setCurrentStep(stepIndex + 1);
+          }, 200);
+        } else {
+          handleClose();
+        }
+      }
+    }, 100);
+  }, [steps, handleClose, updateTooltipPosition, setTooltipPosition]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // Start the tour
+    setCurrentStep(0);
+    setShowVideo(true); // Show video on welcome step
+    highlightStep(0);
+
+    // Handle escape key
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        handleClose();
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isOpen, handleClose, highlightStep]);
+
+  // Reset showVideo when step changes
+  useEffect(() => {
+    if (currentStep === 0) {
+      setShowVideo(true);
+    } else {
+      setShowVideo(false);
+    }
+  }, [currentStep]);
+
+  useEffect(() => {
+    if (isOpen && currentStep < steps.length) {
+      highlightStep(currentStep);
+    }
+  }, [currentStep, isOpen, highlightStep, steps.length]);
+
+  // Handle window resize and scroll
+  useEffect(() => {
+    if (!isOpen || !highlightedElement) return;
+
+    const handleResize = () => {
+      updateTooltipPosition(highlightedElement, steps[currentStep]?.placement || 'bottom');
+    };
+
+    const handleScroll = () => {
+      if (highlightedElement) {
+        updateTooltipPosition(highlightedElement, steps[currentStep]?.placement || 'bottom');
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleScroll, true);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll, true);
+    };
+  }, [isOpen, highlightedElement, currentStep, updateTooltipPosition, steps]);
+
+  const handleNext = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      handleClose();
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
   };
 
   const handleNext = () => {
@@ -277,20 +305,6 @@ function GuidedTour({ isOpen, onClose, user }) {
 
   const handleSkip = () => {
     handleClose();
-  };
-
-  const handleClose = () => {
-    // Save progress for signed-in users
-    if (user?.email) {
-      localStorage.setItem(`tour_progress_${user.email}`, currentStep.toString());
-      localStorage.setItem(`tour_completed_${user.email}`, 'true');
-    } else {
-      localStorage.setItem('tour_completed', 'true');
-    }
-    
-    setHighlightedElement(null);
-    setCurrentStep(0);
-    onClose();
   };
 
   if (!isOpen || currentStep >= steps.length) return null;
