@@ -10,18 +10,33 @@
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
+  gap: 0.5rem; /* Add gap between left and right sections */
 }
 
 .strategy-card .left {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  flex: 1;
+  min-width: 0; /* Allow flex items to shrink below their content size */
+  overflow: hidden; /* Prevent overflow */
+}
+
+.strategy-card .right {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0; /* Don't shrink the right section */
 }
 
 .strategy-name {
   margin: 0;
   color: #fff;
   font-weight: 600;
+  font-size: 0.9rem; /* Slightly smaller font */
+  white-space: nowrap; /* Prevent wrapping */
+  overflow: hidden; /* Hide overflow */
+  text-overflow: ellipsis; /* Show ellipsis for truncated text */
+  max-width: 100%; /* Ensure it respects parent width */
 }
 
 .badge {

@@ -19,7 +19,9 @@ function Account({ onNavigate, onUpgrade }) {
     // Redirect to backend OAuth endpoint with includeSignIn=true
     // This will request both sign-in scopes AND Sheets scope in one flow
     const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
-    const oauthUrl = `${API_BASE_URL}/api/google-sheets/oauth/start?includeSignIn=true`;
+    // Pass the current frontend URL so the backend knows where to redirect back to (for mobile support)
+    const frontendUrl = window.location.origin;
+    const oauthUrl = `${API_BASE_URL}/api/google-sheets/oauth/start?includeSignIn=true&frontendUrl=${encodeURIComponent(frontendUrl)}`;
     window.location.href = oauthUrl;
   };
 

@@ -8,6 +8,8 @@ import CsvUpload from './components/CsvUpload';
 import Footer from './components/Footer';
 import HamburgerMenu from './components/HamburgerMenu';
 import DisclaimerModal from './components/DisclaimerModal';
+import TutorialModal from './components/TutorialModal';
+import GuidedTour from './components/GuidedTour';
 import GoogleSignIn from './components/GoogleSignIn';
 import GooglePicker from './components/GooglePicker';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -31,6 +33,8 @@ function AppContent() {
   });
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(true); // Will be updated in useEffect
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [showGuidedTour, setShowGuidedTour] = useState(false);
   const [riskMode, setRiskMode] = useState(() => {
     return localStorage.getItem('riskMode') || 'risk'; // 'risk' or 'apexMae'
   });
@@ -110,6 +114,26 @@ function AppContent() {
       setShowDisclaimer(!hasAccepted);
     }
   }, [user]);
+
+  // Check if guided tour should be shown (after disclaimer is accepted)
+  useEffect(() => {
+    if (!showDisclaimer) {
+      // Only check tour after disclaimer is accepted
+      let tourCompleted = false;
+      if (user?.email) {
+        tourCompleted = localStorage.getItem(`tour_completed_${user.email}`) === 'true';
+      } else {
+        tourCompleted = localStorage.getItem('tour_completed') === 'true';
+      }
+      
+      if (!tourCompleted) {
+        // Small delay to let disclaimer close animation finish
+        setTimeout(() => {
+          setShowGuidedTour(true);
+        }, 500);
+      }
+    }
+  }, [showDisclaimer, user]);
 
   const fetchSheetNames = useCallback(async () => {
     setLoadingSheets(true);
@@ -545,10 +569,22 @@ function AppContent() {
         <DisclaimerModal onAccept={handleDisclaimerAccept} />
       )}
       
+      <TutorialModal
+        isOpen={showTutorial}
+        onClose={() => setShowTutorial(false)}
+      />
+      
+      <GuidedTour
+        isOpen={showGuidedTour}
+        onClose={() => setShowGuidedTour(false)}
+        user={user}
+      />
+      
       <HamburgerMenu 
         currentPage={currentPage} 
         onNavigate={setCurrentPage}
         onUpgrade={() => setShowUpgradeModal(true)}
+        onShowTutorial={() => setShowGuidedTour(true)}
         isPro={isPro}
         isDevMode={isDevMode}
         theme={theme}

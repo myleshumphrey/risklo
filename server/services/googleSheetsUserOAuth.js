@@ -103,13 +103,14 @@ function verifyState(state) {
   }
 }
 
-function getAuthUrlForEmail(email, includeSignIn = false) {
+function getAuthUrlForEmail(email, includeSignIn = false, frontendUrl = null) {
   const oauth2 = getOAuthClient();
   const state = signState({
     email,
     ts: Date.now(),
     nonce: crypto.randomBytes(8).toString('hex'),
     includeSignIn, // Flag to indicate this is a combined sign-in + Sheets flow
+    frontendUrl, // Frontend URL to redirect back to (for mobile support)
   });
 
   // Use drive.file only (no spreadsheets.readonly as requested)
