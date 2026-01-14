@@ -1925,23 +1925,29 @@ app.post('/api/upload-csv-auto', express.json({ limit: '10mb' }), async (req, re
           continue;
         }
         
-        // Format result to match email service expectations (same format as frontend)
-        // The email service expects: accountName, strategy, contracts, contractType, accountSize, maxDrawdown, safetyNet, metrics (nested)
+        // Format result to match email service expectations (EXACT same format as frontend)
+        // The website spreads the row data and adds metrics, so we need to match that structure exactly
         // Ensure metrics always has riskScore (even if 0) for email display
         const metricsWithRiskScore = {
           ...metrics,
           riskScore: metrics.riskScore !== undefined ? metrics.riskScore : 0
         };
         
+        // Match the EXACT structure the website sends:
+        // - Spread all row properties (like the website does with ...validRows[index])
+        // - Add accountNumber
+        // - Add metrics
+        // - Include both cashValue AND currentBalance (website uses currentBalance, email service checks both)
         results.push({
+          ...row, // Spread all row properties first (matches website's ...validRows[index])
           accountNumber: row.accountNumber,
           accountName: row.accountName,
           strategy: row.strategy,
           contracts: row.numContracts, // Email service expects 'contracts', not 'numContracts'
           contractType: row.contractType,
-          // Keep accountSize for internal/debug if needed, but email will display cashValue instead.
           accountSize: row.accountSize,
           cashValue: row.cashValue,
+          currentBalance: row.cashValue || row.currentBalance, // Include currentBalance for compatibility (website uses this)
           maxDrawdown: row.maxDrawdown,
           safetyNet: row.safetyNet,
           startOfDayProfit: row.startOfDayProfit,
@@ -1970,19 +1976,24 @@ app.post('/api/upload-csv-auto', express.json({ limit: '10mb' }), async (req, re
     console.log(`Calculated risk for ${results.length} accounts`);
     
     // Send email if userEmail is provided
-    // Determine risk mode: if results have safetyNet and startOfDayProfit, use 'apexMae', otherwise 'risk'
-    const hasApexMaeData = results.some(r => r.safetyNet !== undefined && r.startOfDayProfit !== undefined);
-    const riskMode = hasApexMaeData ? 'apexMae' : 'risk';
-    
+    // Use the SAME endpoint as the website to ensure identical formatting and behavior
     let emailSent = false;
     if (userEmail) {
       try {
-        console.log(`Sending email in ${riskMode} mode to:`, userEmail);
+        // Determine risk mode: if results have safetyNet and startOfDayProfit, use 'apexMae', otherwise 'risk'
+        const hasApexMaeData = results.some(r => r.safetyNet !== undefined && r.startOfDayProfit !== undefined);
+        const riskMode = hasApexMaeData ? 'apexMae' : 'risk';
+        
+        console.log(`Sending email via /api/send-risk-summary in ${riskMode} mode to:`, userEmail);
+        
         // Pass CSV file names to email service
         const csvFileNames = {
           accountCsv: accountCsvFileName || 'Accounts.csv',
           strategyCsv: strategyCsvFileName || 'Strategies.csv'
         };
+        
+        // Use the SAME endpoint as the website for consistency
+        // This ensures identical email formatting, colors, and summary sections
         await sendRiskSummaryEmail(userEmail, results, riskMode, csvFileNames);
         emailSent = true;
         console.log('Email sent successfully to:', userEmail);

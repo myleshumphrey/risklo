@@ -1,14 +1,22 @@
 import React from 'react';
 import './SummaryCards.css';
 
-const formatCurrency = (n) => {
-  const num = Number(n) || 0;
+const formatCurrency = (n, contractType = 'NQ') => {
+  let num = Number(n) || 0;
+  // Convert to MNQ if needed (divide by 10)
+  if (contractType === 'MNQ') {
+    num = num / 10;
+  }
   const sign = num < 0 ? '-' : '';
   const abs = Math.abs(num);
-  return `${sign}$${abs.toLocaleString()}`;
+  // For MNQ, show 2 decimal places; for NQ, show whole numbers
+  const formatted = contractType === 'MNQ' 
+    ? abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : abs.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  return `${sign}$${formatted}`;
 };
 
-function SummaryCards({ summary }) {
+function SummaryCards({ summary, contractType = 'NQ' }) {
   if (!summary) return null;
   const { winners, losers, largestWin, largestLoss } = summary;
 
@@ -27,13 +35,13 @@ function SummaryCards({ summary }) {
     },
     {
       title: 'Largest Win',
-      value: largestWin ? formatCurrency(largestWin.weeklyTotal) : '$0',
+      value: largestWin ? formatCurrency(largestWin.weeklyTotal, contractType) : '$0',
       tone: 'positive',
       subtitle: largestWin?.strategyName || '—',
     },
     {
       title: 'Largest Loss',
-      value: largestLoss ? formatCurrency(largestLoss.weeklyTotal) : '$0',
+      value: largestLoss ? formatCurrency(largestLoss.weeklyTotal, contractType) : '$0',
       tone: 'negative',
       subtitle: largestLoss?.strategyName || '—',
     },
