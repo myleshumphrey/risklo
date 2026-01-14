@@ -1927,6 +1927,12 @@ app.post('/api/upload-csv-auto', express.json({ limit: '10mb' }), async (req, re
         
         // Format result to match email service expectations (same format as frontend)
         // The email service expects: accountName, strategy, contracts, contractType, accountSize, maxDrawdown, safetyNet, metrics (nested)
+        // Ensure metrics always has riskScore (even if 0) for email display
+        const metricsWithRiskScore = {
+          ...metrics,
+          riskScore: metrics.riskScore !== undefined ? metrics.riskScore : 0
+        };
+        
         results.push({
           accountNumber: row.accountNumber,
           accountName: row.accountName,
@@ -1939,7 +1945,7 @@ app.post('/api/upload-csv-auto', express.json({ limit: '10mb' }), async (req, re
           maxDrawdown: row.maxDrawdown,
           safetyNet: row.safetyNet,
           startOfDayProfit: row.startOfDayProfit,
-          metrics: metrics // Wrap metrics in 'metrics' object for email service (same as frontend format)
+          metrics: metricsWithRiskScore // Wrap metrics in 'metrics' object for email service (same as frontend format)
         });
         
       } catch (fetchError) {
