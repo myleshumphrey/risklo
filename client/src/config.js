@@ -40,7 +40,10 @@ export const API_ENDPOINTS = {
   sendRiskSummary: `${API_BASE_URL}/api/send-risk-summary`,
   currentResults: (email) => `${API_BASE_URL}/api/current-results${email ? `?email=${encodeURIComponent(email)}` : ''}`,
   sheetsOAuthStatus: (email) => `${API_BASE_URL}/api/google-sheets/oauth/status?email=${encodeURIComponent(email)}`,
-  sheetsOAuthStart: (email) => `${API_BASE_URL}/api/google-sheets/oauth/start?email=${encodeURIComponent(email)}`,
+  sheetsOAuthStart: (email, frontendUrl = null) => {
+    const frontend = frontendUrl || window.location.origin;
+    return `${API_BASE_URL}/api/google-sheets/oauth/start?email=${encodeURIComponent(email)}&frontendUrl=${encodeURIComponent(frontend)}`;
+  },
   strategySheet: (name, email) =>
     `${API_BASE_URL}/api/strategy-sheet?name=${encodeURIComponent(name)}${
       email ? `&email=${encodeURIComponent(email)}` : ''

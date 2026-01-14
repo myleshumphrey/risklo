@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import './HamburgerMenu.css';
 import { IconStar, IconHome, IconBook, IconCalculator, IconHelp, IconFile, IconUpload, IconUser, IconLogOut } from './Icons';
 
-function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro, isDevMode, theme = 'dark', onToggleTheme }) {
+function HamburgerMenu({ currentPage, onNavigate, onUpgrade, onShowTutorial, isPro, isDevMode, theme = 'dark', onToggleTheme }) {
   const { user, signOut } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -28,7 +28,9 @@ function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro, isDevMode, t
     // Redirect to backend OAuth endpoint with includeSignIn=true
     // This will request both sign-in scopes AND Sheets scope in one flow
     const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
-    const oauthUrl = `${API_BASE_URL}/api/google-sheets/oauth/start?includeSignIn=true`;
+    // Pass the current frontend URL so the backend knows where to redirect back to (for mobile support)
+    const frontendUrl = window.location.origin;
+    const oauthUrl = `${API_BASE_URL}/api/google-sheets/oauth/start?includeSignIn=true&frontendUrl=${encodeURIComponent(frontendUrl)}`;
     window.location.href = oauthUrl;
   };
 
@@ -117,6 +119,22 @@ function HamburgerMenu({ currentPage, onNavigate, onUpgrade, isPro, isDevMode, t
                 <span>FAQ</span>
               </button>
             </li>
+            {onShowTutorial && (
+              <li>
+                <button
+                  className="menu-item"
+                  onClick={() => {
+                    if (onShowTutorial) {
+                      onShowTutorial();
+                    }
+                    setIsOpen(false);
+                  }}
+                >
+                  <span className="menu-icon">📚</span>
+                  <span>Show Tutorial</span>
+                </button>
+              </li>
+            )}
             <li>
               <button
                 className={`menu-item ${currentPage === 'apex-30-percent-rule' ? 'active' : ''}`}

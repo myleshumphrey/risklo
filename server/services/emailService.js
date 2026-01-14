@@ -301,7 +301,6 @@ async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk', csvFile
         <td>${contracts} × ${contractType}</td>
         <td>${cashValue}</td>
         <td>${maxDrawdown}</td>
-        <td class="${riskClass}"><strong>${riskLevel}</strong></td>
         <td>${riskScore}</td>
         <td class="${goNoGoClass}"><strong>${goNoGo}</strong></td>
       </tr>
@@ -401,7 +400,6 @@ async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk', csvFile
             <th>Contracts</th>
             <th>Cash Value</th>
             <th>Max Trailing DD</th>
-            <th>Risk Level</th>
             <th>Risk Score</th>
             <th>GO/NO-GO</th>
           </tr>
@@ -470,7 +468,7 @@ async function sendRiskSummaryEmail(toEmail, results, riskMode = 'risk', csvFile
     
     textBody += `Account: ${accountName} | Strategy: ${strategy} | Contracts: ${contracts} × ${contractType} | `;
     textBody += `Cash Value: ${cashValue} | Max Trailing DD: ${maxDrawdown}`;
-    textBody += ` | Risk: ${riskLevel} (${riskScore}) | GO/NO-GO: ${goNoGo}\n`;
+    textBody += ` | Risk Score: ${riskScore} | GO/NO-GO: ${goNoGo}\n`;
   });
   
   textBody += `\nView details in RiskLo: ${appBaseUrl}\n`;

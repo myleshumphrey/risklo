@@ -323,8 +323,23 @@ app.get('/api/google-sheets/oauth/start', (req, res) => {
     const includeSignIn = req.query.includeSignIn === 'true'; // New param for combined flow
     if (!email && !includeSignIn) return res.status(400).send('Missing email or includeSignIn flag');
     
+    // Get frontend URL from query param or referer header (for mobile support)
+    let frontendUrl = req.query.frontendUrl || null;
+    if (!frontendUrl && req.headers.referer) {
+      try {
+        const refererUrl = new URL(req.headers.referer);
+        frontendUrl = `${refererUrl.protocol}//${refererUrl.host}`;
+      } catch (e) {
+        // Invalid referer, ignore
+      }
+    }
+    // Fallback to environment variable if not provided
+    if (!frontendUrl) {
+      frontendUrl = process.env.APP_BASE_URL || process.env.FRONTEND_URL || 'https://risklo.io';
+    }
+    
     // If includeSignIn is true but no email, we'll use a placeholder and get it from ID token
-    const url = getAuthUrlForEmail(email || 'placeholder@example.com', includeSignIn);
+    const url = getAuthUrlForEmail(email || 'placeholder@example.com', includeSignIn, frontendUrl);
     return res.redirect(url);
   } catch (e) {
     console.error('OAuth start error:', e);
@@ -335,7 +350,21 @@ app.get('/api/google-sheets/oauth/start', (req, res) => {
 app.get('/api/google-sheets/oauth/callback', async (req, res) => {
   try {
     const { code, state, error } = req.query;
-    const appBaseUrl = process.env.APP_BASE_URL || process.env.FRONTEND_URL || 'https://risklo.io';
+    
+    // Get frontend URL from state if available (for mobile support), otherwise use env var
+    let appBaseUrl = process.env.APP_BASE_URL || process.env.FRONTEND_URL || 'https://risklo.io';
+    if (state) {
+      try {
+        const { verifyState } = require('./services/googleSheetsUserOAuth');
+        const stateObj = verifyState(String(state));
+        if (stateObj && stateObj.frontendUrl) {
+          appBaseUrl = stateObj.frontendUrl;
+          console.log('Using frontend URL from OAuth state:', appBaseUrl);
+        }
+      } catch (e) {
+        console.warn('Could not extract frontend URL from state, using default:', e.message);
+      }
+    }
 
     if (error) {
       return res.redirect(`${appBaseUrl}?sheetsConnect=error&reason=${encodeURIComponent(String(error))}`);
@@ -357,7 +386,19 @@ app.get('/api/google-sheets/oauth/callback', async (req, res) => {
     return res.redirect(`${appBaseUrl}?sheetsConnect=success&showPicker=true&email=${encodeURIComponent(result.email)}`);
   } catch (e) {
     console.error('OAuth callback error:', e);
-    const appBaseUrl = process.env.APP_BASE_URL || process.env.FRONTEND_URL || 'https://risklo.io';
+    // Try to get frontend URL from state even on error
+    let appBaseUrl = process.env.APP_BASE_URL || process.env.FRONTEND_URL || 'https://risklo.io';
+    if (req.query.state) {
+      try {
+        const { verifyState } = require('./services/googleSheetsUserOAuth');
+        const stateObj = verifyState(String(req.query.state));
+        if (stateObj && stateObj.frontendUrl) {
+          appBaseUrl = stateObj.frontendUrl;
+        }
+      } catch (e) {
+        // Ignore errors when extracting from state
+      }
+    }
     return res.redirect(`${appBaseUrl}?sheetsConnect=error&reason=${encodeURIComponent(e.message || 'unknown')}`);
   }
 });
@@ -1853,10 +1894,11 @@ app.post('/api/upload-csv-auto', express.json({ limit: '10mb' }), async (req, re
           continue;
         }
         
-        // Calculate risk metrics
+        // Use the same analysis logic as /api/analyze endpoint
+        // This ensures consistent results between website uploads and auto-uploads
         const metrics = calculateRiskMetrics(
           data,
-          row.currentBalance,
+          row.accountSize, // Use accountSize, not currentBalance (same as /api/analyze)
           row.numContracts,
           row.maxDrawdown,
           row.contractType,

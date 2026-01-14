@@ -298,6 +298,14 @@ function ResultsDashboard({ user, sheetNames, loadingSheets, sheetsConnectUrl, e
               : 'View detailed performance metrics and weekly breakdown for this strategy.'
             }
           </p>
+          {isCurrent && (
+            <div className="results-data-notice">
+              <span className="results-data-notice-icon">ℹ️</span>
+              <span className="results-data-notice-text">
+                Data updates automatically from Google Results Spreadsheet. If you don't see the latest data, the spreadsheet owners need to update it first.
+              </span>
+            </div>
+          )}
         </div>
         <div className="results-dash-actions">
           {isCurrent && (
