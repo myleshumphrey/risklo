@@ -102,6 +102,7 @@ function GuidedTour({ isOpen, onClose, user }) {
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
   const overlayRef = useRef(null);
   const tooltipRef = useRef(null);
+  const hasInitialized = useRef(false);
 
   // Use the stable steps array from module scope
   const steps = STEPS;
@@ -176,6 +177,9 @@ function GuidedTour({ isOpen, onClose, user }) {
     const step = steps[stepIndex];
     if (!step) return;
 
+    // Reset highlighted element when step changes
+    setHighlightedElement(null);
+
     // Wait for element to be available
     setTimeout(() => {
       // Special handling for centered steps (no target element)
@@ -220,14 +224,20 @@ function GuidedTour({ isOpen, onClose, user }) {
         }
       }
     }, 100);
-  }, [steps, handleClose, updateTooltipPosition, setTooltipPosition]);
+  }, [steps, handleClose, updateTooltipPosition]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      hasInitialized.current = false;
+      return;
+    }
 
-    // Start the tour
-    setCurrentStep(0);
-    highlightStep(0);
+    // Start the tour only when first opened (not on every isOpen change)
+    if (!hasInitialized.current) {
+      hasInitialized.current = true;
+      setCurrentStep(0);
+      highlightStep(0);
+    }
 
     // Handle escape key
     const handleEscape = (e) => {
@@ -237,10 +247,11 @@ function GuidedTour({ isOpen, onClose, user }) {
     };
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [isOpen, handleClose, highlightStep]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]); // Only depend on isOpen, not highlightStep to avoid resetting
 
   useEffect(() => {
-    if (isOpen && currentStep < steps.length) {
+    if (isOpen && currentStep < steps.length && hasInitialized.current) {
       highlightStep(currentStep);
     }
   }, [currentStep, isOpen, highlightStep, steps.length]);
@@ -328,18 +339,18 @@ function GuidedTour({ isOpen, onClose, user }) {
       )}
 
       {/* Tooltip */}
-      {(highlightedElement || steps[currentStep]?.placement === 'center') && (
+      {isOpen && (highlightedElement || steps[currentStep]?.placement === 'center' || (currentStep > 0 && !highlightedElement)) && (
         <div
           ref={tooltipRef}
           className={`tour-tooltip ${steps[currentStep]?.placement === 'center' ? 'tour-tooltip-centered tour-tooltip-welcome' : ''}`}
           style={{
             top: steps[currentStep]?.placement === 'center' 
               ? '50%' 
-              : `${tooltipPosition.top}px`,
+              : (highlightedElement ? `${tooltipPosition.top}px` : '50%'),
             left: steps[currentStep]?.placement === 'center' 
               ? '50%' 
-              : `${tooltipPosition.left}px`,
-            transform: steps[currentStep]?.placement === 'center' 
+              : (highlightedElement ? `${tooltipPosition.left}px` : '50%'),
+            transform: (steps[currentStep]?.placement === 'center' || !highlightedElement)
               ? 'translate(-50%, -50%)' 
               : 'none',
           }}
