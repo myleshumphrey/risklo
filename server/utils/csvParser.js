@@ -119,6 +119,7 @@ function parseStrategiesCsv(csvText) {
   // Find column indices
   const strategyIdx = headers.findIndex(h => h.toLowerCase().includes('strategy'));
   const instrumentIdx = headers.findIndex(h => h.toLowerCase().includes('instrument'));
+  const parametersIdx = headers.findIndex(h => h.toLowerCase().includes('parameters'));
   const accountIdx = headers.findIndex(h => h.toLowerCase().includes('account'));
 
   if (strategyIdx === -1 || instrumentIdx === -1 || accountIdx === -1) {
@@ -133,6 +134,7 @@ function parseStrategiesCsv(csvText) {
     const strategy = values[strategyIdx]?.trim();
     let instrument = values[instrumentIdx]?.trim().toUpperCase();
     const accountDisplayName = values[accountIdx]?.trim();
+    const parameters = parametersIdx >= 0 ? values[parametersIdx]?.trim() : '';
 
     if (!strategy || !instrument || !accountDisplayName) {
       continue;
@@ -145,10 +147,22 @@ function parseStrategiesCsv(csvText) {
       instrument = 'NQ';
     }
 
+    // Try to extract number of contracts from parameters
+    // Parameters format: "3/3/10/50/0.6 (q1/q2/rr1/rr2/sl1)" or similar
+    // First number often represents contracts/quantity
+    let contracts = 1; // Default
+    if (parameters) {
+      const match = parameters.match(/^(\d+)/);
+      if (match) {
+        contracts = parseInt(match[1], 10) || 1;
+      }
+    }
+
     strategies.push({
       strategy,
       instrument,
-      accountDisplayName
+      accountDisplayName,
+      contracts
     });
   }
 
@@ -214,7 +228,7 @@ function matchAccountsToStrategies(accounts, strategies, availableSheetNames) {
           accountName: account.displayName,
           strategy: matchedStrategy,
           contractType: strat.instrument,
-          numContracts: 1,
+          numContracts: strat.contracts || 1,
           currentBalance: account.netLiquidation,
           cashValue: account.cashValue,
           maxDrawdown: Math.floor((account.trailingDrawdown || 1500) * 100) / 100,
