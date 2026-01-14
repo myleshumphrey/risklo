@@ -1,15 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './GuidedTour.css';
 
-function GuidedTour({ isOpen, onClose, user }) {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [highlightedElement, setHighlightedElement] = useState(null);
-  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
-  const [showVideo, setShowVideo] = useState(true); // Show video by default on welcome step
-  const overlayRef = useRef(null);
-  const tooltipRef = useRef(null);
-
-  const steps = [
+// Move steps array to module scope to keep reference stable for hooks
+const STEPS = [
     {
       target: null, // No target - center on screen
       title: 'Welcome to RiskLo! 👋',
@@ -101,7 +94,18 @@ function GuidedTour({ isOpen, onClose, user }) {
       placement: 'bottom',
       showProFeatures: false
     }
-  ];
+];
+
+function GuidedTour({ isOpen, onClose, user }) {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [highlightedElement, setHighlightedElement] = useState(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+  const [showVideo, setShowVideo] = useState(true); // Show video by default on welcome step
+  const overlayRef = useRef(null);
+  const tooltipRef = useRef(null);
+
+  // Use the stable steps array from module scope
+  const steps = STEPS;
 
   const handleClose = useCallback(() => {
     // Save progress for signed-in users
