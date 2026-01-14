@@ -100,7 +100,6 @@ function GuidedTour({ isOpen, onClose, user }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [highlightedElement, setHighlightedElement] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
-  const [showVideo, setShowVideo] = useState(true); // Show video by default on welcome step
   const overlayRef = useRef(null);
   const tooltipRef = useRef(null);
 
@@ -228,7 +227,6 @@ function GuidedTour({ isOpen, onClose, user }) {
 
     // Start the tour
     setCurrentStep(0);
-    setShowVideo(true); // Show video on welcome step
     highlightStep(0);
 
     // Handle escape key
@@ -240,15 +238,6 @@ function GuidedTour({ isOpen, onClose, user }) {
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
   }, [isOpen, handleClose, highlightStep]);
-
-  // Reset showVideo when step changes
-  useEffect(() => {
-    if (currentStep === 0) {
-      setShowVideo(true);
-    } else {
-      setShowVideo(false);
-    }
-  }, [currentStep]);
 
   useEffect(() => {
     if (isOpen && currentStep < steps.length) {
