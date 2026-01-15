@@ -11,4 +11,9 @@ REACT_APP_API_URL=http://localhost:5001
 # Google Identity Services (Sign in)
 REACT_APP_GOOGLE_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com
 
+# Google Picker API (REQUIRED for drive.file per-file authorization)
+# Without these, users will get "Spreadsheet not found" errors after selecting files
+REACT_APP_GOOGLE_API_KEY=YOUR_GOOGLE_API_KEY_HERE
+REACT_APP_GOOGLE_PROJECT_NUMBER=YOUR_PROJECT_NUMBER_HERE
+
 

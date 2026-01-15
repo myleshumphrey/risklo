@@ -373,7 +373,19 @@ app.get('/api/google-sheets/oauth/callback', async (req, res) => {
       return res.redirect(`${appBaseUrl}?sheetsConnect=error&reason=${encodeURIComponent('missing_code_or_state')}`);
     }
 
+    console.log('🔄 OAuth callback: Starting exchangeCodeAndStore');
     const result = await exchangeCodeAndStore(String(code), String(state));
+    console.log('✅ OAuth callback: Token stored for email:', result.email);
+    console.log('✅ OAuth callback: Has refresh token:', result.hasRefreshToken);
+    
+    // Verify token was actually stored
+    const { hasToken } = require('./services/googleSheetsUserOAuth');
+    const tokenStored = hasToken(result.email);
+    console.log('🔍 OAuth callback: Token verification - hasToken(' + result.email + '):', tokenStored);
+    
+    if (!tokenStored) {
+      console.error('❌ OAuth callback: Token was NOT stored! This will cause 401 errors.');
+    }
     
     // If this was a combined sign-in flow, include user info in redirect
     // Also trigger file picker since we're using drive.file scope
@@ -451,16 +463,51 @@ app.get('/api/google-sheets/oauth/access-token', async (req, res) => {
 });
 
 // Store file ID after Google Picker selection
-app.post('/api/google-sheets/oauth/file-id', (req, res) => {
+app.post('/api/google-sheets/oauth/file-id', async (req, res) => {
   try {
     const email = String(req.body?.email || '').trim();
     const fileId = String(req.body?.fileId || '').trim();
     
+    console.log('📤 /api/google-sheets/oauth/file-id: Storing file ID for:', email);
+    console.log('📤 /api/google-sheets/oauth/file-id: File ID:', fileId);
+    
     if (!email) return res.status(400).json({ error: 'Missing email' });
     if (!fileId) return res.status(400).json({ error: 'Missing fileId' });
     
-    if (!hasToken(email)) {
+    const tokenExists = hasToken(email);
+    console.log('🔍 /api/google-sheets/oauth/file-id: hasToken(' + email + '):', tokenExists);
+    
+    if (!tokenExists) {
+      console.error('❌ /api/google-sheets/oauth/file-id: No token found for', email);
       return res.status(401).json({ error: 'Not authenticated' });
+    }
+    
+    // Verify that the user's token can actually access this file before storing
+    // This ensures the file was properly selected via the picker
+    const userClient = getAuthorizedClientForEmail(email);
+    if (!userClient) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    
+    try {
+      // Test access to the file using Drive API (drive.file scope)
+      const drive = google.drive({ version: 'v3', auth: userClient });
+      await drive.files.get({
+        fileId: fileId,
+        fields: 'id, name',
+      });
+      console.log(`✅ Verified file access for ${email}, fileId: ${fileId}`);
+    } catch (verifyError) {
+      console.error(`❌ Cannot access file ${fileId} for ${email}:`, verifyError.message);
+      // If it's a 404, the file wasn't properly authorized via picker
+      if (verifyError.code === 404 || verifyError.status === 404) {
+        return res.status(403).json({ 
+          error: 'File not accessible. Please select the file again using the Google Picker.',
+          requiresReauth: true
+        });
+      }
+      // For other errors, still store the file ID (might be a temporary issue)
+      console.warn('⚠️ File verification failed, but storing file ID anyway:', verifyError.message);
     }
     
     storeFileId(email, fileId);
@@ -1115,12 +1162,46 @@ app.get('/api/sheets', async (req, res) => {
       }
       console.log('✅ Getting authorized client for', email);
       const userClient = getAuthorizedClientForEmail(email);
+      if (!userClient) {
+        console.log('❌ Failed to get authorized client');
+        return res.status(401).json({
+          success: false,
+          requiresOAuth: true,
+          authUrl: buildSheetsConnectUrl(req, email),
+          error: 'Authentication failed. Please reconnect your Google account.',
+          sampleSheets: [SAMPLE_STRATEGY_NAME],
+        });
+      }
+      
+      // Ensure access token is fresh before accessing the file
+      try {
+        await userClient.refreshAccessToken();
+        console.log('✅ Access token refreshed');
+      } catch (refreshError) {
+        console.error('❌ Failed to refresh access token:', refreshError.message);
+        if (refreshError.message && refreshError.message.includes('invalid_grant')) {
+          console.log(`🔄 Detected invalid_grant for ${email}, clearing stored token`);
+          deleteRefreshToken(email);
+          return res.status(401).json({
+            success: false,
+            requiresOAuth: true,
+            authUrl: buildSheetsConnectUrl(req, email),
+            error: 'Your Google authentication has expired. Please reconnect your account.',
+            sampleSheets: [SAMPLE_STRATEGY_NAME],
+          });
+        }
+      }
+      
       console.log('✅ Fetching sheet names for fileId:', fileId);
       try {
         const sheetNames = await getSheetNames(userClient, fileId);
         console.log('✅ Sheet names fetched successfully:', sheetNames.length, 'sheets');
         return res.json({ success: true, sheets: [SAMPLE_STRATEGY_NAME, ...sheetNames] });
       } catch (sheetError) {
+        console.error('❌ Error fetching sheet names:', sheetError.message);
+        console.error('❌ Error code:', sheetError.code);
+        console.error('❌ Error status:', sheetError.status);
+        
         // Check if it's an invalid_grant error (token revoked/expired)
         if (sheetError.message && sheetError.message.includes('invalid_grant')) {
           console.log(`🔄 Detected invalid_grant for ${email}, clearing stored token`);
@@ -1133,6 +1214,31 @@ app.get('/api/sheets', async (req, res) => {
             sampleSheets: [SAMPLE_STRATEGY_NAME],
           });
         }
+        
+        // Check if it's a 404 (file not found/not accessible)
+        if (sheetError.code === 404 || sheetError.status === 404 || sheetError.message?.includes('404')) {
+          console.log(`❌ File ${fileId} not accessible for ${email} - file may not be authorized`);
+          return res.status(403).json({
+            success: false,
+            requiresOAuth: true,
+            authUrl: buildSheetsConnectUrl(req, email),
+            error: 'Spreadsheet not accessible. Please select the Vector Results Spreadsheet again using the file picker.',
+            sampleSheets: [SAMPLE_STRATEGY_NAME],
+          });
+        }
+        
+        // Check if it's a 403 (permission denied)
+        if (sheetError.code === 403 || sheetError.status === 403 || sheetError.message?.includes('403')) {
+          console.log(`❌ Permission denied for ${email} accessing file ${fileId}`);
+          return res.status(403).json({
+            success: false,
+            requiresOAuth: true,
+            authUrl: buildSheetsConnectUrl(req, email),
+            error: 'Permission denied. Make sure you selected the Vector Results Spreadsheet and it is shared with your Google account.',
+            sampleSheets: [SAMPLE_STRATEGY_NAME],
+          });
+        }
+        
         throw sheetError; // Re-throw other errors
       }
     }
@@ -1980,10 +2086,10 @@ app.post('/api/upload-csv-auto', express.json({ limit: '10mb' }), async (req, re
     let emailSent = false;
     if (userEmail) {
       try {
-        // Determine risk mode: if results have safetyNet and startOfDayProfit, use 'apexMae', otherwise 'risk'
-        const hasApexMaeData = results.some(r => r.safetyNet !== undefined && r.startOfDayProfit !== undefined);
-        const riskMode = hasApexMaeData ? 'apexMae' : 'risk';
-        
+    // Determine risk mode: if results have safetyNet and startOfDayProfit, use 'apexMae', otherwise 'risk'
+    const hasApexMaeData = results.some(r => r.safetyNet !== undefined && r.startOfDayProfit !== undefined);
+    const riskMode = hasApexMaeData ? 'apexMae' : 'risk';
+    
         console.log(`Sending email via /api/send-risk-summary in ${riskMode} mode to:`, userEmail);
         
         // Pass CSV file names to email service

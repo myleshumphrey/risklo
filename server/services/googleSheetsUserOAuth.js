@@ -228,11 +228,23 @@ async function exchangeCodeAndStore(code, state) {
   // Google may not return refresh_token on subsequent consents.
   const existing = getRefreshToken(email);
   const refreshToken = tokens.refresh_token || existing;
+  
+  console.log('🔑 exchangeCodeAndStore: Email:', email);
+  console.log('🔑 exchangeCodeAndStore: Has refresh_token in response:', !!tokens.refresh_token);
+  console.log('🔑 exchangeCodeAndStore: Has existing token:', !!existing);
+  console.log('🔑 exchangeCodeAndStore: Final refreshToken:', refreshToken ? 'EXISTS' : 'MISSING');
+  
   if (!refreshToken) {
+    console.error('❌ exchangeCodeAndStore: No refresh token available!');
     throw new Error('No refresh token received. Try again with prompt=consent and ensure you are not reusing an already-consented app without revoking.');
   }
 
+  console.log('💾 exchangeCodeAndStore: Storing refresh token for:', email);
   storeRefreshToken(email, refreshToken);
+  
+  // Verify it was stored
+  const verifyToken = getRefreshToken(email);
+  console.log('✅ exchangeCodeAndStore: Token stored successfully:', verifyToken ? 'YES' : 'NO');
 
   return { 
     email, 
