@@ -153,7 +153,10 @@ function AppContent() {
         if (data?.requiresOAuth) {
           setSheetNames(data.sampleSheets || []);
           setSheetsConnectUrl(data.authUrl || null);
-          setError(data.error || 'Connect Google to load strategies from the Results Spreadsheet.');
+          // If we are showing the picker, don't show the error banner yet
+          if (!showPicker) {
+            setError(data.error || 'Connect Google to load strategies from the Results Spreadsheet.');
+          }
           return;
         }
         throw new Error(data?.error || `Server returned ${response.status}: ${response.statusText}`);
@@ -179,10 +182,10 @@ function AppContent() {
       } else {
         setError(err.message || 'Failed to connect to server. Make sure the backend is running.');
       }
-    } finally {
-      setLoadingSheets(false);
-    }
-  }, [user?.email]);
+      } finally {
+        setLoadingSheets(false);
+      }
+    }, [user?.email, showPicker]);
 
   // Auto-start the Sheets connect flow once per session after sign-in (if needed)
   // Skip if user already has strategies loaded (file ID already stored on backend)
@@ -206,8 +209,13 @@ function AppContent() {
 
   // Fetch sheet names on mount and when signed-in user changes
   useEffect(() => {
+    // Don't fetch if we're currently showing the picker (will fetch after selection)
+    if (showPicker) {
+      console.log('⏭️ Skipping fetchSheetNames while picker is active');
+      return;
+    }
     fetchSheetNames();
-  }, [fetchSheetNames]);
+  }, [fetchSheetNames, showPicker]);
 
   // Handle combined sign-in + Sheets OAuth callback
   useEffect(() => {
@@ -231,6 +239,7 @@ function AppContent() {
           console.log('🎨 Showing picker for email:', email);
           setPickerEmail(email);
           setShowPicker(true);
+          setError(null); // Clear any 401 noise since we're fixing it with the picker
         }, 100);
       } catch (err) {
         console.error('Error parsing user info from OAuth callback:', err);
@@ -239,8 +248,10 @@ function AppContent() {
         setPickerEmail(email);
         setShowPicker(true);
       }
-      // Clear query params
-      window.history.replaceState({}, '', window.location.pathname);
+      // DELAY clearing query params to prevent premature re-render/unmount
+      setTimeout(() => {
+        window.history.replaceState({}, '', window.location.pathname);
+      }, 1000);
       return;
     }
 
@@ -250,8 +261,10 @@ function AppContent() {
       pickerShownRef.current = true; // prevent duplicate
       setPickerEmail(email);
       setShowPicker(true);
-      // Clear query params
-      window.history.replaceState({}, '', window.location.pathname);
+      // DELAY clearing query params to prevent premature re-render/unmount
+      setTimeout(() => {
+        window.history.replaceState({}, '', window.location.pathname);
+      }, 1000);
       return;
     }
 
@@ -298,13 +311,26 @@ function AppContent() {
     setPickerEmail(null);
     console.log('👻 Hidden picker, set showPicker=false, pickerEmail=null');
     
-    // Small delay to ensure picker is fully closed before refreshing
-    setTimeout(() => {
-      console.log('⏰ Timeout elapsed, calling fetchSheetNames...');
-      fetchSheetNames().catch(err => {
-        console.error('Error refreshing sheet names:', err);
-      });
-    }, 300);
+    // Longer delay to ensure backend has time to process file authorization
+    // Then retry a few times if needed
+    const attemptFetch = async (retries = 3) => {
+      console.log(`⏰ Attempting to fetch sheet names (${retries} retries left)...`);
+      try {
+        await fetchSheetNames();
+        console.log('✅ Successfully fetched sheet names');
+      } catch (err) {
+        console.error('❌ Error fetching sheet names:', err);
+        if (retries > 0) {
+          console.log(`🔄 Retrying in 1 second... (${retries} retries left)`);
+          setTimeout(() => attemptFetch(retries - 1), 1000);
+        } else {
+          console.error('❌ All retries exhausted');
+        }
+      }
+    };
+    
+    // Wait 1.5 seconds before first attempt
+    setTimeout(() => attemptFetch(), 1500);
   }, [fetchSheetNames]);
 
   const handlePickerCancel = useCallback(() => {

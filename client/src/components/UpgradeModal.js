@@ -165,13 +165,13 @@ function UpgradeModal({ isOpen, onClose, user, isPro }) {
         <div className="modal-actions">
           {!user ? (
             <div style={{ textAlign: 'center' }}>
-              <p className="sign-in-prompt" style={{ 
-                color: 'rgba(255, 255, 255, 0.7)', 
-                marginBottom: '1rem',
-                textAlign: 'center'
-              }}>
-                Please sign in with Google to upgrade
-              </p>
+            <p className="sign-in-prompt" style={{ 
+              color: 'rgba(255, 255, 255, 0.7)', 
+              marginBottom: '1rem',
+              textAlign: 'center'
+            }}>
+              Please sign in with Google to upgrade
+            </p>
               <button 
                 className="modal-sign-in-button"
                 onClick={() => {

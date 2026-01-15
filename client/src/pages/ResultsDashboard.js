@@ -385,7 +385,7 @@ function ResultsDashboard({ user, sheetNames, loadingSheets, sheetsConnectUrl, e
             onCategoryChange={setCategory}
             contractType={contractType}
             onContractTypeChange={setContractType}
-            hideLosersToggle={isCurrent}
+          hideLosersToggle={isCurrent}
           />
 
           {filteredSortedGroups.map((group) => (

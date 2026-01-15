@@ -2,19 +2,15 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { API_BASE_URL } from '../config';
 import './GooglePicker.css';
 
-// Global guard to prevent double Picker/consent in React StrictMode (dev mounts twice)
-// We use a timestamp to allow re-opening after a legitimate close
-let globalPickerActive = false;
-let globalPickerLastShown = 0;
+// Simple global flag to prevent double-initialization in React Strict Mode
+let globalPickerInitialized = false;
 
 function GooglePicker({ userEmail, spreadsheetId, onFileSelected, onCancel }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [accessToken, setAccessToken] = useState(null);
   const isMountedRef = useRef(true);
-  const pickerInitializedRef = useRef(false); // Track if picker is already showing
   const pickerInstanceRef = useRef(null); // Hold picker instance to close programmatically
-  const silentPickTriggeredRef = useRef(false); // Track if silent pick was already attempted
 
   // Store file ID on backend
   const storeFileId = useCallback(async (fileId) => {
@@ -71,48 +67,15 @@ function GooglePicker({ userEmail, spreadsheetId, onFileSelected, onCancel }) {
   useEffect(() => {
     if (!accessToken || !spreadsheetId) return;
 
-    let silentPickTimeout = null;
-
-    // Silent Auto-Pick: If we have the spreadsheet ID, try to "pick" it silently first.
-    // This allows the app to load results in the background without waiting for the UI.
-    // We do this immediately to provide the fastest possible experience.
-    if (!silentPickTriggeredRef.current) {
-      console.log('🚀 Attempting silent auto-pick for spreadsheet:', spreadsheetId);
-      silentPickTriggeredRef.current = true;
-      
-      // Store file ID on backend (fire and forget)
-      storeFileId(spreadsheetId).catch(err => console.error('Silent storeFileId failed:', err));
-      
-      // Notify parent immediately to unmount this component
-      // We use a small delay to ensure the component is fully mounted before unmounting
-      silentPickTimeout = setTimeout(() => {
-        if (isMountedRef.current) {
-          console.log('✅ Silent auto-pick triggered');
-          onFileSelected(spreadsheetId);
-        }
-      }, 50);
-    }
-
-    // Prevent a second picker instance (StrictMode double-mount)
-    // We use a timestamp to allow re-opening after a legitimate close
-    const now = Date.now();
-    if (globalPickerActive && (now - globalPickerLastShown < 2000)) {
-      console.log('🚫 Global picker guard active, skipping initialization.');
+    // Global guard: prevent double-initialization from React Strict Mode
+    if (globalPickerInitialized) {
+      console.log('⚠️ Picker already initialized globally, skipping re-initialization');
       setLoading(false);
-      if (silentPickTimeout) clearTimeout(silentPickTimeout);
-      return;
-    }
-
-    if (pickerInitializedRef.current) {
-      console.log('⚠️ Picker already initialized, skipping re-initialization');
       return;
     }
     
     console.log('🎬 GooglePicker useEffect: Starting picker initialization');
     isMountedRef.current = true;
-    pickerInitializedRef.current = true; // Mark as initialized
-    globalPickerActive = true; // Mark globally to block duplicates
-    globalPickerLastShown = now;
 
     // Load Google API script
     const loadGoogleAPI = () => {
@@ -131,7 +94,7 @@ function GooglePicker({ userEmail, spreadsheetId, onFileSelected, onCancel }) {
             clearInterval(checkInterval);
             window.gapi.load('picker', initializePicker);
           }
-        }, 100);
+        }, 50);
         return;
       }
 
@@ -175,7 +138,6 @@ function GooglePicker({ userEmail, spreadsheetId, onFileSelected, onCancel }) {
       }
       
       // Wait a bit for the API to be fully ready
-      // We use a longer delay for the visible picker to allow silent pick to win
       setTimeout(() => {
         if (!isMountedRef.current) {
           console.log('⚠️ initializePicker setTimeout: Component unmounted, skipping');
@@ -250,6 +212,9 @@ function GooglePicker({ userEmail, spreadsheetId, onFileSelected, onCancel }) {
                   storeFileId(file.id).catch(err => {
                     console.error('Failed to store file ID:', err);
                   });
+                  // Reset global flag so picker can be shown again in the future
+                  globalPickerInitialized = false;
+                  console.log('🔓 Reset globalPickerInitialized after file selection');
                   // Immediately notify parent to close picker and refresh
                   // Use setTimeout to ensure picker closes first
                   setTimeout(() => {
@@ -258,6 +223,7 @@ function GooglePicker({ userEmail, spreadsheetId, onFileSelected, onCancel }) {
                   }, 100);
                 } else {
                   console.error('❌ No file ID in picker response:', data);
+                  globalPickerInitialized = false;
                   onCancel();
                 }
               } else if (data[window.google.picker.Response.ACTION] === window.google.picker.Action.CANCEL) {
@@ -267,6 +233,8 @@ function GooglePicker({ userEmail, spreadsheetId, onFileSelected, onCancel }) {
                 } catch (e) {
                   console.warn('Unable to close picker programmatically on cancel:', e.message);
                 }
+                globalPickerInitialized = false;
+                console.log('🔓 Reset globalPickerInitialized after cancel');
                 onCancel();
               } else {
                 console.log('ℹ️ Other picker action:', data[window.google.picker.Response.ACTION]);
@@ -284,12 +252,20 @@ function GooglePicker({ userEmail, spreadsheetId, onFileSelected, onCancel }) {
           
           const picker = builder.build();
           pickerInstanceRef.current = picker;
+          
+          // Double-check: if another instance already set the flag, don't show this one
+          if (globalPickerInitialized) {
+            console.log('⚠️ Another picker instance beat us to it, aborting');
+            return;
+          }
+          
+          // Set flag RIGHT BEFORE showing picker (synchronously, atomic)
+          globalPickerInitialized = true;
           picker.setVisible(true);
           console.log('Picker shown successfully');
         } catch (err) {
           console.error('Error initializing Google Picker:', err);
-          console.error('Window.google:', window.google);
-          console.error('Window.google.picker:', window.google?.picker);
+          globalPickerInitialized = false; // Reset so it can be tried again
           
           // Fallback: If picker fails but we have the spreadsheet ID, just use it directly
           if (isMountedRef.current && spreadsheetId) {
@@ -304,14 +280,19 @@ function GooglePicker({ userEmail, spreadsheetId, onFileSelected, onCancel }) {
             setLoading(false);
           }
         }
-      }, 1000); // 1s delay for visible picker to allow silent pick to unmount us first
+      }, 100); // Faster delay
     };
 
     loadGoogleAPI();
 
     return () => {
       console.log('🧹 GooglePicker cleanup: Setting isMountedRef to false');
-      if (silentPickTimeout) clearTimeout(silentPickTimeout);
+      // If pickerInstanceRef is null, picker was never shown (Strict Mode unmounted early)
+      // Reset the flag so the next mount can try
+      if (!pickerInstanceRef.current) {
+        console.log('🔓 Picker never shown, resetting globalPickerInitialized for retry');
+        globalPickerInitialized = false;
+      }
       try {
         pickerInstanceRef.current?.setVisible(false);
       } catch (e) {
@@ -319,9 +300,6 @@ function GooglePicker({ userEmail, spreadsheetId, onFileSelected, onCancel }) {
       }
       pickerInstanceRef.current = null;
       isMountedRef.current = false;
-      pickerInitializedRef.current = false; // Reset on unmount
-      // We DON'T reset globalPickerActive here because we want it to persist 
-      // through double-mounts. It will be allowed again after the timeout.
     };
   }, [accessToken, spreadsheetId, onFileSelected, onCancel, storeFileId]);
 

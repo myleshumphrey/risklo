@@ -480,7 +480,7 @@ function BulkRiskCalculator({
                         disabled={!isPro}
                       >
                         {ACCOUNT_SIZE_PRESETS.map((preset) => (
-                          <option key={preset.value} value={preset.value}>
+                          <option key={`${preset.value}-${preset.label}`} value={preset.value}>
                             {preset.label}
                           </option>
                         ))}
