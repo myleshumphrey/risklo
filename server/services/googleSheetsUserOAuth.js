@@ -140,6 +140,8 @@ function storeRefreshToken(email, refreshToken, fileId = null) {
   const store = readStore();
   store[email] = {
     refreshToken: encryptString(refreshToken),
+    accessToken: null,
+    accessTokenExpiry: null,
     fileId: fileId || store[email]?.fileId || null, // Preserve existing fileId if not provided
     updatedAt: new Date().toISOString(),
   };
@@ -167,6 +169,29 @@ function getRefreshToken(email) {
   const entry = store[email];
   if (!entry || !entry.refreshToken) return null;
   return decryptString(entry.refreshToken);
+}
+
+function storeAccessToken(email, accessToken, accessTokenExpiry = null) {
+  const store = readStore();
+  store[email] = {
+    ...(store[email] || {}),
+    accessToken: accessToken || null,
+    accessTokenExpiry: accessTokenExpiry || null,
+    updatedAt: new Date().toISOString(),
+  };
+  writeStore(store);
+}
+
+function getAccessToken(email) {
+  const store = readStore();
+  const entry = store[email];
+  return entry?.accessToken || null;
+}
+
+function getAccessTokenExpiry(email) {
+  const store = readStore();
+  const entry = store[email];
+  return entry?.accessTokenExpiry || null;
 }
 
 function deleteRefreshToken(email) {
@@ -235,12 +260,17 @@ async function exchangeCodeAndStore(code, state) {
   console.log('🔑 exchangeCodeAndStore: Final refreshToken:', refreshToken ? 'EXISTS' : 'MISSING');
   
   if (!refreshToken) {
-    console.error('❌ exchangeCodeAndStore: No refresh token available!');
-    throw new Error('No refresh token received. Try again with prompt=consent and ensure you are not reusing an already-consented app without revoking.');
+    if (tokens.access_token) {
+      console.warn('⚠️ exchangeCodeAndStore: No refresh token. Storing access token for short-lived session.');
+      storeAccessToken(email, tokens.access_token, tokens.expiry_date || null);
+    } else {
+      console.error('❌ exchangeCodeAndStore: No refresh token or access token available!');
+      throw new Error('No refresh token received. Try again with prompt=consent and ensure you are not reusing an already-consented app without revoking.');
+    }
+  } else {
+    console.log('💾 exchangeCodeAndStore: Storing refresh token for:', email);
+    storeRefreshToken(email, refreshToken);
   }
-
-  console.log('💾 exchangeCodeAndStore: Storing refresh token for:', email);
-  storeRefreshToken(email, refreshToken);
   
   // Verify it was stored
   const verifyToken = getRefreshToken(email);
@@ -255,27 +285,47 @@ async function exchangeCodeAndStore(code, state) {
 
 function getAuthorizedClientForEmail(email) {
   const refreshToken = getRefreshToken(email);
-  if (!refreshToken) return null;
   const oauth2 = getOAuthClient();
-  oauth2.setCredentials({ refresh_token: refreshToken });
+  if (refreshToken) {
+    oauth2.setCredentials({ refresh_token: refreshToken });
+    return oauth2;
+  }
+  const accessToken = getAccessToken(email);
+  if (!accessToken) return null;
+  const expiry = getAccessTokenExpiry(email);
+  oauth2.setCredentials({
+    access_token: accessToken,
+    expiry_date: expiry || null,
+  });
   return oauth2;
 }
 
 // Get access token for Google Picker API (frontend use)
 async function getAccessTokenForEmail(email) {
-  const oauth2 = getAuthorizedClientForEmail(email);
-  if (!oauth2) return null;
-  try {
-    const { credentials } = await oauth2.refreshAccessToken();
-    return credentials.access_token;
-  } catch (error) {
-    console.error('Error refreshing access token:', error);
+  const refreshToken = getRefreshToken(email);
+  if (refreshToken) {
+    const oauth2 = getOAuthClient();
+    oauth2.setCredentials({ refresh_token: refreshToken });
+    try {
+      const { credentials } = await oauth2.refreshAccessToken();
+      return credentials.access_token;
+    } catch (error) {
+      console.error('Error refreshing access token:', error);
+      return null;
+    }
+  }
+  const accessToken = getAccessToken(email);
+  const expiry = getAccessTokenExpiry(email);
+  if (!accessToken) return null;
+  if (expiry && Date.now() > Number(expiry) - 60000) {
+    console.warn('⚠️ Stored access token expired or expiring soon');
     return null;
   }
+  return accessToken;
 }
 
 function hasToken(email) {
-  return !!getRefreshToken(email);
+  return !!getRefreshToken(email) || !!getAccessToken(email);
 }
 
 module.exports = {
@@ -283,11 +333,15 @@ module.exports = {
   exchangeCodeAndStore,
   getAuthorizedClientForEmail,
   hasToken,
+  getRefreshToken,
+  getAccessToken,
+  getAccessTokenExpiry,
   deleteRefreshToken,
   verifyState,
   storeFileId,
   getFileId,
   getAccessTokenForEmail,
+  storeAccessToken,
 };
 
 

@@ -8,6 +8,7 @@ const {
   exchangeCodeAndStore,
   getAuthorizedClientForEmail,
   hasToken,
+  getRefreshToken,
   deleteRefreshToken,
   storeFileId,
   getFileId,
@@ -1173,23 +1174,27 @@ app.get('/api/sheets', async (req, res) => {
         });
       }
       
-      // Ensure access token is fresh before accessing the file
-      try {
-        await userClient.refreshAccessToken();
-        console.log('✅ Access token refreshed');
-      } catch (refreshError) {
-        console.error('❌ Failed to refresh access token:', refreshError.message);
-        if (refreshError.message && refreshError.message.includes('invalid_grant')) {
-          console.log(`🔄 Detected invalid_grant for ${email}, clearing stored token`);
-          deleteRefreshToken(email);
-          return res.status(401).json({
-            success: false,
-            requiresOAuth: true,
-            authUrl: buildSheetsConnectUrl(req, email),
-            error: 'Your Google authentication has expired. Please reconnect your account.',
-            sampleSheets: [SAMPLE_STRATEGY_NAME],
-          });
+      // Ensure access token is fresh before accessing the file (only if we have a refresh token)
+      if (getRefreshToken(email)) {
+        try {
+          await userClient.refreshAccessToken();
+          console.log('✅ Access token refreshed');
+        } catch (refreshError) {
+          console.error('❌ Failed to refresh access token:', refreshError.message);
+          if (refreshError.message && refreshError.message.includes('invalid_grant')) {
+            console.log(`🔄 Detected invalid_grant for ${email}, clearing stored token`);
+            deleteRefreshToken(email);
+            return res.status(401).json({
+              success: false,
+              requiresOAuth: true,
+              authUrl: buildSheetsConnectUrl(req, email),
+              error: 'Your Google authentication has expired. Please reconnect your account.',
+              sampleSheets: [SAMPLE_STRATEGY_NAME],
+            });
+          }
         }
+      } else {
+        console.warn('⚠️ No refresh token available; using stored access token if valid');
       }
       
       console.log('✅ Fetching sheet names for fileId:', fileId);
