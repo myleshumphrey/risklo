@@ -371,7 +371,7 @@ function GuidedTour({ isOpen, onClose, user }) {
                   <iframe
                     width="100%"
                     height="315"
-                    src="https://www.youtube.com/embed/V03_3pfUXCQ"
+                    src="https://www.youtube.com/embed/qqh41zX1fPU"
                     title="RiskLo Tutorial"
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
